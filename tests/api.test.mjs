@@ -165,6 +165,20 @@ try {
     a.ws.close();
     b.ws.close();
   });
+  await test("abnormal disconnects finish lobby cleanup and allow the player to reconnect", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    const a = await socket(0, code);
+    const before = await (await control(code, "read")).json();
+    const disconnected = await control(code, "disconnect");
+    assert.equal(disconnected.status, 200);
+    const after = await (await control(code, "read")).json();
+    assert.ok(after.game.players[0].seen >= before.game.players[0].seen);
+    const b = await socket(0, code);
+    assert.equal(b.messages[0].state.you, a.messages[0].state.you);
+    b.ws.close();
+  });
   await test("alarms advance a disconnected room without GET requests", async () => {
     const {
       body: { code },

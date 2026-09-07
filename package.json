@@ -15,7 +15,8 @@
     "check": "npm run lint && npm run fmt:check && npm run typecheck && npm test && npm run build",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy"
+    "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy",
+    "logs": "node scripts/logs.mjs"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",

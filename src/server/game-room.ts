@@ -209,8 +209,9 @@ export class GameRoom extends DurableObject<Env> {
       }
     });
   }
-  async webSocketClose(ws: WebSocket, code: number) {
-    ws.close(code === 1005 ? 1000 : code);
+  async webSocketClose(ws: WebSocket, _code: number) {
+    // Our compatibility date enables automatic close replies. In particular,
+    // 1006 reports a lost connection and must never be sent as a close frame.
     await this.ctx.blockConcurrencyWhile(async () => {
       const r = this.read();
       if (!r) return;
@@ -224,6 +225,7 @@ export class GameRoom extends DurableObject<Env> {
     });
   }
   async webSocketError(ws: WebSocket) {
+    ws.close(1011, "Reconnect");
     await this.webSocketClose(ws, 1011);
   }
   async alarm() {
