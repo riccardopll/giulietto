@@ -1,50 +1,53 @@
 # Giulietto
 
-A free, anonymous multiplayer card game for 2–6 players. Create a private table and share its invite link, or join public matchmaking. Public tables start 20 seconds after a second player joins; the host may start sooner.
+Multiplayer Giulietto with private lobbies, public matchmaking, two to six players, turn timers, and persistent match history.
 
-## Rules
+React runs in the browser. A Cloudflare Worker handles `/api/game`; D1 stores room state, anonymous player profiles, matches, and results. Card images and fonts are included with their licenses in `public/`.
 
-- Fixed card order: Clubs, Swords, Cups, Coins, weakest to strongest. Within each suit: Ace, 2–7, Jack, Knight, King. Cards use values 1–40.
-- The Ace of Coins is exceptional: its player chooses lowest (0) or highest (41) before playing.
-- Deal 6, 5, 4, 3, 2, then 1 card per player. Repeat this cycle until only one player remains.
-- Players predict tricks in order. The last prediction must not make the sum equal the number of tricks available that round.
-- Any card may be played. Highest wins, and the trick winner leads next.
-- Players begin with 3 lives. Lose the absolute difference between predicted and actual tricks.
-- At zero lives, a player watches. If no one has lives after scoring a round, every player returns with 1 life, including those eliminated earlier. Players who deliberately left have forfeited and do not return.
-- In the one-card round, you see other active players' cards, but cannot see your own until played. Everyone chooses high/low before playing the hidden card so the interface does not reveal whether it is the special ace.
-- First bidder and initial leader rotate each round. Turns expire after 40 seconds: lowest legal prediction, or the first card (ace high). Round results display for 12 seconds. Tables expire after 24 hours of inactivity.
+## Local development
 
-## Implementation
+```sh
+fnm install
+fnm use
+npm ci
+npm run db:migrate:local
+npm run dev
+```
 
-Vinext/React frontend and a Cloudflare Worker API with D1 storage. Room state is server-owned, and optimistic version checks prevent lost updates. Clients poll every 1.5 seconds. Anonymous credentials stay in browser storage; the server stores a SHA-256 digest, never the credential. Reopening in the same browser restores the seat. Other hands are removed from API responses, including your own hand during the blind round.
+Node is pinned in `.node-version` and `package.json`. Vite serves the UI and runs the API in Cloudflare's local Workers runtime. The local D1 database is separate from production.
 
-The supported deployment binding is `DB`; `.openai/hosting.json` declares it. Drizzle migrations are packaged with the app. No external authentication service or paid client subscription is required.
+```sh
+npm run check        # Oxlint, Oxfmt, TypeScript, tests, production build
+npm run fmt          # Format source
+npm run preview      # Serve the production build locally
+```
 
-## Development and verification
+Vite and its React plugin use Oxc and Rolldown. Tests use Node's native TypeScript support and SQLite, with Rolldown bundling the Worker API against an in-memory database adapter.
 
-Use the Sites installation/build helpers for this checkout. Generate schema migrations with `npm run db:generate`.
+## Deployment
 
-- `node --test tests/game.test.mjs`: game rules, visibility, revival, repeated full games.
-- `node --test tests/api.test.mjs`: request handlers with an in-memory SQLite D1 adapter; simultaneous joins, permissions, matchmaking and blind-card play. These tests do not exercise the deployed Cloudflare runtime.
-- `./node_modules/.bin/tsc --noEmit`: TypeScript checks.
+- Site: https://giulietto.riccardo-palleschi-5e6.workers.dev
+- Repository: https://github.com/riccardopll/giulietto
+- Cloudflare Worker: `giulietto`
+- D1 database: `giulietto-db`, bound as `DB`
+- Configuration: `wrangler.jsonc`
 
-Browser layout checks cover 320, 390, 480, 768, and 1280 pixel frames, plus 200% text on narrow screens. The minimal start screen, private lobby, six-player game, blind-card choice, and results were checked with local test data. Private lobby creation and blind-card play were exercised through the UI. These are Chromium viewport checks, not physical-device or Safari tests.
+Every push to `main` runs the checks, applies pending D1 migrations, and deploys the same build using GitHub Actions. A final smoke check verifies the live HTML, assets, API, and D1 connection. Pull requests run checks without deploying. Deployment runs are serialized so a migration or upload is not interrupted by a newer push.
 
-## Stored data
+The repository secret `CLOUDFLARE_API_TOKEN` must contain a Cloudflare token scoped to the Riccardo account with **Workers Scripts: Edit**, **D1: Edit**, and **Account Settings: Read**. Add it through GitHub's repository Actions secrets settings or `gh secret set CLOUDFLARE_API_TOKEN --repo riccardopll/giulietto`. Never commit tokens.
 
-There are four application tables:
+For a manual deployment after `wrangler login`:
 
-- `rooms`: current lobby and game state.
-- `players`: guest identity and display name.
-- `matches`: start/end time, participants count, winner and status.
-- `match_results`: one row per player per match, with outcome, lives, rounds played, tricks won and prediction accuracy.
+```sh
+npm run check
+npm run db:migrate:remote
+npx wrangler deploy
+```
 
-Match history is updated with room state in a single transaction. The match/player primary key prevents duplicate results, and completed results stay unchanged. Guest identities remain tied to browser storage. The migration adding these tables clears previous lobby data, as requested; tracking starts fresh.
+Add future schema changes as numbered SQL files in `drizzle/`. Keep migrations compatible with the currently running Worker: they are applied before the new Worker is deployed. Never edit a migration already applied to production.
 
-## Card artwork
+## Source import
 
-Authentic Neapolitan card scans by Despues, Wikimedia Commons, CC BY-SA 3.0. Faces were cropped, resized and converted to WebP; these adaptations retain the same license. The card back by Trocche100 is public domain. Full credits, source links and the card mapping are included in `public/cards/neapolitan/ATTRIBUTION.txt` and `manifest.json`.
+The original Sites export is preserved in the first Git commit. This checkout uses direct Cloudflare hosting. It removes the unused Sites/Next/Vinext scaffolding, starter catalog, ORM, and example routes. Only the UI primitives used by the game remain.
 
-The table uses a mobile-first neutral layout with mulberry accents with opponents above, the trick in the center, and your hand below. Dealing, playing and trick collection use brief animations and honor reduced-motion preferences. Card movement uses the browser View Transition API where available, with CSS entry animations as a fallback.
-
-The Pacifico wordmark font is self-hosted and subset to the site name; its SIL Open Font License is included in `public/fonts`. Errors use top-center Sonner toasts that dismiss after 4.5 seconds without affecting document layout. New opponent predictions display a brief animated number bubble (including zero bids). Browser Back opens the same leave confirmation as the table control; cancelling keeps the seat, and confirming calls the leave endpoint before returning to the dashboard. Browser checks use Chromium; native iOS Safari gestures require device verification.
+The archive contained source and assets, **not live database records**. This deployment starts with a new database. The initial migration contains the original table definitions without the old export's destructive room-reset statement.
