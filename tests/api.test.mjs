@@ -123,18 +123,27 @@ try {
     const started = await a.send({ action: "start" });
     assert.equal(started.type, "ack");
     const pushed = await waitFor(() => b.messages.find((m) => m.state?.phase === "bidding"));
-    assert.ok(pushed.state.players[0].hand.every((c) => c === null));
-    assert.ok(pushed.state.players[1].hand.every((c) => typeof c === "number"));
+    assert.ok(
+      pushed.state.players.find((p) => p.id !== pushed.state.you).hand.every((c) => c === null),
+    );
+    assert.ok(
+      pushed.state.players
+        .find((p) => p.id === pushed.state.you)
+        .hand.every((c) => typeof c === "number"),
+    );
     assert.equal(pushed.state.events, undefined);
     const move = { action: "bid", bid: 0, commandId: crypto.randomUUID() };
-    const ack = await a.send(move);
-    const retry = await a.send(move);
+    const firstIndex = started.state.order[0] === started.state.you ? 0 : 1;
+    const first = firstIndex === 0 ? a : b;
+    const ack = await first.send(move);
+    assert.equal(ack.type, "ack");
+    const retry = await first.send(move);
     assert.equal(retry.state.turn, 1);
     assert.equal(retry.state.revision, ack.state.revision);
     a.ws.close();
     b.ws.close();
     await mf.unsafeEvictDurableObject("test", "TestGameTable", { name: code });
-    const reconnected = await socket(0, code);
+    const reconnected = await socket(firstIndex, code);
     assert.equal(reconnected.messages[0].state.turn, 1);
     const retriedAfterRestart = await reconnected.send(move);
     assert.equal(retriedAfterRestart.type, "ack");
@@ -153,19 +162,26 @@ try {
     await post(1, { action: "join", code });
     const a = await socket(0, code),
       b = await socket(1, code);
-    await a.send({ action: "start" });
+    const started = await a.send({ action: "start" });
+    const first = started.state.order[0] === started.state.you ? a : b;
     await mf.unsafeEvictDurableObject("test", "TestGameTable", {
       name: code,
       webSockets: "hibernate",
     });
-    const ack = await a.send({ action: "bid", bid: 0 });
+    const ack = await first.send({ action: "bid", bid: 0 });
     assert.equal(ack.type, "ack");
     const pushed = await waitFor(() =>
       b.messages.find((m) => m.state?.revision === ack.state.revision),
     );
-    assert.equal(pushed.state.you, pushed.state.players[1].id);
-    assert.ok(pushed.state.players[0].hand.every((c) => c === null));
-    assert.ok(pushed.state.players[1].hand.every((c) => typeof c === "number"));
+    assert.equal(pushed.state.you, b.messages[0].state.you);
+    assert.ok(
+      pushed.state.players.find((p) => p.id !== pushed.state.you).hand.every((c) => c === null),
+    );
+    assert.ok(
+      pushed.state.players
+        .find((p) => p.id === pushed.state.you)
+        .hand.every((c) => typeof c === "number"),
+    );
     a.ws.close();
     b.ws.close();
   });
@@ -212,7 +228,7 @@ try {
     await control(code, "seed", r);
     await waitFor(async () => (await (await control(code, "read")).json()).game.turn === 1);
     const current = await (await control(code, "read")).json();
-    assert.equal(current.game.players[0].bid, 0);
+    assert.equal(current.game.players.find((p) => p.id === current.game.order[0]).bid, 0);
     assert.ok(current.game.deadline > Date.now());
   });
   await test("D1 outage does not roll back the game; persisted outbox retries and rejects stale snapshots", async () => {

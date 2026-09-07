@@ -86,9 +86,8 @@ export function player(id: string, name: string, now: number): Player {
 export function strength(p: Play) {
   return p.card === 31 ? (p.mode === "low" ? 0 : 41) : p.card;
 }
-function shuffle() {
-  const a = Array.from({ length: 40 }, (_, i) => i + 1);
-  for (let i = 39; i > 0; i--) {
+function shuffle<T>(a: T[]) {
+  for (let i = a.length - 1; i > 0; i--) {
     const range = i + 1,
       limit = Math.floor(4294967296 / range) * range;
     let n;
@@ -104,6 +103,7 @@ export function deal(g: Game, now: number) {
   if (g.round === 0) {
     g.matchId = crypto.randomUUID();
     g.startedAt = now;
+    shuffle(g.players);
   }
   g.round++;
   g.count = 6 - ((g.round - 1) % 6);
@@ -112,7 +112,7 @@ export function deal(g: Game, now: number) {
   g.order = active.map((p) => p.id);
   const offset = (g.round - 1) % active.length;
   g.order = [...g.order.slice(offset), ...g.order.slice(0, offset)];
-  const deck = shuffle();
+  const deck = shuffle(Array.from({ length: 40 }, (_, i) => i + 1));
   for (const p of g.players) {
     p.hand = active.includes(p) ? deck.splice(0, g.count).sort((a, b) => a - b) : [];
     p.bid = null;
