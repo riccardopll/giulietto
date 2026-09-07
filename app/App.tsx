@@ -432,6 +432,7 @@ export default function App() {
             </Button>
             <form
               className="join-section"
+              autoComplete="off"
               onSubmit={(e) => {
                 e.preventDefault();
                 act("join");
@@ -441,6 +442,12 @@ export default function App() {
               <div className="join-form">
                 <Input
                   id="lobby-code"
+                  name="table-invite"
+                  type="text"
+                  autoComplete="off"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
+                  data-form-type="other"
                   placeholder="Enter code"
                   maxLength={8}
                   value={code}
