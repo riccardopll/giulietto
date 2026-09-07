@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { flushSync } from "react-dom";
 import { toast, Toaster } from "sonner";
 import { PredictionEmote } from "@/client/components/prediction-emote";
 import { PlayingCard as Card } from "@/client/components/playing-card";
@@ -109,7 +108,6 @@ export default function App() {
   const [ace, setAce] = useState<number | null>(null);
   const ready = !session.error;
   const [pendingCard, setPendingCard] = useState<number | null>(null);
-  const transition = useRef<ViewTransition | null>(null);
   const token = useRef(session.token);
   const transport = useRef<GameConnection | null>(null);
   const gameRef = useRef<State | null>(null);
@@ -123,30 +121,13 @@ export default function App() {
     clockOffset.current = s.serverTime - Date.now();
     const previous = gameRef.current;
     if (previous && previous.code === s.code && s.revision < previous.revision) return;
-    const changed =
-      previous &&
-      previous.code === s.code &&
-      (previous.round !== s.round ||
-        previous.phase !== s.phase ||
-        JSON.stringify(previous.trick) !== JSON.stringify(s.trick));
     gameRef.current = s;
     if (!previous && history.state?.giuliettoTable !== s.code) {
       // Keep a dashboard entry below the table, including direct invite links.
       history.replaceState({ ...history.state, giuliettoTable: null }, "", location.pathname);
       history.pushState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
     }
-    const commit = () => {
-      if (gameRef.current === s) flushSync(() => setGame(s));
-    };
-    if (
-      changed &&
-      document.startViewTransition &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches
-    ) {
-      transition.current?.skipTransition();
-      transition.current = document.startViewTransition(commit);
-      void transition.current.finished.catch(() => {});
-    } else setGame(s);
+    setGame(s);
     localStorage.setItem("giulietto-room", s.code);
   };
   useEffect(() => {
