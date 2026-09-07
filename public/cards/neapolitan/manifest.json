@@ -1,0 +1,776 @@
+{
+  "deck": "Traditional Neapolitan deck (Dal Negro scans)",
+  "author": "Despues",
+  "license": "CC BY-SA 3.0",
+  "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0/",
+  "modifications": "Individual cards cropped from scanned sheets, resized to 300\u00d7480, and encoded as WebP.",
+  "cards": [
+    {
+      "id": 1,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 1,
+      "rankName": "Ace",
+      "asset": "1.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        18,
+        10,
+        314,
+        486
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 2,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 2,
+      "rankName": "2",
+      "asset": "2.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        331,
+        12,
+        627,
+        490
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 3,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 3,
+      "rankName": "3",
+      "asset": "3.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        643,
+        12,
+        940,
+        490
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 4,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 4,
+      "rankName": "4",
+      "asset": "4.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        962,
+        10,
+        1257,
+        487
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 5,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 5,
+      "rankName": "5",
+      "asset": "5.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        25,
+        512,
+        320,
+        985
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 6,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 6,
+      "rankName": "6",
+      "asset": "6.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        338,
+        519,
+        633,
+        994
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 7,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 7,
+      "rankName": "7",
+      "asset": "7.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        648,
+        516,
+        943,
+        991
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 8,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 8,
+      "rankName": "Jack",
+      "asset": "8.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        966,
+        509,
+        1259,
+        986
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 9,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 9,
+      "rankName": "Knight",
+      "asset": "9.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        340,
+        1020,
+        634,
+        1494
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 10,
+      "suit": "Clubs",
+      "italianSuit": "bastoni",
+      "rank": 10,
+      "rankName": "King",
+      "asset": "10.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_bastoni.jpg",
+      "cropBox": [
+        655,
+        1028,
+        947,
+        1499
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 11,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 1,
+      "rankName": "Ace",
+      "asset": "11.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        18,
+        3,
+        313,
+        490
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 12,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 2,
+      "rankName": "2",
+      "asset": "12.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        332,
+        3,
+        625,
+        486
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 13,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 3,
+      "rankName": "3",
+      "asset": "13.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        642,
+        3,
+        938,
+        489
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 14,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 4,
+      "rankName": "4",
+      "asset": "14.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        957,
+        3,
+        1247,
+        491
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 15,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 5,
+      "rankName": "5",
+      "asset": "15.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        23,
+        523,
+        317,
+        991
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 16,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 6,
+      "rankName": "6",
+      "asset": "16.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        338,
+        528,
+        629,
+        993
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 17,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 7,
+      "rankName": "7",
+      "asset": "17.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        649,
+        525,
+        943,
+        993
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 18,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 8,
+      "rankName": "Jack",
+      "asset": "18.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        958,
+        525,
+        1250,
+        992
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 19,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 9,
+      "rankName": "Knight",
+      "asset": "19.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        335,
+        1022,
+        630,
+        1493
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 20,
+      "suit": "Swords",
+      "italianSuit": "spade",
+      "rank": 10,
+      "rankName": "King",
+      "asset": "20.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_spade.jpg",
+      "cropBox": [
+        654,
+        1030,
+        946,
+        1500
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 21,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 1,
+      "rankName": "Ace",
+      "asset": "21.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        18,
+        18,
+        311,
+        493
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 22,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 2,
+      "rankName": "2",
+      "asset": "22.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        332,
+        18,
+        626,
+        493
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 23,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 3,
+      "rankName": "3",
+      "asset": "23.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        646,
+        17,
+        940,
+        495
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 24,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 4,
+      "rankName": "4",
+      "asset": "24.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        954,
+        12,
+        1248,
+        491
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 25,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 5,
+      "rankName": "5",
+      "asset": "25.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        20,
+        520,
+        309,
+        987
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 26,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 6,
+      "rankName": "6",
+      "asset": "26.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        331,
+        522,
+        627,
+        992
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 27,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 7,
+      "rankName": "7",
+      "asset": "27.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        649,
+        527,
+        944,
+        995
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 28,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 8,
+      "rankName": "Jack",
+      "asset": "28.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        962,
+        532,
+        1258,
+        997
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 29,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 9,
+      "rankName": "Knight",
+      "asset": "29.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        338,
+        1022,
+        628,
+        1491
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 30,
+      "suit": "Cups",
+      "italianSuit": "coppe",
+      "rank": 10,
+      "rankName": "King",
+      "asset": "30.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_coppe.jpg",
+      "cropBox": [
+        660,
+        1029,
+        950,
+        1499
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 31,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 1,
+      "rankName": "Ace",
+      "asset": "31.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        28,
+        14,
+        319,
+        488
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 32,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 2,
+      "rankName": "2",
+      "asset": "32.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        340,
+        13,
+        631,
+        488
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 33,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 3,
+      "rankName": "3",
+      "asset": "33.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        650,
+        17,
+        941,
+        490
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 34,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 4,
+      "rankName": "4",
+      "asset": "34.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        965,
+        9,
+        1253,
+        486
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 35,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 5,
+      "rankName": "5",
+      "asset": "35.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        28,
+        522,
+        319,
+        992
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 36,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 6,
+      "rankName": "6",
+      "asset": "36.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        340,
+        525,
+        630,
+        993
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 37,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 7,
+      "rankName": "7",
+      "asset": "37.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        648,
+        520,
+        938,
+        993
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 38,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 8,
+      "rankName": "Jack",
+      "asset": "38.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        957,
+        519,
+        1251,
+        986
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 39,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 9,
+      "rankName": "Knight",
+      "asset": "39.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        650,
+        1025,
+        944,
+        1495
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    },
+    {
+      "id": 40,
+      "suit": "Coins",
+      "italianSuit": "denari",
+      "rank": 10,
+      "rankName": "King",
+      "asset": "40.webp",
+      "source": "https://commons.wikimedia.org/wiki/File:Carte_da_gioco_napoletane_denari.jpg",
+      "cropBox": [
+        337,
+        1020,
+        628,
+        1494
+      ],
+      "dimensions": [
+        300,
+        480
+      ]
+    }
+  ],
+  "back": {
+    "asset": "back.webp",
+    "author": "Trocche100",
+    "license": "Public domain (PD-user)",
+    "source": "https://commons.wikimedia.org/wiki/File:Carte_Napoletane_retro.jpg",
+    "modifications": "Resized to 300\u00d7480, encoded as WebP."
+  }
+}
