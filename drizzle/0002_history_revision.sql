@@ -1,0 +1,1 @@
+ALTER TABLE matches ADD COLUMN history_revision INTEGER NOT NULL DEFAULT -1;

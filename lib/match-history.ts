@@ -1,9 +1,9 @@
 import type { Game } from "./game";
 
-/** These writes run in the same transaction as the room version check. */
-export function historyStatements(db: D1Database, g: Game, version: number, state: string) {
-  const guard = "EXISTS (SELECT 1 FROM rooms WHERE code=? AND version=? AND state=?)";
-  const guardValues = [g.code, version, state];
+/** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
+export function historyStatements(db: D1Database, g: Game) {
+  const guard = "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=?)";
+  const guardValues = [g.matchId!, g.revision];
   const participants = JSON.stringify(g.players);
   const finished = g.phase === "finished";
   const endedAt = finished ? g.finishedAt! : null;
@@ -12,14 +12,14 @@ export function historyStatements(db: D1Database, g: Game, version: number, stat
     db
       .prepare(`INSERT INTO players(id,display_name,created_at,last_seen_at)
       SELECT json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),?,json_extract(p.value,'$.seen')
-      FROM json_each(?) p WHERE ${guard} ON CONFLICT(id) DO NOTHING`)
-      .bind(Date.now(), participants, ...guardValues),
+      FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name,last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
+      .bind(g.startedAt!, participants),
     db
-      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds)
-      SELECT ?,?,?,?,?,?,?,?,? WHERE ${guard}
+      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision)
+      VALUES(?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET status=excluded.status,completed_at=excluded.completed_at,
-        winner_id=excluded.winner_id,rounds=excluded.rounds,player_count=excluded.player_count
-      WHERE matches.completed_at IS NULL`)
+        winner_id=excluded.winner_id,rounds=excluded.rounds,player_count=excluded.player_count,history_revision=excluded.history_revision
+      WHERE matches.history_revision<excluded.history_revision AND matches.completed_at IS NULL`)
       .bind(
         g.matchId!,
         g.code,
@@ -30,7 +30,7 @@ export function historyStatements(db: D1Database, g: Game, version: number, stat
         endedAt,
         g.winner,
         g.round,
-        ...guardValues,
+        g.revision,
       ),
     db
       .prepare(`INSERT INTO match_results(match_id,player_id,display_name,outcome,lives,

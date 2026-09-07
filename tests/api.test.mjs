@@ -1,93 +1,43 @@
-import { test, mock } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import { build } from "rolldown";
-import { DatabaseSync } from "node:sqlite";
+import { Miniflare, Log, LogLevel, convertV4MiniflareOptions } from "miniflare";
 import { readFile, readdir } from "node:fs/promises";
-const sqlDb = new DatabaseSync(":memory:");
-const db = {
-  failHistoryOnce: false,
-  prepare(sql) {
-    let values = [];
-    const query = {
-      bind(...v) {
-        values = v;
-        return query;
-      },
-      async first() {
-        return sqlDb.prepare(sql).get(...values) || null;
-      },
-      async all() {
-        return { results: sqlDb.prepare(sql).all(...values) };
-      },
-      _run() {
-        if (db.failHistoryOnce && sql.includes("INSERT INTO matches")) {
-          db.failHistoryOnce = false;
-          throw Error("Simulated history write failure");
-        }
-        const r = sqlDb.prepare(sql).run(...values);
-        return { meta: { changes: Number(r.changes) } };
-      },
-      async run() {
-        return query._run();
-      },
-    };
-    return query;
-  },
-  async batch(statements) {
-    sqlDb.exec("BEGIN");
-    try {
-      const results = statements.map((s) => s._run());
-      sqlDb.exec("COMMIT");
-      return results;
-    } catch (e) {
-      sqlDb.exec("ROLLBACK");
-      throw e;
-    }
-  },
-};
-sqlDb.exec("PRAGMA foreign_keys=ON");
-globalThis.testEnv = { DB: db };
-const buildResult = await build({
-  input: "worker/index.ts",
+const built = await build({
+  input: "tests/worker-fixture.ts",
   write: false,
+  external: ["cloudflare:workers"],
   output: { format: "esm" },
-  resolve: { alias: { "@": process.cwd() } },
-  plugins: [
-    {
-      name: "test-env",
-      resolveId(id) {
-        if (id === "cloudflare:workers") return "\0test-env";
-      },
-      load(id) {
-        if (id === "\0test-env") return "export const env=globalThis.testEnv;";
-      },
-    },
-  ],
 });
-const handler = (
-  await import(
-    "data:text/javascript;base64," + Buffer.from(buildResult.output[0].code).toString("base64")
-  )
-).default;
-const mf = {
-  dispatchFetch(url, options) {
-    return handler.fetch(new Request(url, options));
-  },
-};
+const mf = new Miniflare(
+  convertV4MiniflareOptions({
+    name: "test",
+    modules: true,
+    script: built.output[0].code,
+    compatibilityDate: "2026-09-07",
+    compatibilityFlags: ["nodejs_compat"],
+    durableObjects: {
+      ROOMS: { className: "TestGameRoom", useSQLite: true },
+      MATCHMAKER: { className: "Matchmaker", useSQLite: true },
+    },
+    d1Databases: { DB: "test-db" },
+    ratelimits: { REQUEST_LIMIT: { namespace_id: "1001", simple: { limit: 10000, period: 60 } } },
+    unsafeInspectDurableObjects: true,
+    log: new Log(LogLevel.ERROR),
+  }),
+);
+const db = await mf.getD1Database("DB");
 for (const file of (await readdir("drizzle")).filter((f) => f.endsWith(".sql")).sort()) {
-  const migration = await readFile("drizzle/" + file, "utf8");
-  sqlDb.exec(migration);
+  for (const sql of (await readFile("drizzle/" + file, "utf8")).split(";").filter((s) => s.trim()))
+    await db.prepare(sql).run();
 }
-const tokens = Array.from({ length: 7 }, () => crypto.randomUUID());
+const ns = await mf.getDurableObjectNamespace("ROOMS");
+const tokens = Array.from({ length: 8 }, () => crypto.randomUUID());
 async function post(i, body) {
   const r = await mf.dispatchFetch("http://game.test/api/game", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-player-token": tokens[i],
-      Origin: "http://game.test",
-    },
-    body: JSON.stringify({ name: "Player " + i, ...body }),
+    headers: { "x-player-token": tokens[i], Origin: "http://game.test" },
+    body: JSON.stringify({ name: "Player " + i, commandId: crypto.randomUUID(), ...body }),
   });
   return { status: r.status, body: await r.json() };
 }
@@ -97,202 +47,220 @@ async function get(i, code) {
   });
   return { status: r.status, body: await r.json() };
 }
+const control = (code, path, body) =>
+  ns
+    .get(ns.idFromName(code))
+    .fetch(
+      "https://internal/__" + path,
+      body ? { method: "POST", body: JSON.stringify(body) } : {},
+    );
+const waitFor = async (fn, timeout = 5000) => {
+  const until = Date.now() + timeout;
+  while (Date.now() < until) {
+    const value = await fn();
+    if (value) return value;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  throw Error("Timed out waiting for condition");
+};
+async function socket(i, code) {
+  const res = await mf.dispatchFetch("http://game.test/api/game/socket?code=" + code, {
+    headers: {
+      Upgrade: "websocket",
+      "Sec-WebSocket-Protocol": "giulietto, " + tokens[i],
+      Origin: "http://game.test",
+    },
+  });
+  assert.equal(res.status, 101);
+  const ws = res.webSocket,
+    messages = [];
+  ws.addEventListener("message", (e) =>
+    messages.push(e.data === "pong" ? { type: "pong" } : JSON.parse(e.data)),
+  );
+  ws.accept();
+  await waitFor(() => messages.some((m) => m.type === "state"));
+  return {
+    ws,
+    messages,
+    send: async (body) => {
+      const commandId = body.commandId || crypto.randomUUID();
+      const start = messages.length;
+      ws.send(JSON.stringify({ ...body, commandId }));
+      return waitFor(() => messages.slice(start).find((m) => m.commandId === commandId));
+    },
+  };
+}
 try {
-  await test("fresh migration creates the four application tables", () => {
-    const tables = sqlDb
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")
-      .all()
-      .map((r) => r.name)
-      .sort();
-    assert.deepEqual(tables, ["match_results", "matches", "players", "rooms"]);
-    for (const name of tables)
-      assert.equal(sqlDb.prepare("SELECT count(*) AS n FROM " + name).get().n, 0);
-  });
-  await test("private invite joins, capacity, permissions, concurrent updates and real shared state", async () => {
-    const created = await post(0, { action: "create" });
-    assert.equal(created.status, 200);
-    const code = created.body.code;
-    const joins = await Promise.all(
-      Array.from({ length: 5 }, (_, i) => post(i + 1, { action: "join", code })),
+  await test("concurrent matchmaking reserves six seats in one room without duplicates", async () => {
+    const replies = await Promise.all(
+      Array.from({ length: 6 }, (_, i) => post(i, { action: "match" })),
     );
-    assert.ok(joins.every((r) => r.status === 200));
-    const full = await get(0, code);
-    assert.equal(full.body.players.length, 6);
-    assert.equal((await post(6, { action: "join", code })).status, 400);
+    assert.ok(replies.every((r) => r.status === 200));
+    assert.equal(new Set(replies.map((r) => r.body.code)).size, 1);
+    const state = (await get(0, replies[0].body.code)).body;
+    assert.equal(state.players.length, 6);
+    assert.equal(state.phase, "bidding");
+    const seventh = await post(6, { action: "match" });
+    assert.notEqual(seventh.body.code, state.code);
+  });
+  await test("creation retries return the original table", async () => {
+    const b = { action: "create", commandId: crypto.randomUUID() };
+    const a = await post(0, b),
+      retry = await post(0, b);
+    assert.equal(retry.body.code, a.body.code);
+    assert.equal(retry.body.players.length, 1);
+  });
+  await test("WebSocket broadcasts hide hands, deduplicate moves and restore after eviction", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    await post(1, { action: "join", code });
     assert.equal((await post(1, { action: "start", code })).status, 400);
-    const started = await post(0, { action: "start", code });
-    assert.equal(started.status, 200);
-    assert.equal(started.body.phase, "bidding");
-    assert.equal(started.body.players[0].hand.filter((n) => n !== null).length, 6);
-    assert.ok(started.body.players.slice(1).every((p) => p.hand.every((n) => n === null)));
-    assert.equal((await get(6, code)).status, 400);
-    const order = started.body.order;
-    for (const id of order) {
-      const p = started.body.players.find((p) => p.id === id);
-      const i = Number(p.name.split(" ")[1]);
-      assert.equal((await post(i, { action: "bid", code, bid: 0 })).status, 200);
-    }
-    let state = (await get(0, code)).body;
-    assert.equal(state.phase, "playing");
-    for (const id of order) {
-      const p = state.players.find((p) => p.id === id);
-      const i = Number(p.name.split(" ")[1]);
-      const own = (await get(i, code)).body;
-      const card = own.players.find((p) => p.id === own.you).hand[0];
-      const result = await post(i, { action: "play", code, card, mode: "high" });
-      assert.equal(result.status, 200);
-      state = result.body;
-    }
-    assert.equal(state.phase, "trick");
-    assert.equal(state.trick.length, 6);
-    assert.equal(
-      state.players.reduce((n, p) => n + p.taken, 0),
-      1,
-    );
-    assert.equal((await get(1, code)).body.lastWinner, state.lastWinner);
+    const a = await socket(0, code),
+      b = await socket(1, code);
+    const started = await a.send({ action: "start" });
+    assert.equal(started.type, "ack");
+    const pushed = await waitFor(() => b.messages.find((m) => m.state?.phase === "bidding"));
+    assert.ok(pushed.state.players[0].hand.every((c) => c === null));
+    assert.ok(pushed.state.players[1].hand.every((c) => typeof c === "number"));
+    const move = { action: "bid", bid: 0, commandId: crypto.randomUUID() };
+    const ack = await a.send(move);
+    const retry = await a.send(move);
+    assert.equal(retry.state.turn, 1);
+    assert.equal(retry.state.revision, ack.state.revision);
+    a.ws.close();
+    b.ws.close();
+    await mf.unsafeEvictDurableObject("test", "TestGameRoom", { name: code });
+    const reconnected = await socket(0, code);
+    assert.equal(reconnected.messages[0].state.turn, 1);
+    const retriedAfterRestart = await reconnected.send(move);
+    assert.equal(retriedAfterRestart.type, "ack");
+    assert.equal(retriedAfterRestart.state.turn, 1);
+    reconnected.ws.send("ping");
+    await waitFor(() => reconnected.messages.some((m) => m.type === "pong"));
+    reconnected.ws.close();
   });
-  await test("public matchmaking seats strangers at the same public table", async () => {
-    const a = await post(0, { action: "match" });
-    const b = await post(1, { action: "match" });
-    assert.equal(a.status, 200);
-    assert.equal(b.status, 200);
-    assert.equal(a.body.code, b.body.code);
-    assert.equal(b.body.public, true);
-    assert.equal(b.body.players.length, 2);
-    assert.ok(b.body.startAt > Date.now());
-  });
-  await test("blind API accepts a hidden-card move without exposing own card", async () => {
-    const created = await post(0, { action: "create" });
-    const code = created.body.code;
-    await post(1, { action: "join", code });
-    await post(0, { action: "start", code });
-    const row = await db.prepare("SELECT state FROM rooms WHERE code=?").bind(code).first();
-    const g = JSON.parse(row.state);
-    g.phase = "playing";
-    g.count = 1;
-    g.players[0].hand = [31];
-    g.players[1].hand = [40];
-    g.players.forEach((p) => (p.bid = 0));
-    g.turn = 0;
-    await db.prepare("UPDATE rooms SET state=? WHERE code=?").bind(JSON.stringify(g), code).run();
-    const before = (await get(0, code)).body;
-    assert.deepEqual(before.players[0].hand, [null]);
-    assert.deepEqual(before.players[1].hand, [40]);
-    const a = await post(0, { action: "play", code, card: -1, mode: "low" });
-    assert.equal(a.status, 200);
-    assert.equal(a.body.trick[0].card, 31);
-    assert.equal(a.body.trick[0].mode, "low");
-    const b = await post(1, { action: "play", code, card: -1, mode: "high" });
-    assert.equal(b.body.lastWinner, g.players[1].id);
-  });
-  await test("match completion is atomic, retry-safe, and preserves totals and outcomes", async () => {
-    const created = await post(0, { action: "create" });
-    const code = created.body.code;
-    await post(1, { action: "join", code });
-    const started = await post(0, { action: "start", code });
-    assert.equal(started.status, 200);
-    const id = started.body.matchId;
-    assert.ok(id);
-    assert.equal(
-      sqlDb.prepare("SELECT count(*) AS n FROM match_results WHERE match_id=?").get(id).n,
-      2,
-    );
-    const row = sqlDb.prepare("SELECT * FROM rooms WHERE code=?").get(code);
-    const g = JSON.parse(row.state);
-    g.phase = "trick";
-    g.count = 1;
-    g.deadline = Date.now() - 1;
-    g.players.forEach((p) => {
-      p.lives = 1;
-      p.hand = [];
-      p.bid = 1;
-      p.taken = 0;
-    });
-    g.players[0].taken = 1;
-    sqlDb.prepare("UPDATE rooms SET state=? WHERE code=?").run(JSON.stringify(g), code);
-    db.failHistoryOnce = true;
-    const log = mock.method(console, "error", () => {});
-    const failed = await get(0, code);
-    log.mock.restore();
-    assert.equal(failed.status, 503);
-    assert.doesNotMatch(failed.body.error, /Simulated|INSERT|matches/);
-    assert.equal(
-      JSON.parse(sqlDb.prepare("SELECT state FROM rooms WHERE code=?").get(code).state).phase,
-      "trick",
-    );
-    assert.equal(sqlDb.prepare("SELECT status FROM matches WHERE id=?").get(id).status, "active");
-    const finished = await Promise.all([get(0, code), get(1, code)]);
-    assert.ok(finished.every((r) => r.status === 200 && r.body.phase === "finished"));
-    const m = sqlDb.prepare("SELECT * FROM matches WHERE id=?").get(id);
-    assert.equal(m.status, "completed");
-    assert.equal(m.winner_id, g.players[0].id);
-    assert.ok(m.completed_at >= m.started_at);
-    const results = sqlDb
-      .prepare("SELECT * FROM match_results WHERE match_id=? ORDER BY player_id")
-      .all(id);
-    assert.equal(results.length, 2);
-    const win = results.find((r) => r.outcome === "won");
-    const lose = results.find((r) => r.outcome === "lost");
-    assert.equal(win.tricks_won, 1);
-    assert.equal(win.exact_predictions, 1);
-    assert.equal(win.rounds_played, 1);
-    assert.equal(lose.prediction_error, 1);
-    assert.equal(lose.lives, 0);
-    await get(0, code);
-    await post(0, { action: "leave", code });
-    assert.deepEqual(
-      sqlDb.prepare("SELECT * FROM match_results WHERE match_id=? ORDER BY player_id").all(id),
-      results,
-    );
-    // Profiles persist across rooms and update display names without changing historical names.
-    await post(0, { action: "create", name: "New display name" });
-    assert.equal(
-      sqlDb.prepare("SELECT display_name FROM players WHERE id=?").get(g.players[0].id)
-        .display_name,
-      "New display name",
-    );
-    assert.equal(
-      sqlDb
-        .prepare("SELECT display_name FROM match_results WHERE match_id=? AND player_id=?")
-        .get(id, g.players[0].id).display_name,
-      "Player 0",
-    );
-  });
-  await test("rejects malformed input, foreign origins, and unsupported methods", async () => {
-    const send = (body, extra = {}) =>
-      handler.fetch(
-        new Request("http://game.test/api/game", {
-          method: "POST",
-          headers: { "x-player-token": tokens[0], ...extra },
-          body,
-        }),
-      );
-    for (const body of ["null", "[]", "{", "42"]) assert.equal((await send(body)).status, 400);
-    assert.equal(
-      (await send(JSON.stringify({ action: "create" }), { Origin: "https://foreign.test" })).status,
-      403,
-    );
-    assert.equal(
-      (await handler.fetch(new Request("http://game.test/api/game", { method: "DELETE" }))).status,
-      405,
-    );
-    assert.equal((await handler.fetch(new Request("http://game.test/api/missing"))).status, 404);
-    assert.equal((await handler.fetch(new Request("http://game.test/api/game"))).status, 400);
-    assert.equal((await post(0, { action: "bid", code: "ABCDEFGH", bid: null })).status, 400);
-  });
-  await test("forfeited players cannot bid and their hands stay hidden", async () => {
+  await test("alarms advance a disconnected room without GET requests", async () => {
     const {
       body: { code },
     } = await post(0, { action: "create" });
     await post(1, { action: "join", code });
     await post(0, { action: "start", code });
+    const r = await (await control(code, "read")).json();
+    r.game.deadline = Date.now() + 100;
+    await control(code, "seed", r);
+    await waitFor(async () => (await (await control(code, "read")).json()).game.turn === 1);
+    const current = await (await control(code, "read")).json();
+    assert.equal(current.game.players[0].bid, 0);
+    assert.ok(current.game.deadline > Date.now());
+  });
+  await test("D1 outage does not roll back the game; persisted outbox retries and ignores old history", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    await post(1, { action: "join", code });
+    const { body: started } = await post(0, { action: "start", code });
+    await waitFor(async () => !(await (await control(code, "read")).json()).outbox);
+    const r = await (await control(code, "read")).json();
+    const oldGame = structuredClone(r.game);
+    r.game.phase = "trick";
+    r.game.count = 1;
+    r.game.deadline = Date.now() + 100;
+    r.game.players.forEach((p) => Object.assign(p, { hand: [], lives: 1, bid: 1, taken: 0 }));
+    r.game.players[0].taken = 1;
+    await db.prepare("ALTER TABLE matches RENAME TO unavailable_matches").run();
+    await control(code, "seed", r);
+    await waitFor(
+      async () => (await (await control(code, "read")).json()).game.phase === "finished",
+    );
+    const pending = await (await control(code, "read")).json();
+    assert.ok(pending.outbox);
+    assert.equal(pending.game.winner, started.players[0].id);
+    await db.prepare("ALTER TABLE unavailable_matches RENAME TO matches").run();
+    await waitFor(async () => !(await (await control(code, "read")).json()).outbox, 10000);
+    const history = await db
+      .prepare("SELECT * FROM matches WHERE id=?")
+      .bind(started.matchId)
+      .first();
+    assert.equal(history.status, "completed");
+    const results = await db
+      .prepare("SELECT * FROM match_results WHERE match_id=?")
+      .bind(started.matchId)
+      .all();
+    assert.equal(results.results.length, 2);
+    assert.equal(results.results.find((r) => r.outcome === "won").tricks_won, 1);
+    const stale = await (await control(code, "read")).json();
+    stale.outbox = oldGame;
+    stale.retryAt = Date.now() - 1;
+    await control(code, "seed", stale);
+    await control(code, "alarm");
+    assert.deepEqual(
+      await db.prepare("SELECT * FROM matches WHERE id=?").bind(started.matchId).first(),
+      history,
+    );
+    assert.deepEqual(
+      (await db.prepare("SELECT * FROM match_results WHERE match_id=?").bind(started.matchId).all())
+        .results,
+      results.results,
+    );
+  });
+  await test("legacy D1 rooms import once and then use Durable Object state", async () => {
+    const { makeGame, player } = await import("../lib/game.ts");
+    const id = Array.from(
+      new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tokens[0]))),
+      (n) => n.toString(16).padStart(2, "0"),
+    ).join("");
+    const g = makeGame("LEGACY22", player(id, "Legacy", Date.now()), false);
+    await db
+      .prepare("INSERT INTO rooms(code,state,public,phase,updated) VALUES(?,?,0,'lobby',?)")
+      .bind(g.code, JSON.stringify(g), Date.now())
+      .run();
+    assert.equal((await get(0, g.code)).body.players[0].name, "Legacy");
+    await post(1, { action: "join", code: g.code });
+    assert.equal((await get(0, g.code)).body.players.length, 2);
+    assert.equal(
+      JSON.parse(
+        (await db.prepare("SELECT state FROM rooms WHERE code=?").bind(g.code).first()).state,
+      ).players.length,
+      1,
+    );
+  });
+  await test("malformed requests, foreign origins, strangers and forfeited players are rejected", async () => {
+    for (const body of ["null", "[]", "{", "42"])
+      assert.equal(
+        (
+          await mf.dispatchFetch("http://game.test/api/game", {
+            method: "POST",
+            headers: { "x-player-token": tokens[0] },
+            body,
+          })
+        ).status,
+        400,
+      );
+    assert.equal(
+      (
+        await mf.dispatchFetch("http://game.test/api/game/socket?code=ABCDEFGH", {
+          headers: { Upgrade: "websocket", Origin: "https://foreign.test" },
+        })
+      ).status,
+      403,
+    );
+    assert.equal(
+      (await mf.dispatchFetch("http://game.test/api/game", { method: "DELETE" })).status,
+      405,
+    );
+    assert.equal((await mf.dispatchFetch("http://game.test/api/missing")).status, 404);
+    assert.equal((await mf.dispatchFetch("http://game.test/api/game")).status, 400);
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    await post(1, { action: "join", code });
+    await post(0, { action: "start", code });
+    assert.equal((await get(2, code)).status, 400);
     await post(0, { action: "leave", code });
-    const attempt = await post(0, { action: "bid", code, bid: 0 });
-    assert.equal(attempt.status, 400);
-    assert.match(attempt.body.error, /left the game/);
-    const state = (await get(0, code)).body;
-    assert.ok(state.players.every((p) => p.hand.every((card) => card === null)));
+    assert.equal((await post(0, { action: "bid", bid: 0, code })).status, 400);
+    assert.ok((await get(0, code)).body.players.every((p) => p.hand.every((c) => c === null)));
   });
 } finally {
-  sqlDb.close();
+  await mf.dispose();
 }

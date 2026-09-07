@@ -45,6 +45,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { view } from "@/lib/game";
+import { GameConnection } from "./game-connection";
 type State = ReturnType<typeof view>;
 
 async function readResponse<T>(response: Response): Promise<T> {
@@ -110,6 +111,7 @@ export default function App() {
   const [pendingCard, setPendingCard] = useState<number | null>(null);
   const transition = useRef<ViewTransition | null>(null);
   const token = useRef(session.token);
+  const transport = useRef<GameConnection | null>(null);
   const gameRef = useRef<State | null>(null);
   const busyRef = useRef(!!session.saved);
   const clockOffset = useRef(0);
@@ -164,30 +166,14 @@ export default function App() {
     const timer = setInterval(() => setNow(Date.now() + clockOffset.current), 500);
     return () => clearInterval(timer);
   }, [session]);
+  const receiveState = useEffectEvent((s: State) => accept(s));
   useEffect(() => {
     if (!game?.code) return;
-    let cancelled = false;
-    let timer: ReturnType<typeof setTimeout>;
-    const poll = async () => {
-      try {
-        const r = await fetch(`/api/game?code=${encodeURIComponent(game.code)}`, {
-          headers: { "x-player-token": token.current },
-        });
-        const s = await readResponse<State>(r);
-        if (!cancelled && gameRef.current?.code === game.code) {
-          accept(s);
-          setConnection("");
-        }
-      } catch (e) {
-        if (!cancelled) setConnection((e as Error).message || "Reconnecting…");
-      } finally {
-        if (!cancelled) timer = setTimeout(poll, 1500);
-      }
-    };
-    timer = setTimeout(poll, 1500);
+    const connection = new GameConnection(game.code, token.current, receiveState, setConnection);
+    transport.current = connection;
     return () => {
-      cancelled = true;
-      clearTimeout(timer);
+      transport.current = null;
+      connection.stop();
     };
   }, [game?.code]);
   useEffect(() => {
@@ -234,12 +220,27 @@ export default function App() {
     if (action === "play") setPendingCard(Number(extra.card));
     try {
       localStorage.setItem("giulietto-name", name);
-      const r = await fetch("/api/game", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-player-token": token.current },
-        body: JSON.stringify({ action, name, code: gameRef.current?.code || code, ...extra }),
-      });
-      const s = await readResponse<State>(r);
+      let s: State;
+      if (
+        gameRef.current &&
+        transport.current &&
+        ["start", "bid", "play", "leave"].includes(action)
+      ) {
+        s = await transport.current.command(action, extra);
+      } else {
+        const r = await fetch("/api/game", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-player-token": token.current },
+          body: JSON.stringify({
+            action,
+            commandId: crypto.randomUUID(),
+            name,
+            code: gameRef.current?.code || code,
+            ...extra,
+          }),
+        });
+        s = await readResponse<State>(r);
+      }
       if (action === "leave") {
         reset();
       } else {
