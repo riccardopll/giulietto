@@ -140,6 +140,29 @@ try {
     await waitFor(() => reconnected.messages.some((m) => m.type === "pong"));
     reconnected.ws.close();
   });
+  await test("hibernation restores socket identities and per-player snapshots", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    await post(1, { action: "join", code });
+    const a = await socket(0, code),
+      b = await socket(1, code);
+    await a.send({ action: "start" });
+    await mf.unsafeEvictDurableObject("test", "TestGameRoom", {
+      name: code,
+      webSockets: "hibernate",
+    });
+    const ack = await a.send({ action: "bid", bid: 0 });
+    assert.equal(ack.type, "ack");
+    const pushed = await waitFor(() =>
+      b.messages.find((m) => m.state?.revision === ack.state.revision),
+    );
+    assert.equal(pushed.state.you, pushed.state.players[1].id);
+    assert.ok(pushed.state.players[0].hand.every((c) => c === null));
+    assert.ok(pushed.state.players[1].hand.every((c) => typeof c === "number"));
+    a.ws.close();
+    b.ws.close();
+  });
   await test("alarms advance a disconnected room without GET requests", async () => {
     const {
       body: { code },

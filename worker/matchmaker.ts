@@ -63,7 +63,7 @@ export class Matchmaker extends DurableObject<Env> {
           candidates.filter((r) => !unavailable.has(r.code)),
         );
         this.ctx.storage.kv.put(key, { code, at: Date.now() });
-        await this.ctx.storage.setAlarm(Date.now() + DAY);
+        if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + DAY);
         return Response.json(state);
       } catch (error) {
         return failure(error);
@@ -76,7 +76,7 @@ export class Matchmaker extends DurableObject<Env> {
         if (Date.now() - value.at >= DAY) this.ctx.storage.kv.delete(key);
       }
       if (Array.from(this.ctx.storage.kv.list({ prefix: "request:", limit: 1 })).length)
-        await this.ctx.storage.setAlarm(Date.now() + DAY);
+        if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + DAY);
     });
   }
 }
