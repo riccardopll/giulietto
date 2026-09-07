@@ -44,7 +44,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/client/components/ui/table";
-import type { view } from "@/shared/game";
+import { MIN_STARTING_LIVES, MAX_STARTING_LIVES, type view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
 type State = ReturnType<typeof view>;
 
@@ -85,14 +85,21 @@ function restoreSession() {
 function Lives({ n }: { n: number }) {
   return (
     <span className="lives" aria-label={`${n} ${n === 1 ? "life" : "lives"}`}>
-      {[0, 1, 2].map((i) => (
-        <Heart
-          key={i}
-          size={14}
-          fill={i < n ? "currentColor" : "none"}
-          className={i < n ? "" : "empty-heart"}
-        />
-      ))}
+      {n > 3 ? (
+        <>
+          <Heart size={14} fill="currentColor" aria-hidden="true" />
+          {n}
+        </>
+      ) : (
+        [0, 1, 2].map((i) => (
+          <Heart
+            key={i}
+            size={14}
+            fill={i < n ? "currentColor" : "none"}
+            className={i < n ? "" : "empty-heart"}
+          />
+        ))
+      )}
     </span>
   );
 }
@@ -224,7 +231,7 @@ export default function App() {
       if (
         gameRef.current &&
         transport.current &&
-        ["start", "bid", "play", "leave"].includes(action)
+        ["settings", "start", "bid", "play", "leave"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -491,6 +498,32 @@ export default function App() {
                     : "Start when everyone is here."}
                 </p>
               </div>
+              <div className="lobby-settings">
+                <label htmlFor="starting-lives">Starting lives</label>
+                {game.host === game.you ? (
+                  <select
+                    id="starting-lives"
+                    value={game.startingLives}
+                    disabled={busy}
+                    onChange={(event) =>
+                      act("settings", { startingLives: Number(event.target.value) })
+                    }
+                  >
+                    {Array.from(
+                      { length: MAX_STARTING_LIVES - MIN_STARTING_LIVES + 1 },
+                      (_, i) => i + MIN_STARTING_LIVES,
+                    ).map((lives) => (
+                      <option key={lives} value={lives}>
+                        {lives}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <output id="starting-lives" aria-live="polite">
+                    {game.startingLives}
+                  </output>
+                )}
+              </div>
               <div className="seats">
                 {Array.from({ length: 6 }, (_, i) => {
                   const p = game.players[i];
@@ -508,7 +541,7 @@ export default function App() {
                             </strong>
                             <span>{p.id === game.host ? "Host" : "Ready"}</span>
                           </div>
-                          <Lives n={3} />
+                          <Lives n={game.startingLives} />
                         </>
                       ) : (
                         <>

@@ -11,6 +11,8 @@ import {
   view,
   legalBids,
   strength,
+  MIN_STARTING_LIVES,
+  MAX_STARTING_LIVES,
 } from "../src/shared/game.ts";
 function setup(n = 3) {
   const g = makeGame("ABCDEFGH", player("p0", "P0", 100), false);
@@ -18,6 +20,35 @@ function setup(n = 3) {
   deal(g, 100);
   return g;
 }
+test("starting lives default to three and apply only on the first deal", () => {
+  const g = makeGame("ABCDEFGH", player("p0", "P0", 100), false);
+  assert.equal(g.startingLives, 3);
+  g.players.push(player("p1", "P1", 100));
+  g.startingLives = MAX_STARTING_LIVES;
+  deal(g, 100);
+  assert.ok(g.players.every((p) => p.lives === MAX_STARTING_LIVES));
+  g.players[0].lives = 2;
+  g.players[1].lives = 0;
+  deal(g, 200);
+  assert.deepEqual(
+    g.players.map((p) => p.lives),
+    [2, 0],
+  );
+});
+test("public countdown and full-table starts use the selected starting lives", () => {
+  for (const n of [2, 6]) {
+    const g = makeGame("ABCDEFGH", player("p0", "P0", 100), true);
+    g.startingLives = n === 2 ? MIN_STARTING_LIVES : MAX_STARTING_LIVES;
+    for (let i = 1; i < n; i++) g.players.push(player("p" + i, "P" + i, 100));
+    tick(g, 100);
+    if (n === 2) {
+      assert.equal(g.phase, "lobby");
+      tick(g, g.startAt);
+    }
+    assert.equal(g.phase, "bidding");
+    assert.ok(g.players.every((p) => p.lives === g.startingLives));
+  }
+});
 test("initial seating can produce every order while preserving the host", (t) => {
   let draws;
   t.mock.method(crypto, "getRandomValues", (values) => {

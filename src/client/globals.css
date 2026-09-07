@@ -287,6 +287,24 @@ h1 {
   color: var(--muted-foreground);
   font-size: 0.875rem;
 }
+.lobby-settings {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+}
+.lobby-settings select {
+  min-width: 4.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--input);
+  border-radius: 0.5rem;
+  background: #fff;
+}
+.lobby-settings select:disabled {
+  opacity: 0.5;
+}
 .seats {
   display: grid;
   gap: 0.5rem;
