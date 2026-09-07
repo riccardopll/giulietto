@@ -724,8 +724,9 @@ export default function App() {
                           disabled={!active || !myTurn || phase !== "playing" || busy}
                           pending={pendingCard === (card ?? -1)}
                           onClick={() => {
-                            if (blind || card === 31) setAce(card ?? -1);
-                            else act("play", { card });
+                            if (game.canChooseAce && (card === null || card === 31))
+                              setAce(card ?? -1);
+                            else act("play", { card: card ?? -1 });
                           }}
                         />
                       ))}
@@ -754,19 +755,15 @@ export default function App() {
         </main>
       )}
       <Dialog
-        open={ace !== null}
+        open={ace !== null && !!game?.canChooseAce}
         onOpenChange={(open) => {
           if (!open) setAce(null);
         }}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{blind ? "High or low?" : "Ace of Coins"}</DialogTitle>
-            <DialogDescription>
-              {blind
-                ? "This choice applies only if your hidden card is the Ace of Coins."
-                : "Choose its value before playing."}
-            </DialogDescription>
+            <DialogTitle>Ace of Coins</DialogTitle>
+            <DialogDescription>Choose its value before playing.</DialogDescription>
           </DialogHeader>
           <div className="ace-choices">
             <Button

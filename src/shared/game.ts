@@ -232,6 +232,7 @@ export function view(g: Game, id: string) {
   return {
     ...g,
     you: id,
+    canChooseAce: active && g.phase === "playing" && g.order[g.turn] === id && me.hand.includes(31),
     players: g.players.map((p) => ({
       ...p,
       hand: p.hand.map((card) =>

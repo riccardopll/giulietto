@@ -102,6 +102,41 @@ test("normal rounds reveal only your hand; blind rounds reveal only others", () 
   const spectator = view(g, "p2");
   assert.ok(spectator.players.every((p) => p.hand.every((n) => n === null)));
 });
+test("blind ace choice is available only to its holder on their playing turn", () => {
+  for (const n of [2, 3]) {
+    const g = setup(n);
+    g.count = 1;
+    for (let i = 0; i < n; i++) g.players[i].hand = [i === 1 ? 31 : 10 + i];
+    for (const p of g.players) {
+      assert.equal(view(g, p.id).canChooseAce, false);
+      bid(g, p.id, 0, 100);
+    }
+    assert.equal(view(g, "p0").canChooseAce, false);
+    assert.equal(view(g, "p1").canChooseAce, false);
+    play(g, "p0", 10, undefined, 100);
+    assert.deepEqual(g.trick[0], { player: "p0", card: 10 });
+    const holder = view(g, "p1");
+    assert.deepEqual(holder.players[1].hand, [null]);
+    assert.equal(holder.canChooseAce, true);
+    assert.equal(view(g, "p0").canChooseAce, false);
+    assert.throws(() => play(g, "p1", 31, undefined, 100), /Choose high or low/);
+    play(g, "p1", 31, "low", 100);
+    assert.deepEqual(g.trick[1], { player: "p1", card: 31, mode: "low" });
+    assert.equal(view(g, "p1").canChooseAce, false);
+  }
+});
+test("normal ace choice requires the ace in the current player's hand", () => {
+  const g = setup(2);
+  g.players[0].hand = [10, 31];
+  g.players[1].hand = [20, 40];
+  for (const p of g.players) bid(g, p.id, 0, 100);
+  assert.equal(view(g, "p0").canChooseAce, true);
+  assert.equal(view(g, "p1").canChooseAce, false);
+  play(g, "p0", 10, undefined, 100);
+  assert.equal(view(g, "p0").canChooseAce, false);
+  assert.equal(view(g, "p1").canChooseAce, false);
+  assert.throws(() => play(g, "p1", 31, "high", 100), /not in your hand/);
+});
 test("six rounds cycle from six to one then restart, with rotating first bidder", () => {
   const g = setup();
   const counts = [g.count];
