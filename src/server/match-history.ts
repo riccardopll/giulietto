@@ -15,11 +15,11 @@ export function historyStatements(db: D1Database, g: Game, recording: { eventCou
       FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name,last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
       .bind(g.startedAt!, participants),
     db
-      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,recording_version,history_complete,event_count)
-      VALUES(?,?,?,?,?,?,?,?,?,?,1,1,?)
+      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,event_count)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET status=excluded.status,completed_at=excluded.completed_at,
         winner_id=excluded.winner_id,rounds=excluded.rounds,player_count=excluded.player_count,history_revision=excluded.history_revision,
-        recording_version=excluded.recording_version,history_complete=excluded.history_complete,event_count=excluded.event_count
+        event_count=excluded.event_count
       WHERE matches.history_revision<excluded.history_revision AND matches.completed_at IS NULL`)
       .bind(
         g.matchId!,

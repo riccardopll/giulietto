@@ -351,6 +351,8 @@ try {
       .first();
     assert.equal(partial.status, "active");
     assert.equal(partial.completed_at, null);
+    assert.equal(partial.history_revision, -1);
+    assert.equal(partial.event_count, 0);
     assert.ok(r.outbox);
     // Simulate a crash after D1 commit but before the local cursor was acknowledged.
     r.deliveredSequence = 0;
@@ -366,8 +368,7 @@ try {
     assert.deepEqual(saved, events);
     const match = await db.prepare("SELECT * FROM matches WHERE id=?").bind(r.game.matchId).first();
     assert.equal(match.status, "abandoned");
-    assert.equal(match.recording_version, 1);
-    assert.equal(match.history_complete, 1);
+    assert.equal(match.history_revision, r.game.revision);
     assert.equal(match.event_count, events.length);
     const results = (
       await db.prepare("SELECT * FROM match_results WHERE match_id=?").bind(r.game.matchId).all()
