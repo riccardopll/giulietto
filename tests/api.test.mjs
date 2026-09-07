@@ -179,6 +179,24 @@ try {
     assert.equal(b.messages[0].state.you, a.messages[0].state.you);
     b.ws.close();
   });
+  await test("normal WebSocket closure receives a close reply promptly", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    const a = await socket(0, code);
+    const closed = new Promise((resolve) =>
+      a.ws.addEventListener("close", resolve, { once: true }),
+    );
+    a.ws.close(1000);
+    const event = await Promise.race([
+      closed,
+      new Promise((_, reject) => {
+        const timer = setTimeout(() => reject(Error("Close handshake timed out")), 2000);
+        timer.unref();
+      }),
+    ]);
+    assert.equal(event.code, 1000);
+  });
   await test("alarms advance a disconnected room without GET requests", async () => {
     const {
       body: { code },
