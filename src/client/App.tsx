@@ -45,6 +45,7 @@ import {
 } from "@/client/components/ui/table";
 import { MIN_STARTING_LIVES, MAX_STARTING_LIVES, type view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
+import { tableOrder } from "./table-order";
 type State = ReturnType<typeof view>;
 
 async function readResponse<T>(response: Response): Promise<T> {
@@ -323,7 +324,8 @@ export default function App() {
     }
   }
   const me = game?.players.find((p) => p.id === game.you);
-  const myTurn = !!game && game.order[game.turn] === game.you && !me?.left;
+  const seating = game ? tableOrder(game) : null;
+  const myTurn = !!game && seating?.current === game.you && !me?.left;
   const turnPlayer = game?.players.find((p) => p.id === game.order[game.turn]);
   const seconds = Math.max(0, Math.ceil(((game?.deadline || 0) - now) / 1000));
   const blind = game?.count === 1;
@@ -348,7 +350,7 @@ export default function App() {
       (game.players.find((p) => p.id === game.order[0])?.hand.length ?? 0) +
       (game.trick.some((p) => p.player === game.order[0]) ? 0 : 1)
     : 0;
-  const opponents = game?.players.filter((p) => p.id !== game.you) ?? [];
+  const seatNumber = (id: string) => (game?.players.findIndex((p) => p.id === id) ?? -1) + 1;
   const animateTrick = useEffectEvent(() => {
     if (!game || game.phase !== "trick" || matchMedia("(prefers-reduced-motion: reduce)").matches)
       return;
@@ -548,6 +550,7 @@ export default function App() {
                           </div>
                           <div className="seat-label">
                             <strong>
+                              <span className="result-seat">Seat {seatNumber(p.id)}</span>
                               {p.name}
                               {p.id === game.you ? " (you)" : ""}
                             </strong>
@@ -658,108 +661,162 @@ export default function App() {
                 </section>
               ) : (
                 <div className="match-board">
-                  <div className={`opponents ${blind ? "blind-opponents" : ""}`}>
-                    {opponents.map((p) => {
-                      const i = game.players.indexOf(p);
+                  <div className="turn-order" aria-label="Play order">
+                    <p>
+                      {phase === "bidding"
+                        ? `Round ${game.round} prediction order`
+                        : seating!.nextTrick
+                          ? "Next trick order · winner leads"
+                          : "This trick’s play order"}
+                    </p>
+                    <ol>
+                      {seating!.order.map((id) => (
+                        <li key={id} aria-current={seating!.current === id ? "step" : undefined}>
+                          <span>Seat {seatNumber(id)}</span>
+                          {seating!.current === id && <strong>Now</strong>}
+                          {seating!.next === id && <strong>Next</strong>}
+                        </li>
+                      ))}
+                    </ol>
+                    {phase === "bidding" && (
+                      <p>The first seat changes each round. Seats stay fixed.</p>
+                    )}
+                    {phase === "trick" && !seating!.nextTrick && (
+                      <p>Round complete · scoring next</p>
+                    )}
+                  </div>
+                  <div className="seated-table" aria-label="Game table">
+                    {game.players.map((p, i) => {
+                      const current = seating!.current === p.id;
+                      const played = game.trick.some((play) => play.player === p.id);
                       return (
-                        <div
+                        <section
                           data-seat={p.id}
                           key={p.id}
-                          className={`opponent ${game.order[game.turn] === p.id && ["bidding", "playing"].includes(phase!) ? "current-player" : ""} ${p.lives <= 0 || p.left ? "eliminated" : ""}`}
+                          aria-label={`Seat ${i + 1}: ${p.name}${p.id === game.you ? " (you)" : ""}`}
+                          className={`table-seat table-seat-${i + 1} ${current ? "current-player" : ""} ${p.id === game.you ? "your-seat" : ""} ${p.lives <= 0 || p.left ? "eliminated" : ""}`}
                         >
                           <PredictionEmote
                             key={`${game.round}-${p.id}`}
                             bid={p.bid}
                             name={p.name}
                           />
-                          <div className={`avatar avatar-${i}`}>
-                            {p.name.slice(0, 1).toUpperCase()}
-                          </div>
-                          <strong title={p.name}>{p.name}</strong>
+                          <span className={`seat-number avatar-${i}`}>Seat {i + 1}</span>
+                          <strong>
+                            {p.name}
+                            {p.id === game.you ? " (you)" : ""}
+                          </strong>
                           <Lives n={p.lives} />
                           <span className="player-score">
+                            {p.taken} / {p.bid ?? "–"} tricks
+                          </span>
+                          <span className="seat-status">
                             {p.left
-                              ? "Left"
+                              ? game.order.includes(p.id)
+                                ? "Left · auto play"
+                                : "Left"
                               : p.lives <= 0
                                 ? "Out"
-                                : `${p.taken} / ${p.bid ?? "–"}`}
+                                : current
+                                  ? phase === "bidding"
+                                    ? "Predicting now"
+                                    : "Playing now"
+                                  : phase === "trick" && game.lastWinner === p.id
+                                    ? "Trick winner"
+                                    : seating!.next === p.id
+                                      ? "Up next"
+                                      : played
+                                        ? "Played"
+                                        : phase === "bidding" && p.bid !== null
+                                          ? "Predicted"
+                                          : "Waiting"}
                           </span>
-                          {blind && p.hand[0] != null && <Card card={p.hand[0]} small />}
-                        </div>
+                          {p.id !== game.you &&
+                            (blind && p.hand[0] != null ? (
+                              <Card card={p.hand[0]} small />
+                            ) : (
+                              <span className="seat-cards">
+                                {p.hand.length} {p.hand.length === 1 ? "card" : "cards"}
+                              </span>
+                            ))}
+                        </section>
                       );
                     })}
-                  </div>
-                  <section className="play-table">
-                    <div className="table-status">
-                      <span className="eyebrow">
-                        {phase === "bidding"
-                          ? "Predictions"
-                          : phase === "trick"
-                            ? "Trick won"
-                            : `Trick ${trickNumber}`}
-                      </span>
-                      <div className="turn-line">
-                        <h1 key={turnText}>{turnText}</h1>
-                        {["bidding", "playing"].includes(phase!) && (
-                          <span className={`timer ${seconds < 10 ? "urgent" : ""}`}>
-                            <Clock3 size={14} />
-                            {seconds}s
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {phase === "bidding" ? (
-                      <div className="bidding-area">
-                        <div className="bid-options">
-                          {Array.from({ length: game.count + 1 }, (_, i) => i).map((n) => (
-                            <Button
-                              key={n}
-                              variant="outline"
-                              disabled={!myTurn || !active || busy || !game.legalBids.includes(n)}
-                              className="bid-button"
-                              aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
-                              onClick={() => act("bid", { bid: n })}
-                            >
-                              {n}
-                            </Button>
-                          ))}
+                    <section className="play-table">
+                      <div className="table-status">
+                        <span className="eyebrow">
+                          {phase === "bidding"
+                            ? "Predictions"
+                            : phase === "trick"
+                              ? "Trick won"
+                              : `Trick ${trickNumber}`}
+                        </span>
+                        <div className="turn-line">
+                          <h1 aria-live="polite" aria-atomic="true">
+                            {turnText}
+                            {seating!.current && (
+                              <span className="turn-seat">Seat {seatNumber(seating!.current)}</span>
+                            )}
+                          </h1>
+                          {["bidding", "playing"].includes(phase!) && (
+                            <span className={`timer ${seconds < 10 ? "urgent" : ""}`}>
+                              <Clock3 size={14} />
+                              {seconds}s
+                            </span>
+                          )}
                         </div>
-                        <p className="bid-total">
-                          {game.players.reduce((n, p) => n + (p.bid ?? 0), 0)} predicted ·{" "}
-                          {game.count} available
-                        </p>
-                        {game.turn === game.order.length - 1 && (
-                          <p className="last-bid-note">The total cannot equal {game.count}.</p>
-                        )}
                       </div>
-                    ) : (
-                      <div className="trick-cards" key={`${game.round}-${trickNumber}`}>
-                        {game.trick.length ? (
-                          game.trick.map((p) => (
-                            <div
-                              className={`played-card ${phase === "trick" && p.player === game.lastWinner ? "winner-card" : ""}`}
-                              key={p.card}
-                            >
-                              <Card card={p.card} mode={p.mode} />
-                              <span>
-                                {p.player === game.you
-                                  ? "You"
-                                  : game.players.find((x) => x.id === p.player)?.name}
-                              </span>
-                            </div>
-                          ))
-                        ) : (
-                          <p className="empty-trick">
-                            {myTurn ? "Choose a card" : "Waiting for a card…"}
+                      {phase === "bidding" ? (
+                        <div className="bidding-area">
+                          <div className="bid-options">
+                            {Array.from({ length: game.count + 1 }, (_, i) => i).map((n) => (
+                              <Button
+                                key={n}
+                                variant="outline"
+                                disabled={!myTurn || !active || busy || !game.legalBids.includes(n)}
+                                className="bid-button"
+                                aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
+                                onClick={() => act("bid", { bid: n })}
+                              >
+                                {n}
+                              </Button>
+                            ))}
+                          </div>
+                          <p className="bid-total">
+                            {game.players.reduce((n, p) => n + (p.bid ?? 0), 0)} predicted ·{" "}
+                            {game.count} available
                           </p>
-                        )}
-                      </div>
-                    )}
-                  </section>
+                          {game.turn === game.order.length - 1 && (
+                            <p className="last-bid-note">The total cannot equal {game.count}.</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="trick-cards" key={`${game.round}-${trickNumber}`}>
+                          {game.trick.length ? (
+                            game.trick.map((p) => (
+                              <div
+                                className={`played-card ${phase === "trick" && p.player === game.lastWinner ? "winner-card" : ""}`}
+                                key={p.card}
+                              >
+                                <Card card={p.card} mode={p.mode} />
+                                <span title={game.players.find((x) => x.id === p.player)?.name}>
+                                  Seat {seatNumber(p.player)}
+                                </span>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="empty-trick">
+                              {myTurn ? "Choose a card" : "Waiting for a card…"}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </section>
+                  </div>
                   <section className={`hand-area ${myTurn && active ? "your-turn" : ""}`}>
-                    <div className="self-player" data-seat={game.you}>
+                    <div className="self-player">
                       <div className="self-name">
-                        <strong>You</strong>
+                        <strong>Your hand · Seat {seatNumber(game.you)}</strong>
                         <Lives n={me?.lives ?? 0} />
                       </div>
                       <span className="self-score">
