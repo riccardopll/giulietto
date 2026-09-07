@@ -120,25 +120,25 @@ try {
     const a = await socket(0, code),
       b = await socket(1, code);
     assert.equal((await b.send({ action: "settings", startingLives: 5 })).type, "error");
-    for (const startingLives of [undefined, null, "5", true, 0, -1, 11, 1.5]) {
+    for (const startingLives of [undefined, null, "5", true, 0, -1, 6, 10, 1.5]) {
       const rejected = await post(0, { action: "settings", code, startingLives });
       assert.equal(rejected.status, 400);
     }
     assert.equal((await get(0, code)).body.startingLives, 3);
-    const update = { action: "settings", startingLives: 10, commandId: crypto.randomUUID() };
+    const update = { action: "settings", startingLives: 5, commandId: crypto.randomUUID() };
     const saved = await a.send(update);
     assert.equal(saved.type, "ack");
-    assert.equal(saved.state.startingLives, 10);
+    assert.equal(saved.state.startingLives, 5);
     assert.equal((await a.send(update)).state.revision, saved.state.revision);
-    const pushed = await waitFor(() => b.messages.find((m) => m.state?.startingLives === 10));
-    assert.ok(pushed.state.players.every((p) => p.lives === 10));
+    const pushed = await waitFor(() => b.messages.find((m) => m.state?.startingLives === 5));
+    assert.ok(pushed.state.players.every((p) => p.lives === 5));
     const joined = await post(2, { action: "join", code });
-    assert.equal(joined.body.startingLives, 10);
-    assert.ok(joined.body.players.every((p) => p.lives === 10));
+    assert.equal(joined.body.startingLives, 5);
+    assert.ok(joined.body.players.every((p) => p.lives === 5));
     a.ws.close();
     b.ws.close();
     await mf.unsafeEvictDurableObject("test", "TestGameTable", { name: code });
-    assert.equal((await get(0, code)).body.startingLives, 10);
+    assert.equal((await get(0, code)).body.startingLives, 5);
     await post(0, { action: "leave", code });
     const changed = await post(1, { action: "settings", code, startingLives: 1 });
     assert.equal(changed.status, 200);

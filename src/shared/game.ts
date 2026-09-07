@@ -52,7 +52,7 @@ export type Game = {
 export const TURN_MS = 40000;
 export const DEFAULT_STARTING_LIVES = 3;
 export const MIN_STARTING_LIVES = 1;
-export const MAX_STARTING_LIVES = 10;
+export const MAX_STARTING_LIVES = 5;
 export function makeGame(code: string, p: Player, isPublic: boolean): Game {
   return {
     code,
