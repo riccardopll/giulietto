@@ -1,8 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
-import { GameError } from "../lib/game-error";
-import { makeGame, player, tick, view, type Game } from "../lib/game";
-import { historyStatements, needsHistory } from "../lib/match-history";
+import { GameError } from "../shared/game-error";
+import { makeGame, player, tick, view, type Game } from "../shared/game";
+import { historyStatements, needsHistory } from "./match-history";
 import { apply, command, displayName, failure, type Command } from "./protocol";
 
 type Record = { game: Game; updated: number; outbox?: Game; retryAt?: number; failures?: number };

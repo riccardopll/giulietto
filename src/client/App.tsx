@@ -1,8 +1,8 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toast, Toaster } from "sonner";
-import { PredictionEmote } from "@/components/prediction-emote";
-import { PlayingCard as Card } from "@/components/playing-card";
+import { PredictionEmote } from "@/client/components/prediction-emote";
+import { PlayingCard as Card } from "@/client/components/playing-card";
 import {
   ArrowRight,
   Heart,
@@ -17,15 +17,15 @@ import {
   LogOut,
   Loader2,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/client/components/ui/button";
+import { Input } from "@/client/components/ui/input";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog";
+} from "@/client/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -35,7 +35,7 @@ import {
   AlertDialogFooter,
   AlertDialogCancel,
   AlertDialogAction,
-} from "@/components/ui/alert-dialog";
+} from "@/client/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -43,8 +43,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import type { view } from "@/lib/game";
+} from "@/client/components/ui/table";
+import type { view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
 type State = ReturnType<typeof view>;
 

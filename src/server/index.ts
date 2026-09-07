@@ -1,6 +1,6 @@
 import type { Env } from "./env";
 import { command, failure, roomCode } from "./protocol";
-import { GameError } from "../lib/game-error";
+import { GameError } from "../shared/game-error";
 export { GameRoom } from "./game-room";
 export { Matchmaker } from "./matchmaker";
 

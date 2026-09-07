@@ -1,5 +1,5 @@
-import { GameError } from "../lib/game-error";
-import { bid, deal, play, player, tick, type Game } from "../lib/game";
+import { GameError } from "../shared/game-error";
+import { bid, deal, play, player, tick, type Game } from "../shared/game";
 
 export type Command = Record<string, unknown> & { action: string; commandId: string };
 export function command(value: unknown): Command {

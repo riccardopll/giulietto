@@ -1,4 +1,4 @@
-import handler, { GameRoom, Matchmaker } from "../worker/index";
+import handler, { GameRoom, Matchmaker } from "../src/server/index";
 export { Matchmaker };
 export default handler;
 // Test-only control surface, never included in the production worker entry point.

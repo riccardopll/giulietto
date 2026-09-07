@@ -27,8 +27,10 @@ const mf = new Miniflare(
   }),
 );
 const db = await mf.getD1Database("DB");
-for (const file of (await readdir("drizzle")).filter((f) => f.endsWith(".sql")).sort()) {
-  for (const sql of (await readFile("drizzle/" + file, "utf8")).split(";").filter((s) => s.trim()))
+for (const file of (await readdir("migrations")).filter((f) => f.endsWith(".sql")).sort()) {
+  for (const sql of (await readFile("migrations/" + file, "utf8"))
+    .split(";")
+    .filter((s) => s.trim()))
     await db.prepare(sql).run();
 }
 const ns = await mf.getDurableObjectNamespace("ROOMS");
@@ -228,7 +230,7 @@ try {
     );
   });
   await test("legacy D1 rooms import once and then use Durable Object state", async () => {
-    const { makeGame, player } = await import("../lib/game.ts");
+    const { makeGame, player } = await import("../src/shared/game.ts");
     const id = Array.from(
       new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tokens[0]))),
       (n) => n.toString(16).padStart(2, "0"),

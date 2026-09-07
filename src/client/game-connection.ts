@@ -1,4 +1,4 @@
-import type { view } from "../lib/game";
+import type { view } from "../shared/game";
 type State = ReturnType<typeof view>;
 type Pending = {
   message: string;

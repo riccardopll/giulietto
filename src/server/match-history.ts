@@ -1,4 +1,4 @@
-import type { Game } from "./game";
+import type { Game } from "../shared/game";
 
 /** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
 export function historyStatements(db: D1Database, g: Game) {

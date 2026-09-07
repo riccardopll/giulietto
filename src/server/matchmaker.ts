@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { command, displayName, failure } from "./protocol";
-import type { view } from "../lib/game";
+import type { view } from "../shared/game";
 
 type State = ReturnType<typeof view>;
 export class Matchmaker extends DurableObject<Env> {

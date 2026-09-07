@@ -11,7 +11,7 @@ import {
   view,
   legalBids,
   strength,
-} from "../lib/game.ts";
+} from "../src/shared/game.ts";
 function setup(n = 3) {
   const g = makeGame("ABCDEFGH", player("p0", "P0", 100), false);
   for (let i = 1; i < n; i++) g.players.push(player("p" + i, "P" + i, 100));
