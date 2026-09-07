@@ -152,7 +152,10 @@ export class GameTable extends DurableObject<Env> {
       apply(g, id, b, Date.now());
       r = await this.save(r, g, { id, commandId: b.commandId });
     }
-    return b.action === "leave" ? { ok: true } : view(r.game, id);
+    return {
+      state: b.action === "leave" ? { ok: true } : view(r.game, id),
+      duplicate: !!duplicate,
+    };
   }
   async fetch(req: Request) {
     return this.ctx.blockConcurrencyWhile(async () => {
@@ -197,7 +200,8 @@ export class GameTable extends DurableObject<Env> {
           });
         }
         if (req.method === "GET") return Response.json(view(r.game, id));
-        return Response.json(await this.execute(r, id, command(await req.json())));
+        const { state } = await this.execute(r, id, command(await req.json()));
+        return Response.json(state);
       } catch (error) {
         return failure(error);
       }
@@ -206,8 +210,13 @@ export class GameTable extends DurableObject<Env> {
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
     await this.ctx.blockConcurrencyWhile(async () => {
       let commandId: string | undefined;
+      let action: string | undefined;
+      let playerId: string | undefined;
+      let outcome = "error";
+      let reason: string | undefined;
       try {
         const { id } = ws.deserializeAttachment() as Attachment;
+        playerId = id;
         const now = Date.now();
         let rate = this.rates.get(id);
         if (!rate || now - rate.start > 1000) {
@@ -215,10 +224,12 @@ export class GameTable extends DurableObject<Env> {
           this.rates.set(id, rate);
         }
         if (++rate.count > 10) {
+          outcome = "rate_limited";
           ws.close(1008, "Too many commands.");
           return;
         }
         if (typeof message !== "string" || message.length > 2048) {
+          outcome = "invalid_message";
           ws.close(1009, "Message too large.");
           return;
         }
@@ -230,15 +241,33 @@ export class GameTable extends DurableObject<Env> {
         }
         const b = command(value);
         commandId = b.commandId;
+        action = b.action;
         if (!["start", "bid", "play", "leave"].includes(b.action))
           throw new GameError("Invalid room command.");
         const r = this.read();
         if (!r) throw new GameError("Table expired.");
-        const state = await this.execute(await this.advance(r), id, b);
+        const { state, duplicate } = await this.execute(await this.advance(r), id, b);
         this.send(ws, { type: "ack", commandId, state });
+        outcome = duplicate ? "duplicate" : "accepted";
       } catch (error) {
         const response = failure(error);
-        this.send(ws, { type: "error", commandId, ...((await response.json()) as object) });
+        const body = (await response.json()) as { error: string };
+        outcome = response.status === 400 ? "rejected" : "error";
+        reason = body.error;
+        this.send(ws, { type: "error", commandId, ...body });
+      } finally {
+        const g = this.read()?.game;
+        console.log({
+          message: "websocket_command",
+          commandId: commandId ?? null,
+          action: action ?? null,
+          playerId: playerId ?? null,
+          roomCode: g?.code ?? null,
+          matchId: g?.matchId ?? null,
+          revision: g?.revision ?? null,
+          outcome,
+          ...(reason ? { reason } : {}),
+        });
       }
     });
   }
