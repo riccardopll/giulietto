@@ -155,6 +155,120 @@ try {
     await waitFor(() => reconnected.messages.some((m) => m.type === "pong"));
     reconnected.ws.close();
   });
+  await test("emotes broadcast from the authenticated sender without changing play or recording game events", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create", name: "bot_1" });
+    await post(1, { action: "join", code, name: "bot_2" });
+    const a = await socket(0, code),
+      b = await socket(1, code);
+    const started = await a.send({ action: "start" });
+    const before = await (await control(code, "read")).json();
+    const events = await (await control(code, "events")).json();
+    const move = { action: "emote", emote: "clap", playerId: b.messages[0].state.you };
+    const ack = await a.send(move);
+    assert.equal(ack.type, "ack");
+    const sender = ack.state.players.find((p) => p.id === started.state.you);
+    assert.equal(sender.emote.id, "clap");
+    assert.equal(sender.emote.commandId, ack.commandId);
+    assert.equal(ack.state.players.find((p) => p.id !== started.state.you).emote, undefined);
+    const pushed = await waitFor(() =>
+      b.messages.find((m) => m.type === "state" && m.state?.revision === ack.state.revision),
+    );
+    assert.deepEqual(pushed.state.players.find((p) => p.id === sender.id).emote, sender.emote);
+    assert.ok(
+      pushed.state.players.find((p) => p.id === sender.id).hand.every((card) => card === null),
+    );
+    const after = await (await control(code, "read")).json();
+    const withoutEmotes = (game) => ({
+      ...game,
+      revision: 0,
+      players: game.players.map(({ emote: _emote, seen: _seen, ...p }) => p),
+    });
+    assert.deepEqual(withoutEmotes(after.game), withoutEmotes(before.game));
+    assert.deepEqual(await (await control(code, "events")).json(), events);
+    const bidder = started.state.order[0] === started.state.you ? a : b;
+    assert.equal((await bidder.send({ action: "bid", bid: 0 })).type, "ack");
+    a.ws.close();
+    b.ws.close();
+  });
+  await test("emote cooldown and retry receipts survive tabs, HTTP requests and room eviction", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create", name: "bot_1" });
+    await post(1, { action: "join", code, name: "bot_2" });
+    const a = await socket(0, code),
+      secondTab = await socket(0, code);
+    const move = { action: "emote", emote: "wave", commandId: crypto.randomUUID() };
+    const first = await a.send(move);
+    assert.equal(first.type, "ack");
+    const retry = await a.send(move);
+    assert.equal(retry.state.revision, first.state.revision);
+    assert.deepEqual(retry.state.players[0].emote, first.state.players[0].emote);
+    assert.equal(
+      (await secondTab.send({ action: "emote", emote: "wow" })).error,
+      "Wait three seconds between emotes.",
+    );
+    assert.equal((await post(0, { action: "emote", emote: "wow", code })).status, 400);
+    assert.equal((await post(1, { action: "emote", emote: "luck", code })).status, 200);
+    a.ws.close();
+    secondTab.ws.close();
+    await mf.unsafeEvictDurableObject("test", "TestGameTable", { name: code });
+    const reconnected = await socket(0, code);
+    const restored = await reconnected.send(move);
+    assert.equal(restored.type, "ack");
+    assert.deepEqual(restored.state.players[0].emote, first.state.players[0].emote);
+    assert.equal((await reconnected.send({ action: "emote", emote: "oops" })).type, "error");
+    const room = await (await control(code, "read")).json();
+    room.game.players[0].emote.sentAt = Date.now() - 3000;
+    await control(code, "seed", room);
+    const next = await reconnected.send({ action: "emote", emote: "laugh" });
+    assert.equal(next.type, "ack");
+    assert.equal(next.state.players[0].emote.id, "laugh");
+    const oldRetry = await reconnected.send(move);
+    assert.equal(oldRetry.state.revision, next.state.revision);
+    assert.deepEqual(oldRetry.state.players[0].emote, next.state.players[0].emote);
+    reconnected.ws.close();
+    const expired = await (await control(code, "read")).json();
+    expired.game.players.forEach((p) => {
+      p.emote.sentAt = Date.now() - 4000;
+    });
+    await control(code, "seed", expired);
+    assert.ok((await get(0, code)).body.players.every((p) => p.emote === undefined));
+    const fresh = await socket(0, code);
+    assert.ok(fresh.messages[0].state.players.every((p) => p.emote === undefined));
+    fresh.ws.close();
+  });
+  await test("emotes reject unknown payloads, strangers and players who have left", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create", name: "bot_1" });
+    for (const emote of [undefined, null, 1, {}, ["wave"], "free text", "<script>"])
+      assert.equal(
+        (await post(0, { action: "emote", emote, code })).body.error,
+        "Choose a valid emote.",
+      );
+    assert.equal(
+      (await post(1, { action: "emote", emote: "wave", code })).body.error,
+      "Join this table first.",
+    );
+    const a = await socket(0, code);
+    assert.equal(
+      (await a.send({ action: "emote", emote: "invalid" })).error,
+      "Choose a valid emote.",
+    );
+    assert.equal((await a.send({ action: "emote", emote: "wave" })).type, "ack");
+    await post(1, { action: "join", code, name: "bot_2" });
+    await a.send({ action: "start" });
+    await a.send({ action: "leave" });
+    assert.equal(
+      (await a.send({ action: "emote", emote: "wave" })).error,
+      "You have left the game.",
+    );
+    assert.equal((await post(0, { action: "emote", emote: "wave", code })).status, 400);
+    assert.equal((await get(1, code)).body.players.find((p) => p.left).emote, undefined);
+    a.ws.close();
+  });
   await test("hibernation restores socket identities and per-player snapshots", async () => {
     const {
       body: { code },

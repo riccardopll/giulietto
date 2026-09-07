@@ -2,6 +2,8 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { toast, Toaster } from "sonner";
 import { PredictionEmote } from "@/client/components/prediction-emote";
+import { EmoteMenu, PlayerEmote } from "@/client/components/emotes";
+import type { EmoteId } from "@/shared/emotes";
 import { PlayingCard as Card } from "@/client/components/playing-card";
 import {
   ArrowRight,
@@ -255,6 +257,16 @@ export default function App() {
       setPendingCard(null);
     }
   }
+  async function sendEmote(emote: EmoteId) {
+    const current = gameRef.current;
+    if (!current || !transport.current) return;
+    try {
+      const state = await transport.current.command("emote", { emote });
+      if (gameRef.current?.code === current.code) accept(state);
+    } catch (error) {
+      if (gameRef.current?.code === current.code) setError((error as Error).message);
+    }
+  }
   function reset() {
     gameRef.current = null;
     setGame(null);
@@ -353,6 +365,13 @@ export default function App() {
               {game.code}
               {copied ? <Check size={15} /> : <Copy size={15} />}
             </button>
+            <EmoteMenu
+              key={game.code}
+              emote={me?.emote}
+              now={now}
+              disabled={!me || !!me.left || !!connection}
+              send={sendEmote}
+            />
             <Button
               variant="ghost"
               className="leave-button"
@@ -508,6 +527,7 @@ export default function App() {
                             </strong>
                             <span>{p.id === game.host ? "Host" : "Ready"}</span>
                           </div>
+                          <PlayerEmote emote={p.emote} name={p.name} now={now} />
                           <Lives n={3} />
                         </>
                       ) : (
@@ -580,6 +600,7 @@ export default function App() {
                             <TableCell>
                               {p.name}
                               {p.id === game.you ? " (you)" : ""}
+                              <PlayerEmote emote={p.emote} name={p.name} now={now} />
                             </TableCell>
                             <TableCell>{r?.bid ?? "–"}</TableCell>
                             <TableCell>{r?.taken ?? "–"}</TableCell>
@@ -621,6 +642,7 @@ export default function App() {
                             bid={p.bid}
                             name={p.name}
                           />
+                          <PlayerEmote emote={p.emote} name={p.name} now={now} floating />
                           <div className={`avatar avatar-${i}`}>
                             {p.name.slice(0, 1).toUpperCase()}
                           </div>
@@ -709,6 +731,7 @@ export default function App() {
                     <div className="self-player" data-seat={game.you}>
                       <div className="self-name">
                         <strong>You</strong>
+                        <PlayerEmote emote={me?.emote} name={me?.name ?? "You"} now={now} />
                         <Lives n={me?.lives ?? 0} />
                       </div>
                       <span className="self-score">

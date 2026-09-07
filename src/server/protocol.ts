@@ -1,4 +1,5 @@
 import { GameError } from "../shared/game-error";
+import { EMOTE_COOLDOWN_MS, isEmoteId } from "../shared/emotes";
 import { bid, deal, play, player, tick, type Game } from "../shared/game";
 
 export type Command = Record<string, unknown> & { action: string; commandId: string };
@@ -6,7 +7,11 @@ export function command(value: unknown): Command {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new GameError("Invalid request.");
   const b = value as Record<string, unknown>;
-  if (!["create", "match", "join", "start", "bid", "play", "leave"].includes(String(b.action)))
+  if (
+    !["create", "match", "join", "start", "bid", "play", "leave", "emote"].includes(
+      String(b.action),
+    )
+  )
     throw new GameError("Unknown action.");
   if (typeof b.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.commandId))
     throw new GameError("Invalid command ID.");
@@ -40,6 +45,11 @@ export function apply(g: Game, id: string, b: Command, now: number) {
     if (g.phase !== "lobby" || g.players.length < 2)
       throw new GameError("You need at least two players.");
     deal(g, now);
+  } else if (b.action === "emote") {
+    if (!isEmoteId(b.emote)) throw new GameError("Choose a valid emote.");
+    if (p.emote && now - p.emote.sentAt < EMOTE_COOLDOWN_MS)
+      throw new GameError("Wait three seconds between emotes.");
+    p.emote = { id: b.emote, commandId: b.commandId, sentAt: now };
   } else if (b.action === "bid") bid(g, id, b.bid as number, now);
   else if (b.action === "play") {
     if (g.count !== 1 && (typeof b.card !== "number" || !Number.isInteger(b.card)))

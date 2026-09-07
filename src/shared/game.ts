@@ -1,4 +1,5 @@
 import { GameError } from "./game-error.ts";
+import { EMOTE_DURATION_MS, type Emote } from "./emotes.ts";
 export type PlayerStats = {
   roundsPlayed: number;
   tricksWon: number;
@@ -15,6 +16,7 @@ export type Player = {
   seen: number;
   stats: PlayerStats;
   left?: boolean;
+  emote?: Emote;
 };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
 export type Result = {
@@ -225,6 +227,7 @@ export function tick(g: Game, now: number) {
   } else if (g.phase === "results") deal(g, now);
 }
 export function view(g: Game, id: string) {
+  const now = Date.now();
   const me = g.players.find((p) => p.id === id);
   if (!me) throw new GameError("You are no longer at this table. Join again.");
   const active = g.order.includes(id) && !me.left;
@@ -235,11 +238,12 @@ export function view(g: Game, id: string) {
     canChooseAce: active && g.phase === "playing" && g.order[g.turn] === id && me.hand.includes(31),
     players: g.players.map((p) => ({
       ...p,
+      emote: !p.left && p.emote && now < p.emote.sentAt + EMOTE_DURATION_MS ? p.emote : undefined,
       hand: p.hand.map((card) =>
         active && ((!blind && p.id === id) || (blind && p.id !== id)) ? card : null,
       ),
     })),
     legalBids: g.phase === "bidding" && g.order[g.turn] === id ? legalBids(g) : [],
-    serverTime: Date.now(),
+    serverTime: now,
   };
 }
