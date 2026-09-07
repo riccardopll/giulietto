@@ -1,7 +1,7 @@
 import type { Game } from "../shared/game";
 
 /** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
-export function historyStatements(db: D1Database, g: Game) {
+export function historyStatements(db: D1Database, g: Game, recording: { eventCount: number }) {
   const guard = "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=?)";
   const guardValues = [g.matchId!, g.revision];
   const participants = JSON.stringify(g.players);
@@ -15,10 +15,11 @@ export function historyStatements(db: D1Database, g: Game) {
       FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name,last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
       .bind(g.startedAt!, participants),
     db
-      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision)
-      VALUES(?,?,?,?,?,?,?,?,?,?)
+      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,recording_version,history_complete,event_count)
+      VALUES(?,?,?,?,?,?,?,?,?,?,1,1,?)
       ON CONFLICT(id) DO UPDATE SET status=excluded.status,completed_at=excluded.completed_at,
-        winner_id=excluded.winner_id,rounds=excluded.rounds,player_count=excluded.player_count,history_revision=excluded.history_revision
+        winner_id=excluded.winner_id,rounds=excluded.rounds,player_count=excluded.player_count,history_revision=excluded.history_revision,
+        recording_version=excluded.recording_version,history_complete=excluded.history_complete,event_count=excluded.event_count
       WHERE matches.history_revision<excluded.history_revision AND matches.completed_at IS NULL`)
       .bind(
         g.matchId!,
@@ -31,6 +32,7 @@ export function historyStatements(db: D1Database, g: Game) {
         g.winner,
         g.round,
         g.revision,
+        recording.eventCount,
       ),
     db
       .prepare(`INSERT INTO match_results(match_id,player_id,display_name,outcome,lives,
@@ -57,14 +59,4 @@ export function historyStatements(db: D1Database, g: Game) {
         ...guardValues,
       ),
   ];
-}
-
-export function needsHistory(before: Game, after: Game) {
-  if (!after.round || before.phase === "finished") return false;
-  return (
-    !before.matchId ||
-    before.round !== after.round ||
-    (before.phase !== after.phase && ["results", "finished"].includes(after.phase)) ||
-    after.players.some((p) => p.left !== before.players.find((b) => b.id === p.id)?.left)
-  );
 }

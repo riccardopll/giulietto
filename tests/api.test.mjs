@@ -17,8 +17,8 @@ const mf = new Miniflare(
     compatibilityDate: "2026-09-07",
     compatibilityFlags: ["nodejs_compat"],
     durableObjects: {
-      ROOMS: { className: "TestGameRoom", useSQLite: true },
-      MATCHMAKER: { className: "Matchmaker", useSQLite: true },
+      ROOMS: { className: "TestGameTable", useSQLite: true },
+      MATCHMAKER: { className: "MatchQueue", useSQLite: true },
     },
     d1Databases: { DB: "test-db" },
     ratelimits: { REQUEST_LIMIT: { namespace_id: "1001", simple: { limit: 10000, period: 60 } } },
@@ -125,6 +125,7 @@ try {
     const pushed = await waitFor(() => b.messages.find((m) => m.state?.phase === "bidding"));
     assert.ok(pushed.state.players[0].hand.every((c) => c === null));
     assert.ok(pushed.state.players[1].hand.every((c) => typeof c === "number"));
+    assert.equal(pushed.state.events, undefined);
     const move = { action: "bid", bid: 0, commandId: crypto.randomUUID() };
     const ack = await a.send(move);
     const retry = await a.send(move);
@@ -132,12 +133,15 @@ try {
     assert.equal(retry.state.revision, ack.state.revision);
     a.ws.close();
     b.ws.close();
-    await mf.unsafeEvictDurableObject("test", "TestGameRoom", { name: code });
+    await mf.unsafeEvictDurableObject("test", "TestGameTable", { name: code });
     const reconnected = await socket(0, code);
     assert.equal(reconnected.messages[0].state.turn, 1);
     const retriedAfterRestart = await reconnected.send(move);
     assert.equal(retriedAfterRestart.type, "ack");
     assert.equal(retriedAfterRestart.state.turn, 1);
+    const events = await (await control(code, "events")).json();
+    assert.equal(events.filter((e) => e.type === "bid").length, 1);
+    assert.equal(events.find((e) => e.type === "bid").command_id, move.commandId);
     reconnected.ws.send("ping");
     await waitFor(() => reconnected.messages.some((m) => m.type === "pong"));
     reconnected.ws.close();
@@ -150,7 +154,7 @@ try {
     const a = await socket(0, code),
       b = await socket(1, code);
     await a.send({ action: "start" });
-    await mf.unsafeEvictDurableObject("test", "TestGameRoom", {
+    await mf.unsafeEvictDurableObject("test", "TestGameTable", {
       name: code,
       webSockets: "hibernate",
     });
@@ -211,7 +215,7 @@ try {
     assert.equal(current.game.players[0].bid, 0);
     assert.ok(current.game.deadline > Date.now());
   });
-  await test("D1 outage does not roll back the game; persisted outbox retries and ignores old history", async () => {
+  await test("D1 outage does not roll back the game; persisted outbox retries and rejects stale snapshots", async () => {
     const {
       body: { code },
     } = await post(0, { action: "create" });
@@ -219,7 +223,7 @@ try {
     const { body: started } = await post(0, { action: "start", code });
     await waitFor(async () => !(await (await control(code, "read")).json()).outbox);
     const r = await (await control(code, "read")).json();
-    const oldGame = structuredClone(r.game);
+    const staleSnapshot = structuredClone(r.game);
     r.game.phase = "trick";
     r.game.count = 1;
     r.game.deadline = Date.now() + 100;
@@ -247,7 +251,7 @@ try {
     assert.equal(results.results.length, 2);
     assert.equal(results.results.find((r) => r.outcome === "won").tricks_won, 1);
     const stale = await (await control(code, "read")).json();
-    stale.outbox = oldGame;
+    stale.outbox = staleSnapshot;
     stale.retryAt = Date.now() - 1;
     await control(code, "seed", stale);
     await control(code, "alarm");
@@ -261,28 +265,142 @@ try {
       results.results,
     );
   });
-  await test("legacy D1 rooms import once and then use Durable Object state", async () => {
-    const { makeGame, player } = await import("../src/shared/game.ts");
-    const id = Array.from(
-      new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tokens[0]))),
-      (n) => n.toString(16).padStart(2, "0"),
-    ).join("");
-    const g = makeGame("LEGACY22", player(id, "Legacy", Date.now()), false);
+  await test("complete replay survives eviction and batch failure, then archives before room cleanup", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create" });
+    await control(code, "pause");
+    await post(1, { action: "join", code });
+    const lobby = await (await control(code, "read")).json();
+    // Extra lives keep this fixture running through blind rounds and several delivery batches.
+    lobby.game.players.forEach((p) => (p.lives = 100));
+    await control(code, "seed", lobby);
+    await post(0, { action: "start", code });
+    let r = await (await control(code, "read")).json();
+    while (r.game.round < 7) r = await (await control(code, "step")).json();
+    await post(0, { action: "leave", code });
+    await post(1, { action: "leave", code });
+    for (let i = 0; i < 100 && r.game.phase !== "finished"; i++)
+      r = await (await control(code, "step")).json();
+    assert.equal(r.game.phase, "finished");
+    assert.equal(r.game.winner, null);
+    const events = await (await control(code, "events")).json();
+    assert.ok(events.length > 100);
+    assert.equal(events[0].type, "round_dealt");
+    assert.equal(events.at(-1).type, "match_finished");
+    assert.ok(events.some((e) => e.round === 6 && JSON.parse(e.payload).blind === true));
+    assert.equal(events.filter((e) => e.type === "player_left").length, 2);
+    const hands = new Map();
+    const moves = [];
+    for (const [i, e] of events.entries()) {
+      assert.equal(e.sequence, i + 1);
+      const data = JSON.parse(e.payload);
+      if (e.type === "round_dealt") for (const p of data.players) hands.set(p.id, [...p.hand]);
+      if (e.type === "play") {
+        const hand = hands.get(e.player_id);
+        assert.deepEqual(data.handBefore, hand);
+        assert.ok(hand.includes(data.card));
+        hand.splice(hand.indexOf(data.card), 1);
+        assert.equal(e.source, "timeout");
+        if (data.card === 31) assert.equal(data.mode, "high");
+        moves.push({
+          player: e.player_id,
+          card: data.card,
+          ...(data.mode ? { mode: data.mode } : {}),
+        });
+      }
+      if (e.type === "trick_won") {
+        assert.deepEqual(data.plays, moves.splice(0));
+        const strength = (p) => (p.card === 31 ? (p.mode === "low" ? 0 : 41) : p.card);
+        assert.equal(
+          e.player_id,
+          data.plays.reduce((a, b) => (strength(a) > strength(b) ? a : b)).player,
+        );
+      }
+    }
+    await mf.unsafeEvictDurableObject("test", "TestGameTable", { name: code });
+    assert.deepEqual(await (await control(code, "events")).json(), events);
+    const deliver = async () => {
+      const pending = await (await control(code, "read")).json();
+      pending.retryAt = Date.now() - 1;
+      await control(code, "seed", pending);
+      await control(code, "alarm");
+      return (await control(code, "read")).json();
+    };
+    // A failed event insert must roll back the batch and retain the DO delivery cursor.
     await db
-      .prepare("INSERT INTO rooms(code,state,public,phase,updated) VALUES(?,?,0,'lobby',?)")
-      .bind(g.code, JSON.stringify(g), Date.now())
+      .prepare(`CREATE TRIGGER reject_event BEFORE INSERT ON match_events
+      BEGIN SELECT RAISE(ABORT, 'test outage'); END`)
       .run();
-    assert.equal((await get(0, g.code)).body.players[0].name, "Legacy");
-    await post(1, { action: "join", code: g.code });
-    assert.equal((await get(0, g.code)).body.players.length, 2);
+    r = await deliver();
+    assert.equal(r.deliveredSequence, 0);
+    assert.ok(r.outbox);
     assert.equal(
-      JSON.parse(
-        (await db.prepare("SELECT state FROM rooms WHERE code=?").bind(g.code).first()).state,
-      ).players.length,
-      1,
+      await db
+        .prepare("SELECT count(*) AS n FROM matches WHERE id=?")
+        .bind(r.game.matchId)
+        .first("n"),
+      0,
+    );
+    await db.prepare("DROP TRIGGER reject_event").run();
+    r = await deliver();
+    assert.equal(r.deliveredSequence, 100);
+    const partial = await db
+      .prepare("SELECT * FROM matches WHERE id=?")
+      .bind(r.game.matchId)
+      .first();
+    assert.equal(partial.status, "active");
+    assert.equal(partial.completed_at, null);
+    assert.ok(r.outbox);
+    // Simulate a crash after D1 commit but before the local cursor was acknowledged.
+    r.deliveredSequence = 0;
+    await control(code, "seed", r);
+    for (let i = 0; i < 10 && r.outbox; i++) r = await deliver();
+    assert.equal(r.outbox, undefined);
+    const saved = (
+      await db
+        .prepare("SELECT * FROM match_events WHERE match_id=? ORDER BY sequence")
+        .bind(r.game.matchId)
+        .all()
+    ).results;
+    assert.deepEqual(saved, events);
+    const match = await db.prepare("SELECT * FROM matches WHERE id=?").bind(r.game.matchId).first();
+    assert.equal(match.status, "abandoned");
+    assert.equal(match.recording_version, 1);
+    assert.equal(match.history_complete, 1);
+    assert.equal(match.event_count, events.length);
+    const results = (
+      await db.prepare("SELECT * FROM match_results WHERE match_id=?").bind(r.game.matchId).all()
+    ).results;
+    for (const p of r.game.players) {
+      const result = results.find((v) => v.player_id === p.id);
+      assert.equal(result.outcome, "forfeited");
+      assert.equal(result.rounds_played, p.stats.roundsPlayed);
+      assert.equal(result.tricks_won, p.stats.tricksWon);
+      assert.equal(result.exact_predictions, p.stats.exactPredictions);
+      assert.equal(result.prediction_error, p.stats.predictionError);
+      assert.equal(result.finalized_at, r.game.finishedAt);
+    }
+    r.updated = Date.now() - 86400001;
+    await control(code, "seed", r);
+    await control(code, "alarm");
+    assert.equal((await get(0, code)).status, 400);
+    assert.equal(
+      await db
+        .prepare("SELECT count(*) AS n FROM match_events WHERE match_id=?")
+        .bind(r.game.matchId)
+        .first("n"),
+      events.length,
     );
   });
   await test("malformed requests, foreign origins, strangers and forfeited players are rejected", async () => {
+    const missingCommand = await mf.dispatchFetch("http://game.test/api/game", {
+      method: "POST",
+      headers: { "x-player-token": tokens[0] },
+      body: JSON.stringify({ action: "create", name: "Player" }),
+    });
+    assert.equal(missingCommand.status, 400);
+    assert.equal((await missingCommand.json()).error, "Invalid command ID.");
     for (const body of ["null", "[]", "{", "42"])
       assert.equal(
         (

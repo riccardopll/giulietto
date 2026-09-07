@@ -25,9 +25,11 @@ await Promise.all(
 const unauthorized = await request("/api/game");
 assert.equal(unauthorized.status, 400);
 assert.match((await unauthorized.json()).error, /guest session/);
-const database = await request("/api/game?code=ZZZZZZZZ", {
+const missingRoom = await request("/api/game?code=ZZZZZZZZ", {
   headers: { "x-player-token": crypto.randomUUID() },
 });
-assert.equal(database.status, 400);
-assert.match((await database.json()).error, /not found|Join this table/);
-console.log(`Verified ${origin.origin}: HTML, JavaScript, CSS, cards, font, API, and D1.`);
+assert.equal(missingRoom.status, 400);
+assert.match((await missingRoom.json()).error, /not found|Join this table/);
+console.log(
+  `Verified ${origin.origin}: HTML, JavaScript, CSS, cards, font, API, and room routing.`,
+);

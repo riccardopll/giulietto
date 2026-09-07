@@ -1,8 +1,8 @@
 import type { Env } from "./env";
 import { command, failure, roomCode } from "./protocol";
 import { GameError } from "../shared/game-error";
-export { GameRoom } from "./game-room";
-export { Matchmaker } from "./matchmaker";
+export { GameTable } from "./game-table";
+export { MatchQueue } from "./match-queue";
 
 export default {
   async fetch(req: Request, env: Env): Promise<Response> {
@@ -51,9 +51,6 @@ export default {
         } catch {
           throw new GameError("Invalid JSON.");
         }
-        // Allow old open tabs to finish their HTTP requests during the rollout.
-        if (value && typeof value === "object" && !value.commandId)
-          value.commandId = crypto.randomUUID();
         body = command(value);
       }
       const headers = new Headers({ "x-player-id": id });

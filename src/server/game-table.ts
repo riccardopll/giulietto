@@ -2,20 +2,34 @@ import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
 import { makeGame, player, tick, view, type Game } from "../shared/game";
-import { historyStatements, needsHistory } from "./match-history";
+import { historyStatements } from "./match-history";
+import { eventStatements, gameEvents, type EventSource, type GameEvent } from "./game-events";
 import { apply, command, displayName, failure, type Command } from "./protocol";
 
-type Record = { game: Game; updated: number; outbox?: Game; retryAt?: number; failures?: number };
+type Record = {
+  game: Game;
+  updated: number;
+  outbox?: Game;
+  retryAt?: number;
+  failures?: number;
+  deliveredSequence: number;
+};
 type Attachment = { id: string };
 const DAY = 86400000;
 
-export class GameRoom extends DurableObject<Env> {
+export class GameTable extends DurableObject<Env> {
   private rates = new Map<string, { start: number; count: number }>();
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS receipts (player TEXT, command TEXT, PRIMARY KEY(player,command))",
     );
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS game_events (
+      sequence INTEGER PRIMARY KEY AUTOINCREMENT, match_id TEXT NOT NULL,
+      revision INTEGER NOT NULL, round INTEGER NOT NULL, type TEXT NOT NULL,
+      player_id TEXT, source TEXT NOT NULL, command_id TEXT,
+      occurred_at INTEGER NOT NULL, payload TEXT NOT NULL
+    )`);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   private read() {
@@ -57,16 +71,42 @@ export class GameRoom extends DurableObject<Env> {
       Math.max(Date.now() + 1, Math.min(this.due(r), r.retryAt ?? Infinity)),
     );
   }
-  private async save(before: Record, g: Game, receipt?: { id: string; commandId: string }) {
+  private async save(
+    before: Record,
+    g: Game,
+    receipt?: { id: string; commandId: string },
+    origin?: EventSource,
+  ) {
     g.revision = before.game.revision + 1;
     const r: Record = { ...before, game: g, updated: Date.now() };
-    if (needsHistory(before.game, g)) {
+    const events = gameEvents(
+      before.game,
+      g,
+      origin ?? { source: "player", commandId: receipt?.commandId },
+      r.updated,
+    );
+    if (events.length) {
       r.outbox = structuredClone(g);
       r.retryAt = Date.now() + 1;
       r.failures = 0;
     }
     this.ctx.storage.transactionSync(() => {
       this.ctx.storage.kv.put("room", r);
+      for (const event of events)
+        this.ctx.storage.sql.exec(
+          `INSERT INTO game_events
+          (match_id,revision,round,type,player_id,source,command_id,occurred_at,payload)
+          VALUES(?,?,?,?,?,?,?,?,?)`,
+          event.match_id,
+          event.revision,
+          event.round,
+          event.type,
+          event.player_id,
+          event.source,
+          event.command_id,
+          event.occurred_at,
+          event.payload,
+        );
       if (receipt)
         this.ctx.storage.sql.exec(
           "INSERT INTO receipts VALUES(?,?)",
@@ -89,23 +129,16 @@ export class GameRoom extends DurableObject<Env> {
       for (const p of g.players) if (ids.has(p.id) && now - p.seen >= 60000) p.seen = now;
     }
     tick(g, now);
-    return JSON.stringify(g) === JSON.stringify(r.game) ? r : this.save(r, g);
+    return JSON.stringify(g) === JSON.stringify(r.game)
+      ? r
+      : this.save(r, g, undefined, {
+          source: ["bidding", "playing"].includes(r.game.phase) ? "timeout" : "system",
+        });
   }
-  private async load(code: string) {
+  private load() {
     if (this.ctx.storage.kv.get("expired"))
       throw new GameError("Table not found or expired. Check the invite code.");
-    let r = this.read();
-    if (!r) {
-      // One-time import preserves rooms opened before the Durable Object rollout.
-      const old = await this.env.DB.prepare("SELECT state,updated FROM rooms WHERE code=?")
-        .bind(code)
-        .first<{ state: string; updated: number }>();
-      if (old && Date.now() - old.updated < DAY) {
-        r = { game: JSON.parse(old.state), updated: old.updated };
-        this.ctx.storage.kv.put("room", r);
-        await this.schedule(r);
-      }
-    }
+    const r = this.read();
     if (!r || Date.now() - r.updated >= DAY)
       throw new GameError("Table not found or expired. Check the invite code.");
     return r;
@@ -137,13 +170,13 @@ export class GameRoom extends DurableObject<Env> {
               player(id, displayName(b.name), Date.now()),
               b.action === "match",
             );
-            r = { game: g, updated: Date.now() };
+            r = { game: g, updated: Date.now(), deliveredSequence: 0 };
             this.ctx.storage.kv.put("room", r);
             await this.schedule(r);
           }
           return Response.json(view(r.game, id));
         }
-        let r = await this.load(code);
+        let r = this.load();
         // Membership must be checked before reads can advance or broadcast a room.
         if (req.method === "GET" && !r.game.players.some((p) => p.id === id))
           throw new GameError("Join this table first.");
@@ -232,7 +265,11 @@ export class GameRoom extends DurableObject<Env> {
     const pending = await this.ctx.blockConcurrencyWhile(async () => {
       let r = this.read();
       if (!r) return;
-      if (Date.now() - r.updated >= DAY && !r.outbox) {
+      if (
+        Date.now() - r.updated >= DAY &&
+        !r.outbox &&
+        ["lobby", "finished"].includes(r.game.phase)
+      ) {
         for (const ws of this.ctx.getWebSockets()) ws.close(4001, "Table expired.");
         await this.ctx.storage.deleteAll();
         this.ctx.storage.kv.put("expired", true);
@@ -248,20 +285,48 @@ export class GameRoom extends DurableObject<Env> {
         this.ctx.storage.kv.put("room", r);
       }
       await this.schedule(r);
-      return pending;
+      if (!pending) return;
+      const rows = this.ctx.storage.sql
+        .exec<GameEvent>(
+          "SELECT * FROM game_events WHERE sequence>? AND revision<=? ORDER BY sequence LIMIT 101",
+          r.deliveredSequence,
+          pending.revision,
+        )
+        .toArray();
+      const events = rows.slice(0, 100);
+      return {
+        game: pending,
+        events,
+        last: rows.length <= 100,
+        sequence: events.at(-1)?.sequence ?? r.deliveredSequence,
+      };
     });
     if (!pending) return;
     try {
-      await this.env.DB.batch(historyStatements(this.env.DB, pending));
+      await this.env.DB.batch([
+        ...eventStatements(this.env.DB, pending.game, pending.events),
+        ...(pending.last
+          ? historyStatements(this.env.DB, pending.game, {
+              eventCount: pending.sequence,
+            })
+          : []),
+      ]);
       await this.ctx.blockConcurrencyWhile(async () => {
         const r = this.read();
-        if (r?.outbox?.revision === pending.revision) {
-          delete r.outbox;
-          delete r.retryAt;
-          delete r.failures;
-          this.ctx.storage.kv.put("room", r);
-          await this.schedule(r);
+        if (!r) return;
+        r.deliveredSequence = Math.max(r.deliveredSequence, pending.sequence);
+        if (r.outbox?.revision === pending.game.revision) {
+          if (pending.last) {
+            delete r.outbox;
+            delete r.retryAt;
+            delete r.failures;
+          } else {
+            r.retryAt = Date.now() + 1;
+            r.failures = 0;
+          }
         }
+        this.ctx.storage.kv.put("room", r);
+        await this.schedule(r);
       });
     } catch (error) {
       console.error("Match history delivery will retry", error);

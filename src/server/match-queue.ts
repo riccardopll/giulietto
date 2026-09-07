@@ -4,7 +4,7 @@ import { command, displayName, failure } from "./protocol";
 import type { view } from "../shared/game";
 
 type State = ReturnType<typeof view>;
-export class Matchmaker extends DurableObject<Env> {
+export class MatchQueue extends DurableObject<Env> {
   async fetch(req: Request) {
     // Serialize the seat reservation through the room's commit, including concurrent strangers.
     return this.ctx.blockConcurrencyWhile(async () => {
