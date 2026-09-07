@@ -1,4 +1,5 @@
 import { GameError } from "../shared/game-error";
+import { CHAT_HISTORY_LIMIT, CHAT_INTERVAL_MS, CHAT_MAX_LENGTH } from "../shared/chat";
 import { bid, deal, play, player, tick, type Game } from "../shared/game";
 
 export type Command = Record<string, unknown> & { action: string; commandId: string };
@@ -6,7 +7,9 @@ export function command(value: unknown): Command {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new GameError("Invalid request.");
   const b = value as Record<string, unknown>;
-  if (!["create", "match", "join", "start", "bid", "play", "leave"].includes(String(b.action)))
+  if (
+    !["create", "match", "join", "start", "bid", "play", "leave", "chat"].includes(String(b.action))
+  )
     throw new GameError("Unknown action.");
   if (typeof b.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.commandId))
     throw new GameError("Invalid command ID.");
@@ -45,6 +48,23 @@ export function apply(g: Game, id: string, b: Command, now: number) {
     if (g.count !== 1 && (typeof b.card !== "number" || !Number.isInteger(b.card)))
       throw new GameError("Choose a valid card.");
     play(g, id, g.count === 1 ? p.hand[0] : (b.card as number), b.mode, now);
+  } else if (b.action === "chat") {
+    if (typeof b.text !== "string" || !b.text.trim()) throw new GameError("Enter a message.");
+    if (b.text.length > CHAT_MAX_LENGTH)
+      throw new GameError(`Messages can be at most ${CHAT_MAX_LENGTH} characters.`);
+    if (/\p{Cc}/u.test(b.text))
+      throw new GameError("Use a single line without control characters.");
+    const last = g.chat.findLast((message) => message.playerId === id);
+    if (last && now - last.sentAt < CHAT_INTERVAL_MS)
+      throw new GameError("Wait a second before sending another message.");
+    g.chat.push({
+      id: b.commandId,
+      playerId: p.id,
+      name: p.name,
+      text: b.text.trim(),
+      sentAt: now,
+    });
+    g.chat = g.chat.slice(-CHAT_HISTORY_LIMIT);
   } else if (b.action === "leave") {
     if (g.phase === "lobby") {
       g.players = g.players.filter((p) => p.id !== id);

@@ -93,6 +93,127 @@ async function socket(i, code) {
   };
 }
 try {
+  await test("chat broadcasts only to its table and survives reconnects without duplicate messages", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create", name: "bot_1" });
+    await post(1, { action: "join", code, name: "bot_2" });
+    const { body: other } = await post(2, { action: "create", name: "bot_3" });
+    const a = await socket(0, code),
+      b = await socket(1, code),
+      c = await socket(2, other.code);
+    const started = await a.send({ action: "start" });
+    const message = {
+      action: "chat",
+      text: "  Good luck! 👋  ",
+      commandId: crypto.randomUUID(),
+      name: "Impostor",
+      playerId: other.you,
+      sentAt: 0,
+      code: other.code,
+    };
+    const ack = await a.send(message);
+    assert.equal(ack.type, "ack");
+    assert.equal(ack.state.phase, started.state.phase);
+    assert.equal(ack.state.deadline, started.state.deadline);
+    assert.equal(ack.state.turn, started.state.turn);
+    const expected = ack.state.chat;
+    assert.equal(expected.length, 1);
+    assert.deepEqual(expected[0], {
+      id: message.commandId,
+      playerId: ack.state.you,
+      name: "bot_1",
+      text: "Good luck! 👋",
+      sentAt: expected[0].sentAt,
+    });
+    assert.ok(expected[0].sentAt > 0);
+    const pushed = await waitFor(() => b.messages.find((m) => m.state?.chat?.length === 1));
+    assert.deepEqual(pushed.state.chat, expected);
+    assert.deepEqual((await get(2, other.code)).body.chat, []);
+    assert.ok(c.messages.every((m) => !m.state?.chat?.length));
+    assert.deepEqual((await a.send(message)).state.chat, expected);
+    await mf.unsafeEvictDurableObject("test", "TestGameTable", {
+      name: code,
+      webSockets: "hibernate",
+    });
+    assert.deepEqual((await a.send(message)).state.chat, expected);
+    a.ws.close();
+    b.ws.close();
+    c.ws.close();
+    const reconnected = await socket(0, code);
+    assert.deepEqual(reconnected.messages[0].state.chat, expected);
+    assert.deepEqual((await reconnected.send(message)).state.chat, expected);
+    reconnected.ws.close();
+    const events = await (await control(code, "events")).json();
+    assert.ok(events.every((e) => e.command_id !== message.commandId));
+  });
+  await test("chat validates text, membership and persisted send frequency over HTTP and WebSocket", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create", name: "bot_1" });
+    await post(1, { action: "join", code, name: "bot_2" });
+    for (const text of [
+      undefined,
+      null,
+      42,
+      {},
+      "",
+      "   ",
+      "x".repeat(281),
+      "hello\nworld",
+      "\u0000",
+    ])
+      assert.equal((await post(0, { action: "chat", code, text })).status, 400);
+    assert.equal((await post(2, { action: "chat", code, text: "Hello" })).status, 400);
+    const a = await socket(0, code);
+    const invalid = await a.send({ action: "chat", text: " " });
+    assert.equal(invalid.type, "error");
+    assert.equal(invalid.error, "Enter a message.");
+    const accepted = await a.send({ action: "chat", text: "<script>alert(1)</script>" });
+    assert.equal(accepted.type, "ack");
+    assert.equal(accepted.state.chat[0].text, "<script>alert(1)</script>");
+    await mf.unsafeEvictDurableObject("test", "TestGameTable", {
+      name: code,
+      webSockets: "hibernate",
+    });
+    const limited = await a.send({ action: "chat", text: "Too soon" });
+    assert.equal(limited.type, "error");
+    assert.match(limited.error, /Wait a second/);
+    assert.equal((await post(0, { action: "chat", code, text: "Still too soon" })).status, 400);
+    assert.equal((await post(1, { action: "chat", code, text: "x".repeat(280) })).status, 200);
+    await post(0, { action: "start", code });
+    await post(0, { action: "leave", code });
+    assert.equal((await a.send({ action: "chat", text: "After leaving" })).type, "error");
+    assert.deepEqual((await get(0, code)).body.chat, []);
+    assert.equal((await get(1, code)).body.chat.length, 2);
+    a.ws.close();
+  });
+  await test("chat retains the last 50 messages and remains available to eliminated players", async () => {
+    const {
+      body: { code },
+    } = await post(0, { action: "create", name: "bot_1" });
+    await post(1, { action: "join", code, name: "bot_2" });
+    await control(code, "pause");
+    await post(0, { action: "start", code });
+    const r = await (await control(code, "read")).json();
+    r.game.players[0].lives = 0;
+    r.game.chat = Array.from({ length: 50 }, (_, i) => ({
+      id: crypto.randomUUID(),
+      playerId: r.game.players[0].id,
+      name: r.game.players[0].name,
+      text: String(i),
+      sentAt: i,
+    }));
+    await control(code, "seed", r);
+    const sender = r.game.players[0].name === "bot_1" ? 0 : 1;
+    const reply = await post(sender, { action: "chat", code, text: "Still watching" });
+    assert.equal(reply.status, 200);
+    assert.equal(reply.body.chat.length, 50);
+    assert.equal(reply.body.chat[0].text, "1");
+    assert.equal(reply.body.chat.at(-1).text, "Still watching");
+    const saved = await (await control(code, "read")).json();
+    assert.deepEqual(saved.game.chat, reply.body.chat);
+  });
   await test("concurrent matchmaking reserves six seats in one room without duplicates", async () => {
     const replies = await Promise.all(
       Array.from({ length: 6 }, (_, i) => post(i, { action: "match" })),

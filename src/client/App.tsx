@@ -46,6 +46,7 @@ import {
 } from "@/client/components/ui/table";
 import type { view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
+import { TableChat } from "./components/table-chat";
 type State = ReturnType<typeof view>;
 
 async function readResponse<T>(response: Response): Promise<T> {
@@ -268,6 +269,12 @@ export default function App() {
     if (history.state?.giuliettoTable) history.back();
     else history.replaceState({ ...history.state, giuliettoTable: null }, "", location.pathname);
   }
+  async function sendChat(text: string) {
+    const code = gameRef.current?.code;
+    if (!transport.current || !code) throw new Error("Connect to the table before sending.");
+    const state = await transport.current.command("chat", { text });
+    if (gameRef.current?.code === code) accept(state);
+  }
   async function copy() {
     try {
       await navigator.clipboard.writeText(`${location.origin}/?table=${game!.code}`);
@@ -353,6 +360,13 @@ export default function App() {
               {game.code}
               {copied ? <Check size={15} /> : <Copy size={15} />}
             </button>
+            <TableChat
+              key={game.code}
+              messages={game.chat}
+              you={game.you}
+              disabled={!!connection || !!me?.left}
+              send={sendChat}
+            />
             <Button
               variant="ghost"
               className="leave-button"

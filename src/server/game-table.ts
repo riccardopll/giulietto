@@ -33,7 +33,9 @@ export class GameTable extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   private read() {
-    return this.ctx.storage.kv.get("room") as Record | undefined;
+    const r = this.ctx.storage.kv.get("room") as Record | undefined;
+    if (r) r.game.chat ??= [];
+    return r;
   }
   private send(ws: WebSocket, message: unknown) {
     try {
@@ -242,7 +244,7 @@ export class GameTable extends DurableObject<Env> {
         const b = command(value);
         commandId = b.commandId;
         action = b.action;
-        if (!["start", "bid", "play", "leave"].includes(b.action))
+        if (!["start", "bid", "play", "leave", "chat"].includes(b.action))
           throw new GameError("Invalid room command.");
         const r = this.read();
         if (!r) throw new GameError("Table expired.");

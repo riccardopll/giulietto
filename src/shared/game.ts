@@ -1,4 +1,5 @@
 import { GameError } from "./game-error.ts";
+import type { ChatMessage } from "./chat.ts";
 export type PlayerStats = {
   roundsPlayed: number;
   tricksWon: number;
@@ -47,6 +48,7 @@ export type Game = {
   startAt: number | null;
   winner: string | null;
   tie: boolean;
+  chat: ChatMessage[];
 };
 export const TURN_MS = 40000;
 export function makeGame(code: string, p: Player, isPublic: boolean): Game {
@@ -69,6 +71,7 @@ export function makeGame(code: string, p: Player, isPublic: boolean): Game {
     startAt: null,
     winner: null,
     tie: false,
+    chat: [],
   };
 }
 export function player(id: string, name: string, now: number): Player {
@@ -231,6 +234,7 @@ export function view(g: Game, id: string) {
   const blind = g.count === 1 && ["bidding", "playing", "trick"].includes(g.phase);
   return {
     ...g,
+    chat: me.left ? [] : g.chat,
     you: id,
     canChooseAce: active && g.phase === "playing" && g.order[g.turn] === id && me.hand.includes(31),
     players: g.players.map((p) => ({
