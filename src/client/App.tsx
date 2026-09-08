@@ -115,11 +115,25 @@ function LobbyOptions({
   save: (lives: number) => Promise<void>;
 }) {
   const [draft, setDraft] = useState<number | null>(null);
+  const [queued, setQueued] = useState<number | null>(null);
+  const saving = useRef(false);
   const selected = draft ?? lives;
-  async function commit() {
-    if (!host || busy || draft === null) return;
-    if (draft !== lives) await save(draft);
-    setDraft(null);
+  const persist = useEffectEvent(async (value: number) => {
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      if (value !== lives) await save(value);
+    } finally {
+      setDraft((current) => (current === value ? null : current));
+      setQueued((current) => (current === value ? null : current));
+      saving.current = false;
+    }
+  });
+  useEffect(() => {
+    if (host && !busy && queued !== null) void persist(queued);
+  }, [host, busy, queued]);
+  function commit() {
+    if (host && draft !== null) setQueued(draft);
   }
   return (
     <section className="lobby-settings" aria-labelledby="lobby-options-heading">
@@ -139,7 +153,7 @@ function LobbyOptions({
         step={1}
         value={selected}
         aria-valuetext={`${selected} ${selected === 1 ? "life" : "lives"}`}
-        disabled={!host || busy}
+        disabled={!host}
         onChange={(event) => setDraft(Number(event.target.value))}
         onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
         onPointerUp={commit}
