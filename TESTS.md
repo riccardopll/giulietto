@@ -1,5 +1,8 @@
 # Testing
 
+After implementing a visual change requested by the user, open `/preview` on the
+local development server to check the layout and let the user review it.
+
 For live test matches, name automated players `bot_1` through `bot_6`, using
 consecutive numbers starting at 1 for the number of players in the match.
 For example, a five-player match uses `bot_1`, `bot_2`, `bot_3`, `bot_4`, and `bot_5`.
