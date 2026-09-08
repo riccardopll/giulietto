@@ -470,7 +470,14 @@ h1 {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   min-height: 0;
-  padding: 0.75rem 0;
+  padding: 0.75rem clamp(0.75rem, 2vw, 1.25rem);
+  margin-top: 0.5rem;
+  border: 1px solid #ead5df80;
+  border-radius: 0.875rem;
+  background: linear-gradient(160deg, #fffafded, #f3e7edb3);
+  box-shadow:
+    inset 0 1px 0 #ffffffcc,
+    0 4px 12px #71364e08;
 }
 .match-screen .wordmark {
   grid-column: 1;
@@ -544,11 +551,12 @@ h1 {
     0 2px 2px #ffe7ed80;
 }
 .table-seat {
+  --seat-avatar-size: clamp(2.75rem, 7.5vw, 4.375rem);
   position: absolute;
   inset: 0;
   pointer-events: none;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
 }
 .table-seat .seat-identity {
   position: absolute;
@@ -592,8 +600,8 @@ h1 {
   width: 100%;
 }
 .table-seat[data-bubble-side="right"] .seat-bubble-slot {
-  left: calc(50% + clamp(1.25rem, 3.5vw, 2rem) + 0.875rem);
-  top: clamp(1.25rem, 3.5vw, 2rem);
+  left: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
+  top: calc(var(--seat-avatar-size) / 2);
   bottom: auto;
   width: auto;
   height: auto;
@@ -611,12 +619,12 @@ h1 {
 .seat-avatar {
   display: grid;
   place-items: center;
-  width: clamp(2.5rem, 7vw, 4rem);
-  height: clamp(2.5rem, 7vw, 4rem);
+  width: var(--seat-avatar-size);
+  height: var(--seat-avatar-size);
   border-radius: 50%;
   background: hsl(var(--avatar-hue) 45% 84%);
   color: #493642;
-  font-size: 1.5rem;
+  font-size: 1.625rem;
   font-weight: 600;
   border: 3px solid var(--background);
   box-shadow: 0 0 0 1px #6f4a5e12;
@@ -645,11 +653,11 @@ h1 {
   font-weight: 600;
 }
 .seat-identity .lives {
-  --heart-size: 10px;
+  --heart-size: 11px;
   --heart-gap: 2px;
 }
 .player-score {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: #75606d;
   font-variant-numeric: tabular-nums;
 }
@@ -779,7 +787,7 @@ h1 {
 }
 @media (min-width: 64rem) {
   .seat-avatar {
-    font-size: 2rem;
+    font-size: 2.125rem;
   }
   .seat-number {
     min-width: 1.75rem;
@@ -787,11 +795,11 @@ h1 {
     font-size: 0.875rem;
   }
   .seat-name,
-  .player-score {
-    font-size: 0.875rem;
+  .seat-identity .player-score {
+    font-size: 0.9375rem;
   }
   .seat-identity .lives {
-    --heart-size: 12px;
+    --heart-size: 13px;
   }
   .seated-table > .play-table {
     width: calc(100% - 2 * var(--surface-inset-x) - 10rem);
