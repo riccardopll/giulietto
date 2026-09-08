@@ -341,7 +341,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const myTurn = !!game && seating?.current === game.you && !me?.left;
   const turnPlayer = game?.players.find((p) => p.id === game.order[game.turn]);
   const seconds = Math.max(0, Math.ceil(((game?.deadline || 0) - now) / 1000));
-  const blind = game?.count === 1;
   const active = !!me && me.lives > 0 && !me.left;
   const phase = game?.phase;
   const waiting = phase === "lobby";
