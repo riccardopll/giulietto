@@ -564,8 +564,11 @@ h1 {
   width: clamp(3.5rem, 8vw, 5rem);
   pointer-events: auto;
 }
-.table-seat[data-seat-edge] .seat-identity {
+.table-seat[data-seat-edge="top"] .seat-identity {
   --seat-inset-y: 6.5rem;
+}
+.table-seat[data-seat-edge="bottom"] .seat-identity {
+  --seat-inset-y: 6rem;
 }
 .table-seat .seat-hand {
   position: absolute;
