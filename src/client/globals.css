@@ -571,7 +571,6 @@ h1 {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  min-height: 2.6em;
   overflow: hidden;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -789,7 +788,7 @@ h1 {
   justify-content: center;
   gap: 0.375rem;
   flex-wrap: wrap;
-  margin: 0 0 0.875rem;
+  margin: 0;
 }
 .bid-button {
   width: 2.75rem;
@@ -813,15 +812,6 @@ h1 {
 }
 .bid-button:disabled {
   opacity: 0.35;
-}
-.bid-total,
-.last-bid-note {
-  font-size: 0.75rem;
-  color: var(--muted-foreground);
-}
-.last-bid-note {
-  margin-top: 0.375rem;
-  color: #956232;
 }
 .trick-cards {
   display: flex;

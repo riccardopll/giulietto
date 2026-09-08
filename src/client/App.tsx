@@ -742,13 +742,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                               </Button>
                             ))}
                           </div>
-                          <p className="bid-total">
-                            {game.players.reduce((n, p) => n + (p.bid ?? 0), 0)} predicted ·{" "}
-                            {game.count} available
-                          </p>
-                          {game.turn === game.order.length - 1 && (
-                            <p className="last-bid-note">The total cannot equal {game.count}.</p>
-                          )}
                         </div>
                       ) : (
                         <div className="trick-cards" key={`${game.round}-${trickNumber}`}>
