@@ -33,6 +33,8 @@ export function PlayerSeat({
   startingLives: number;
   status: string;
 }) {
+  const name = Array.from(player.name);
+  const visibleName = name.length > 12 ? `${name.slice(0, 12).join("")}…` : player.name;
   return (
     <section
       data-seat={player.id}
@@ -62,8 +64,8 @@ export function PlayerSeat({
             {toRoman(number)}
           </span>
         </div>
-        <strong className="seat-name" title={player.name}>
-          {you ? "You" : player.name}
+        <strong className="seat-name" title={player.name} aria-label={you ? "You" : player.name}>
+          {you ? "You" : visibleName}
         </strong>
         <Lives n={player.lives} total={startingLives} />
         <span
