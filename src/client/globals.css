@@ -463,8 +463,9 @@ h1 {
   width: var(--heart-size);
   height: var(--heart-size);
 }
-.match-screen {
-  max-width: 78rem;
+.site-shell.match-screen {
+  max-width: 84rem;
+  padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
 }
 .match-screen .site-header {
   display: grid;
@@ -492,7 +493,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 70rem;
+  max-width: 80rem;
   margin: -0.75rem auto 0;
 }
 /* One orbit per table: seat angles depend on player count, with you at the bottom. */
@@ -678,8 +679,7 @@ h1 {
   --fan-width: clamp(0.95rem, 3.65vw, 2.4375rem);
   --fan-step: clamp(1px, 0.73vw, 7.5px);
   position: relative;
-  width: 100%;
-  max-width: 8rem;
+  width: calc(var(--fan-width) + 5 * var(--fan-step) + 1rem);
   height: 5rem;
 }
 .seat-fan-card {
@@ -761,8 +761,21 @@ h1 {
   color: var(--muted-foreground);
 }
 @media (max-width: 39.999rem) {
+  .site-shell.match-screen {
+    padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
+  }
   .seated-table {
+    --surface-inset-x: 0.5rem;
     --played-card-width: min(6.8vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.105));
+  }
+  /* Stagger player identities along two mirrored arcs outside the wider felt. */
+  .table-seat .seat-identity {
+    --mobile-seat-clearance: 5.5rem;
+    top: calc(
+      50% + var(--mobile-seat-side) *
+        (50% - var(--surface-inset-y) + var(--mobile-seat-clearance) - var(--mobile-seat-arc) *
+          3.5rem)
+    );
   }
   .seated-table .trick-cards {
     max-width: calc(3 * var(--played-card-width) + 0.75rem);
@@ -787,16 +800,6 @@ h1 {
   }
   .seated-table > .play-table:has(.bidding-area) {
     height: auto;
-  }
-}
-@media (max-width: 24rem) {
-  .seated-table {
-    --fan-inset: 1.25rem;
-    --fan-inset-y: 0.75rem;
-  }
-  .seat-hand {
-    --fan-width: clamp(0.7rem, 3vw, 0.9rem);
-    --fan-step: clamp(1px, 0.5vw, 2px);
   }
 }
 @media (min-width: 64rem) {

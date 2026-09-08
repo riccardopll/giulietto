@@ -35,6 +35,7 @@ export function PlayerSeat({
 }) {
   const name = Array.from(player.name);
   const visibleName = name.length > 12 ? `${name.slice(0, 12).join("")}…` : player.name;
+  const seatY = Math.cos(position * Math.PI * 2);
   return (
     <section
       data-seat={player.id}
@@ -45,7 +46,9 @@ export function PlayerSeat({
       style={
         {
           "--seat-x": -Math.sin(position * Math.PI * 2),
-          "--seat-y": Math.cos(position * Math.PI * 2),
+          "--seat-y": seatY,
+          "--mobile-seat-side": seatY > 0.001 ? 1 : -1,
+          "--mobile-seat-arc": 1 - Math.abs(seatY),
         } as CSSProperties
       }
       className={`table-seat ${current ? "current-player" : ""} ${you ? "your-seat" : ""} ${player.lives <= 0 || player.left ? "eliminated" : ""}`}
