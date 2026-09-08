@@ -745,53 +745,53 @@ export default function App() {
                         </div>
                       )}
                     </section>
-                    <section className="hand-area" aria-label="Your hand">
-                      <div className="self-player">
-                        <Lives n={me?.lives ?? 0} total={game.startingLives} />
-                        <span className="self-score">
-                          {me?.taken} / {me?.bid ?? "–"} tricks
-                        </span>
-                      </div>
-                      <div className="hand" key={`hand-${game.round}`}>
-                        {me?.hand.map((card, i) => (
-                          <div
-                            className="hand-card"
-                            key={card ?? i}
-                            style={
-                              {
-                                "--hand-angle": `${(i - (me.hand.length - 1) / 2) * 3}deg`,
-                                "--hand-rise": `${Math.abs(i - (me.hand.length - 1) / 2) * 3}px`,
-                              } as CSSProperties
-                            }
-                          >
-                            <Card
-                              card={card}
-                              delay={i * 40}
-                              disabled={!active || !myTurn || phase !== "playing" || busy}
-                              pending={pendingCard === (card ?? -1)}
-                              onClick={() => {
-                                if (game.canChooseAce && (card === null || card === 31))
-                                  setAce(card ?? -1);
-                                else act("play", { card: card ?? -1 });
-                              }}
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      {(!active || blind) && (
-                        <div className="hand-hint">
-                          {!active ? (
-                            "Watching · you return if everyone is out"
-                          ) : (
-                            <>
-                              <EyeOff size={14} />
-                              Your card stays hidden until played
-                            </>
-                          )}
-                        </div>
-                      )}
-                    </section>
                   </div>
+                  <section className="hand-area" aria-label="Your hand">
+                    <div className="self-player">
+                      <Lives n={me?.lives ?? 0} total={game.startingLives} />
+                      <span className="self-score">
+                        {me?.taken} / {me?.bid ?? "–"} tricks
+                      </span>
+                    </div>
+                    <div className="hand" key={`hand-${game.round}`}>
+                      {me?.hand.map((card, i) => (
+                        <div
+                          className="hand-card"
+                          key={card ?? i}
+                          style={
+                            {
+                              "--hand-angle": `${(i - (me.hand.length - 1) / 2) * 3}deg`,
+                              "--hand-rise": `${Math.abs(i - (me.hand.length - 1) / 2) * 3}px`,
+                            } as CSSProperties
+                          }
+                        >
+                          <Card
+                            card={card}
+                            delay={i * 40}
+                            disabled={!active || !myTurn || phase !== "playing" || busy}
+                            pending={pendingCard === (card ?? -1)}
+                            onClick={() => {
+                              if (game.canChooseAce && (card === null || card === 31))
+                                setAce(card ?? -1);
+                              else act("play", { card: card ?? -1 });
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {(!active || blind) && (
+                      <div className="hand-hint">
+                        {!active ? (
+                          "Watching · you return if everyone is out"
+                        ) : (
+                          <>
+                            <EyeOff size={14} />
+                            Your card stays hidden until played
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </section>
                 </div>
               )}
             </>
