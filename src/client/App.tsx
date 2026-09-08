@@ -713,13 +713,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                     ))}
                     <section className="play-table">
                       <div className="table-status">
-                        <span className="eyebrow">
-                          {phase === "bidding"
-                            ? "Predictions"
-                            : phase === "trick"
-                              ? "Trick won"
-                              : `Trick ${trickNumber}`}
-                        </span>
                         <div className="turn-line">
                           <h1 aria-live="polite" aria-atomic="true">
                             {turnText}

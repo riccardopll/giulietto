@@ -59,7 +59,14 @@ export function makePreview(options: PreviewOptions): Game {
   if (phase === "bidding") return game;
   while (game.phase === "bidding") game = advancePreview(game);
   if (phase === "results") {
-    while (game.phase !== "results" && game.phase !== "finished") game = advancePreview(game);
+    while (game.phase !== "trick" || game.players.some((p) => p.hand.length))
+      game = advancePreview(game);
+    // Keep this fixture on round results even when a random deal gives one player every trick.
+    // Include both an exact prediction and a lost life without ending the match.
+    for (const p of game.players) p.bid = p.taken;
+    const missed = game.players[0];
+    missed.bid = missed.taken === game.count ? missed.taken - 1 : missed.taken + 1;
+    game = advancePreview(game);
   } else {
     // Others have played; the viewer can make the final play in this trick.
     game.turn = 1;
