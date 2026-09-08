@@ -544,6 +544,7 @@ h1 {
   stroke-width: calc(var(--table-rim-width) + 2px);
 }
 .table-rail {
+  stroke: #b7798c;
   stroke-width: var(--table-rim-width);
 }
 .table-rail-highlight {

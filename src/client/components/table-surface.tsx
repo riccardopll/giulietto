@@ -7,7 +7,6 @@ const contour =
 export function TableSurface() {
   const id = useId();
   const clip = `${id}-felt`;
-  const rail = `${id}-rail`;
   return (
     <div className="table-surface" aria-hidden="true">
       <div className="table-felt" style={{ clipPath: `url(#${clip})` }} />
@@ -16,19 +15,9 @@ export function TableSurface() {
           <clipPath id={clip} clipPathUnits="objectBoundingBox">
             <path d={contour} />
           </clipPath>
-          <linearGradient id={rail} x1="0" y1="0" x2="0.2" y2="1">
-            <stop offset="0" stopColor="#f4d3dc" />
-            <stop offset="0.45" stopColor="#d09aa9" />
-            <stop offset="1" stopColor="#b7798c" />
-          </linearGradient>
         </defs>
         <path className="table-rail-edge" d={contour} vectorEffect="non-scaling-stroke" />
-        <path
-          className="table-rail"
-          d={contour}
-          stroke={`url(#${rail})`}
-          vectorEffect="non-scaling-stroke"
-        />
+        <path className="table-rail" d={contour} vectorEffect="non-scaling-stroke" />
         <path className="table-rail-highlight" d={contour} vectorEffect="non-scaling-stroke" />
       </svg>
     </div>
