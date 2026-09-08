@@ -271,6 +271,12 @@ h1 {
   font-weight: 600;
   color: #78626f;
 }
+.round-title {
+  padding: 0.25rem 0 1.25rem;
+  text-align: center;
+  font-size: clamp(1.5rem, 3vw, 1.875rem);
+  font-weight: 600;
+}
 .lobby {
   max-width: 34rem;
   margin: 1rem auto 0;
@@ -548,13 +554,6 @@ h1 {
 .seated-table .played-card {
   max-width: clamp(3.125rem, 7vw, 4.5rem);
 }
-.turn-order {
-  text-align: center;
-  font-size: 0.75rem;
-}
-.turn-order p {
-  color: var(--muted-foreground);
-}
 .turn-seat,
 .result-seat {
   display: block;
@@ -795,28 +794,15 @@ h1 {
 .self-player {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: flex-end;
+  gap: 0.625rem;
   margin-bottom: 0.875rem;
   padding: 0.25rem 0.375rem;
   color: var(--muted-foreground);
   font-size: 0.75rem;
 }
-.self-name {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-.self-name > strong {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--foreground);
-}
 .self-score {
   font-variant-numeric: tabular-nums;
-}
-.your-turn .self-name > strong {
-  color: var(--primary);
 }
 .hand {
   display: flex;

@@ -516,16 +516,14 @@ export default function App() {
         </main>
       ) : (
         <main className={`game-main ${waiting ? "" : "in-game"}`}>
-          <div className="match-meta">
-            <span>
-              {waiting ? (game.public ? "Public lobby" : "Private lobby") : `Round ${game.round}`}
-            </span>
-            <span>
-              {waiting
-                ? `${game.players.length} / 6 players`
-                : `${game.count} ${game.count === 1 ? "card" : "cards"} each`}
-            </span>
-          </div>
+          {waiting ? (
+            <div className="match-meta">
+              <span>{game.public ? "Public lobby" : "Private lobby"}</span>
+              <span>{game.players.length} / 6 players</span>
+            </div>
+          ) : (
+            <h2 className="round-title">Round {game.round}</h2>
+          )}
           {waiting ? (
             <section className="lobby">
               <div className="lobby-heading">
@@ -661,21 +659,6 @@ export default function App() {
                 </section>
               ) : (
                 <div className="match-board">
-                  <div className="turn-order" aria-label="Play order">
-                    <p>
-                      {phase === "bidding"
-                        ? `Round ${game.round} prediction order`
-                        : seating!.nextTrick
-                          ? "Next trick order · winner leads"
-                          : "This trick’s play order"}
-                    </p>
-                    {phase === "bidding" && (
-                      <p>The first seat changes each round. Seats stay fixed.</p>
-                    )}
-                    {phase === "trick" && !seating!.nextTrick && (
-                      <p>Round complete · scoring next</p>
-                    )}
-                  </div>
                   <div className="seated-table" aria-label="Game table">
                     {game.players.map((p, i) => {
                       const current = seating!.current === p.id;
@@ -804,12 +787,9 @@ export default function App() {
                       )}
                     </section>
                   </div>
-                  <section className={`hand-area ${myTurn && active ? "your-turn" : ""}`}>
+                  <section className="hand-area" aria-label="Your hand">
                     <div className="self-player">
-                      <div className="self-name">
-                        <strong>Your hand · Seat {seatNumber(game.you)}</strong>
-                        <Lives n={me?.lives ?? 0} />
-                      </div>
+                      <Lives n={me?.lives ?? 0} />
                       <span className="self-score">
                         {me?.taken} / {me?.bid ?? "–"} tricks
                       </span>
@@ -830,22 +810,18 @@ export default function App() {
                         />
                       ))}
                     </div>
-                    <div className="hand-hint">
-                      {!active ? (
-                        "Watching · you return if everyone is out"
-                      ) : blind ? (
-                        <>
-                          <EyeOff size={14} />
-                          Your card stays hidden until played
-                        </>
-                      ) : phase === "bidding" ? (
-                        "Predict your tricks"
-                      ) : myTurn ? (
-                        "Choose a card to play"
-                      ) : (
-                        "Waiting for your turn"
-                      )}
-                    </div>
+                    {(!active || blind) && (
+                      <div className="hand-hint">
+                        {!active ? (
+                          "Watching · you return if everyone is out"
+                        ) : (
+                          <>
+                            <EyeOff size={14} />
+                            Your card stays hidden until played
+                          </>
+                        )}
+                      </div>
+                    )}
                   </section>
                 </div>
               )}
