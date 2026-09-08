@@ -688,6 +688,15 @@ h1 {
   padding: 0;
   width: 100%;
 }
+.seated-table > .play-table:has(.bidding-area) {
+  align-content: center;
+  gap: 1rem;
+}
+.seated-table .play-table:has(.bidding-area) .table-status {
+  position: static;
+  width: 100%;
+  transform: none;
+}
 .result-seat {
   display: block;
   font-size: 0.75rem;
@@ -701,12 +710,11 @@ h1 {
     bottom: calc(50% + 23rem);
     width: calc(100vw - 2rem);
   }
-  .seated-table .bidding-area {
-    position: absolute;
-    top: calc(50% + 23rem);
-    left: 50%;
+  .seated-table > .play-table:has(.bidding-area) {
+    top: calc(100% + 1rem);
     transform: translateX(-50%);
     width: calc(100vw - 2rem);
+    height: auto;
   }
   .match-board:has(.bidding-area) {
     gap: 12rem;
