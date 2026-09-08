@@ -465,7 +465,11 @@ h1 {
 }
 .site-shell.match-screen {
   max-width: 84rem;
+  min-height: 0;
   padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
+}
+.game-main.in-game {
+  padding-bottom: 0;
 }
 .match-screen .site-header {
   display: grid;
