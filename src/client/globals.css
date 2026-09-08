@@ -665,14 +665,6 @@ h1 {
   align-items: center;
   gap: 0.25rem;
 }
-.table-seat[data-seat-edge] .seat-details {
-  position: absolute;
-  align-items: flex-start;
-  left: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
-  top: calc(var(--seat-avatar-size) / 2);
-  transform: translateY(-50%);
-  width: max-content;
-}
 .seat-identity .lives {
   --heart-size: 11px;
   --heart-gap: 2px;
@@ -802,12 +794,6 @@ h1 {
           3.5rem)
     );
   }
-  .table-seat[data-seat-edge="top"] .seat-identity {
-    translate: 0 -1.5rem;
-  }
-  .table-seat[data-seat-edge="bottom"] .seat-identity {
-    --mobile-seat-clearance: 2.5rem;
-  }
   .seated-table .trick-cards {
     max-width: calc(3 * var(--played-card-width) + 0.75rem);
   }
@@ -826,6 +812,14 @@ h1 {
   }
 }
 @media (min-width: 40rem) {
+  .table-seat[data-seat-edge] .seat-details {
+    position: absolute;
+    align-items: flex-start;
+    left: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
+    top: calc(var(--seat-avatar-size) / 2);
+    transform: translateY(-50%);
+    width: max-content;
+  }
   .table-seat[data-lower-side] .seat-identity {
     translate: calc(var(--seat-x) * 1.5rem) 1rem;
   }
