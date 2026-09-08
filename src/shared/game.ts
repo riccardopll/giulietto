@@ -33,6 +33,7 @@ export type Game = {
   revision: number;
   public: boolean;
   host: string;
+  startingLives: number;
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
   order: string[];
@@ -49,12 +50,16 @@ export type Game = {
   tie: boolean;
 };
 export const TURN_MS = 40000;
+export const DEFAULT_STARTING_LIVES = 3;
+export const MIN_STARTING_LIVES = 1;
+export const MAX_STARTING_LIVES = 5;
 export function makeGame(code: string, p: Player, isPublic: boolean): Game {
   return {
     code,
     revision: 0,
     public: isPublic,
     host: p.id,
+    startingLives: DEFAULT_STARTING_LIVES,
     phase: "lobby",
     players: [p],
     order: [],
@@ -75,7 +80,7 @@ export function player(id: string, name: string, now: number): Player {
   return {
     id,
     name,
-    lives: 3,
+    lives: DEFAULT_STARTING_LIVES,
     hand: [],
     bid: null,
     taken: 0,
@@ -103,6 +108,7 @@ export function deal(g: Game, now: number) {
   if (g.round === 0) {
     g.matchId = crypto.randomUUID();
     g.startedAt = now;
+    for (const p of g.players) p.lives = p.left ? 0 : g.startingLives;
     shuffle(g.players);
   }
   g.round++;
