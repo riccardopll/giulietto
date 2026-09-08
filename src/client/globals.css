@@ -778,6 +778,10 @@ h1 {
 @media (max-width: 39.999rem) {
   .site-shell.match-screen {
     padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+  }
+  .match-board .hand {
+    padding-bottom: 0.25rem;
   }
   .seated-table {
     --surface-inset-x: 0.5rem;
