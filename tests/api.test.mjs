@@ -151,6 +151,37 @@ try {
     assert.equal(after.startingLives, 1);
     assert.ok(after.players.every((p) => p.lives === 1));
   });
+  await test("stored lobbies without starting lives default to three for every start path", async () => {
+    for (const start of ["manual", "countdown", "full"]) {
+      const {
+        body: { code },
+      } = await post(0, { action: "create" });
+      await control(code, "pause");
+      const count = start === "full" ? 5 : 2;
+      for (let i = 1; i < count; i++) await post(i, { action: "join", code });
+      const stored = await (await control(code, "read")).json();
+      delete stored.game.startingLives;
+      stored.game.public = start !== "manual";
+      stored.game.startAt = start === "countdown" ? Date.now() - 1 : null;
+      await control(code, "seed", stored);
+      await mf.unsafeEvictDurableObject("test", "TestGameTable", { name: code });
+      if (start === "manual") {
+        const restored = await socket(0, code);
+        assert.equal(restored.messages[0].state.startingLives, 3);
+        const joined = await post(2, { action: "join", code });
+        assert.ok(joined.body.players.every((p) => p.lives === 3));
+        assert.equal((await restored.send({ action: "start" })).type, "ack");
+        restored.ws.close();
+      } else if (start === "countdown") await control(code, "alarm");
+      else assert.equal((await post(5, { action: "join", code })).status, 200);
+      const state = (await get(0, code)).body;
+      assert.equal(state.startingLives, 3);
+      assert.equal(state.phase, "bidding");
+      assert.equal(state.order.length, state.players.length);
+      assert.ok(state.players.every((p) => p.lives === 3 && p.hand.length === 6));
+      assert.equal((await (await control(code, "read")).json()).game.startingLives, 3);
+    }
+  });
   await test("WebSocket broadcasts hide hands, deduplicate moves and restore after eviction", async () => {
     const {
       body: { code },
