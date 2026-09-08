@@ -119,6 +119,9 @@ h1 {
   color: var(--primary);
   padding-right: 0.25rem;
 }
+.wordmark:only-child {
+  margin-inline: auto;
+}
 .header-right {
   display: flex;
   gap: 0.125rem;
