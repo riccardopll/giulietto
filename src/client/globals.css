@@ -660,8 +660,8 @@ h1 {
   font-size: 0.75rem;
 }
 .seat-hand {
-  --fan-width: clamp(0.75rem, 3vw, 2rem);
-  --fan-step: clamp(1px, 0.6vw, 6px);
+  --fan-width: clamp(0.875rem, 3.375vw, 2.25rem);
+  --fan-step: clamp(1px, 0.675vw, 7px);
   position: relative;
   width: 100%;
   max-width: 8rem;
