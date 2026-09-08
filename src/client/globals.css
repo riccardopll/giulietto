@@ -638,7 +638,7 @@ h1 {
   box-shadow: 0 2px 4px #5c334b20;
 }
 .match-board .hand-card {
-  flex: 0 0 min(4rem, calc((100% - 0.3125rem) / 6));
+  flex: 0 0 min(6.5rem, calc((100% - 0.3125rem) / 6));
 }
 .match-board .self-player {
   margin-bottom: 0;
