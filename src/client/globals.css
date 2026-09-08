@@ -503,7 +503,7 @@ h1 {
 /* One orbit per table: seat angles depend on player count, with you at the bottom. */
 .seated-table {
   --table-rim-width: clamp(8px, 1.2vw, 14px);
-  --played-card-width: clamp(1.5rem, 6.8vw, 4.5rem);
+  --played-card-width: min(5.25rem, calc((100cqw - 2 * var(--surface-inset-x) - 12.5rem) / 6));
   --seat-inset-x: clamp(2rem, 5vw, 3.5rem);
   --seat-inset-y: 5.5rem;
   --surface-inset-x: clamp(3.5rem, 11vw, 8rem);
@@ -690,8 +690,8 @@ h1 {
   font-size: 0.75rem;
 }
 .seat-hand {
-  --fan-width: clamp(0.95rem, 3.65vw, 2.4375rem);
-  --fan-step: clamp(1px, 0.73vw, 7.5px);
+  --fan-width: clamp(1.125rem, 4.6vw, 3rem);
+  --fan-step: clamp(1.25px, 0.86vw, 9px);
   position: relative;
   width: calc(var(--fan-width) + 5 * var(--fan-step) + 1rem);
   height: 5rem;
@@ -756,7 +756,7 @@ h1 {
 .seated-table .played-card {
   flex: 0 0 var(--played-card-width);
   min-width: 0;
-  max-width: 4.5rem;
+  max-width: 5.25rem;
 }
 .seated-table .played-mode {
   font-size: clamp(0.375rem, 1vw, 0.75rem);
@@ -780,7 +780,7 @@ h1 {
   }
   .seated-table {
     --surface-inset-x: 0.5rem;
-    --played-card-width: min(6.8vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.105));
+    --played-card-width: min(9vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.14));
   }
   .match-board {
     margin-top: -1.5rem;
@@ -796,6 +796,9 @@ h1 {
   }
   .seated-table .trick-cards {
     max-width: calc(3 * var(--played-card-width) + 0.75rem);
+  }
+  .table-seat[data-seat-edge="top"] .seat-hand {
+    translate: 0 -0.75rem;
   }
   .match-screen .site-header:has(.header-right) .header-right {
     grid-column: 1 / -1;
