@@ -591,6 +591,19 @@ h1 {
   height: 2.25rem;
   width: 100%;
 }
+.table-seat[data-bubble-side="right"] .seat-bubble-slot {
+  left: calc(50% + clamp(1.25rem, 3.5vw, 2rem) + 0.875rem);
+  top: clamp(1.25rem, 3.5vw, 2rem);
+  bottom: auto;
+  width: auto;
+  height: auto;
+  transform: translateY(-50%);
+}
+.table-seat[data-bubble-side="right"] .seat-bubble::after {
+  left: -0.25rem;
+  top: calc(50% - 0.25rem);
+  bottom: auto;
+}
 .seat-avatar-wrap {
   position: relative;
   margin: 0 0.375rem 0.25rem;
