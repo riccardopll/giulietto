@@ -652,6 +652,7 @@ export default function App() {
                         key={p.id}
                         player={p}
                         number={i + 1}
+                        position={seating!.positions[p.id]}
                         you={p.id === game.you}
                         current={seating!.current === p.id}
                         next={seating!.next === p.id}

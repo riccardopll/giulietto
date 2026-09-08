@@ -26,6 +26,7 @@ function renderSeats(state) {
       createElement(PlayerSeat, {
         player: p,
         number: i + 1,
+        position: i + 1,
         you: p.id === state.you,
         current: p.id === state.order[state.turn],
         next: false,

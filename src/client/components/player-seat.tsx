@@ -16,6 +16,7 @@ function avatarHue(id: string) {
 export function PlayerSeat({
   player,
   number,
+  position,
   you,
   current,
   next,
@@ -24,6 +25,7 @@ export function PlayerSeat({
 }: {
   player: SeatPlayer;
   number: number;
+  position: number;
   you: boolean;
   current: boolean;
   next: boolean;
@@ -35,7 +37,7 @@ export function PlayerSeat({
       data-seat={player.id}
       aria-label={`Seat ${number}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className={`table-seat table-seat-${number} ${current ? "current-player" : ""} ${you ? "your-seat" : ""} ${player.lives <= 0 || player.left ? "eliminated" : ""}`}
+      className={`table-seat table-seat-${position} ${current ? "current-player" : ""} ${you ? "your-seat" : ""} ${player.lives <= 0 || player.left ? "eliminated" : ""}`}
     >
       <div className="seat-identity">
         <div className="seat-bubble-slot">

@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 export function cardLabel(card: number) {
   const suits = ["Clubs", "Swords", "Cups", "Coins"];
@@ -33,6 +33,7 @@ export function PlayingCard({
   pending?: boolean;
   delay?: number;
 }) {
+  const [failedCard, setFailedCard] = useState<number | null | undefined>(undefined);
   const label = card
     ? `${cardLabel(card)}, ${card === 31 ? "lowest or highest" : `value ${card}`}`
     : "Hidden card";
@@ -41,7 +42,11 @@ export function PlayingCard({
   } as CSSProperties;
   const content = (
     <>
-      <span className="card-fallback" aria-hidden="true">
+      <span
+        className="card-fallback"
+        aria-hidden="true"
+        style={{ visibility: failedCard === card ? "visible" : "hidden" }}
+      >
         {card === null ? "Hidden card" : cardLabel(card)}
       </span>
       <img
@@ -53,6 +58,7 @@ export function PlayingCard({
         width={300}
         height={480}
         onError={(event) => {
+          setFailedCard(card);
           event.currentTarget.style.visibility = "hidden";
         }}
       />
