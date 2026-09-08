@@ -669,15 +669,6 @@ export default function App() {
                           ? "Next trick order · winner leads"
                           : "This trick’s play order"}
                     </p>
-                    <ol>
-                      {seating!.order.map((id) => (
-                        <li key={id} aria-current={seating!.current === id ? "step" : undefined}>
-                          <span>Seat {seatNumber(id)}</span>
-                          {seating!.current === id && <strong>Now</strong>}
-                          {seating!.next === id && <strong>Next</strong>}
-                        </li>
-                      ))}
-                    </ol>
                     {phase === "bidding" && (
                       <p>The first seat changes each round. Seats stay fixed.</p>
                     )}

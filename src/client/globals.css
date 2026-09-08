@@ -555,37 +555,6 @@ h1 {
 .turn-order p {
   color: var(--muted-foreground);
 }
-.turn-order ol {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(3, max-content);
-  justify-content: center;
-  gap: 0.5rem 1rem;
-  padding: 0;
-  margin: 0.5rem 0;
-}
-.turn-order li {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-}
-.turn-order li:not(:last-child)::after {
-  content: "→";
-  position: absolute;
-  left: calc(100% + 0.125rem);
-}
-@media (width < 48rem) {
-  .turn-order li:nth-child(3n)::after {
-    content: none;
-  }
-}
-.turn-order [aria-current="step"] {
-  color: var(--primary);
-  font-weight: 700;
-}
-.turn-order strong {
-  font-size: 0.625rem;
-}
 .turn-seat,
 .result-seat {
   display: block;
@@ -618,9 +587,6 @@ h1 {
   .table-seat > .playing-card {
     grid-column: 2;
     grid-row: 1 / 6;
-  }
-  .turn-order ol {
-    grid-template-columns: repeat(6, max-content);
   }
 }
 .player-score {
