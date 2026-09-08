@@ -398,6 +398,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         >
           Giulietto
         </a>
+        {game && !waiting && <h2 className="round-title">Round {toRoman(game.round)}</h2>}
         {game && !isPreview && (
           <div className="header-right">
             <button className="code-button" onClick={copy} aria-label="Copy lobby invite">
@@ -520,13 +521,11 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         </main>
       ) : (
         <main className={`game-main ${waiting ? "" : "in-game"}`}>
-          {waiting ? (
+          {waiting && (
             <div className="match-meta">
               <span>{game.public ? "Public lobby" : "Private lobby"}</span>
               <span>{game.players.length} / 6 players</span>
             </div>
-          ) : (
-            <h2 className="round-title">Round {toRoman(game.round)}</h2>
           )}
           {waiting ? (
             <section className="lobby">
