@@ -1,10 +1,10 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { toast, Toaster } from "sonner";
-import { PredictionEmote } from "@/client/components/prediction-emote";
+import { PlayerSeat } from "@/client/components/player-seat";
+import { Lives } from "@/client/components/lives";
 import { PlayingCard as Card } from "@/client/components/playing-card";
 import {
   ArrowRight,
-  Heart,
   Users,
   Link as LinkIcon,
   Check,
@@ -82,19 +82,6 @@ function restoreSession() {
   }
 }
 
-function Lives({ n }: { n: number }) {
-  return (
-    <span className="lives" aria-label={`${n} ${n === 1 ? "life" : "lives"}`}>
-      {Array.from({ length: Math.ceil(n / 3) }, (_, row) => (
-        <span className="lives-row" key={row} aria-hidden="true">
-          {Array.from({ length: Math.min(3, n - row * 3) }, (_, heart) => (
-            <Heart key={heart} size={14} fill="currentColor" />
-          ))}
-        </span>
-      ))}
-    </span>
-  );
-}
 function LobbyOptions({
   lives,
   host,
@@ -354,7 +341,7 @@ export default function App() {
   const animateTrick = useEffectEvent(() => {
     if (!game || game.phase !== "trick" || matchMedia("(prefers-reduced-motion: reduce)").matches)
       return;
-    const anchor = document.querySelector(`[data-seat="${game.lastWinner}"]`);
+    const anchor = document.querySelector(`[data-seat="${game.lastWinner}"] .seat-avatar`);
     if (!anchor) return;
     const target = anchor.getBoundingClientRect();
     const animations = Array.from(
@@ -660,62 +647,38 @@ export default function App() {
               ) : (
                 <div className="match-board">
                   <div className="seated-table" aria-label="Game table">
-                    {game.players.map((p, i) => {
-                      const current = seating!.current === p.id;
-                      const played = game.trick.some((play) => play.player === p.id);
-                      return (
-                        <section
-                          data-seat={p.id}
-                          key={p.id}
-                          aria-label={`Seat ${i + 1}: ${p.name}${p.id === game.you ? " (you)" : ""}`}
-                          className={`table-seat table-seat-${i + 1} ${current ? "current-player" : ""} ${p.id === game.you ? "your-seat" : ""} ${p.lives <= 0 || p.left ? "eliminated" : ""}`}
-                        >
-                          <PredictionEmote
-                            key={`${game.round}-${p.id}`}
-                            bid={p.bid}
-                            name={p.name}
-                          />
-                          <span className={`seat-number avatar-${i}`}>Seat {i + 1}</span>
-                          <strong>
-                            {p.name}
-                            {p.id === game.you ? " (you)" : ""}
-                          </strong>
-                          <Lives n={p.lives} />
-                          <span className="player-score">
-                            {p.taken} / {p.bid ?? "–"} tricks
-                          </span>
-                          <span className="seat-status">
-                            {p.left
-                              ? game.order.includes(p.id)
-                                ? "Left · auto play"
-                                : "Left"
-                              : p.lives <= 0
-                                ? "Out"
-                                : current
-                                  ? phase === "bidding"
-                                    ? "Predicting now"
-                                    : "Playing now"
-                                  : phase === "trick" && game.lastWinner === p.id
-                                    ? "Trick winner"
-                                    : seating!.next === p.id
-                                      ? "Up next"
-                                      : played
-                                        ? "Played"
-                                        : phase === "bidding" && p.bid !== null
-                                          ? "Predicted"
-                                          : "Waiting"}
-                          </span>
-                          {p.id !== game.you &&
-                            (blind && p.hand[0] != null ? (
-                              <Card card={p.hand[0]} small />
-                            ) : (
-                              <span className="seat-cards">
-                                {p.hand.length} {p.hand.length === 1 ? "card" : "cards"}
-                              </span>
-                            ))}
-                        </section>
-                      );
-                    })}
+                    {game.players.map((p, i) => (
+                      <PlayerSeat
+                        key={p.id}
+                        player={p}
+                        number={i + 1}
+                        you={p.id === game.you}
+                        current={seating!.current === p.id}
+                        next={seating!.next === p.id}
+                        round={game.round}
+                        status={
+                          p.left
+                            ? game.order.includes(p.id)
+                              ? "Left · auto play"
+                              : "Left"
+                            : p.lives <= 0
+                              ? "Out"
+                              : seating!.current === p.id
+                                ? phase === "bidding"
+                                  ? "Predicting now"
+                                  : "Playing now"
+                                : phase === "trick" && game.lastWinner === p.id
+                                  ? "Trick winner"
+                                  : seating!.next === p.id
+                                    ? "Up next"
+                                    : game.trick.some((play) => play.player === p.id)
+                                      ? "Played"
+                                      : phase === "bidding" && p.bid !== null
+                                        ? "Predicted"
+                                        : "Waiting"
+                        }
+                      />
+                    ))}
                     <section className="play-table">
                       <div className="table-status">
                         <span className="eyebrow">
@@ -728,9 +691,6 @@ export default function App() {
                         <div className="turn-line">
                           <h1 aria-live="polite" aria-atomic="true">
                             {turnText}
-                            {seating!.current && (
-                              <span className="turn-seat">Seat {seatNumber(seating!.current)}</span>
-                            )}
                           </h1>
                           {["bidding", "playing"].includes(phase!) && (
                             <span className={`timer ${seconds < 10 ? "urgent" : ""}`}>
@@ -773,8 +733,12 @@ export default function App() {
                                 key={p.card}
                               >
                                 <Card card={p.card} mode={p.mode} />
-                                <span title={game.players.find((x) => x.id === p.player)?.name}>
-                                  Seat {seatNumber(p.player)}
+                                <span
+                                  className="played-seat"
+                                  aria-label={`Seat ${seatNumber(p.player)}`}
+                                  title={game.players.find((x) => x.id === p.player)?.name}
+                                >
+                                  {seatNumber(p.player)}
                                 </span>
                               </div>
                             ))
@@ -796,18 +760,28 @@ export default function App() {
                     </div>
                     <div className="hand" key={`hand-${game.round}`}>
                       {me?.hand.map((card, i) => (
-                        <Card
+                        <div
+                          className="hand-card"
                           key={card ?? i}
-                          card={card}
-                          delay={i * 40}
-                          disabled={!active || !myTurn || phase !== "playing" || busy}
-                          pending={pendingCard === (card ?? -1)}
-                          onClick={() => {
-                            if (game.canChooseAce && (card === null || card === 31))
-                              setAce(card ?? -1);
-                            else act("play", { card: card ?? -1 });
-                          }}
-                        />
+                          style={
+                            {
+                              "--hand-angle": `${(i - (me.hand.length - 1) / 2) * 3}deg`,
+                              "--hand-rise": `${Math.abs(i - (me.hand.length - 1) / 2) * 3}px`,
+                            } as CSSProperties
+                          }
+                        >
+                          <Card
+                            card={card}
+                            delay={i * 40}
+                            disabled={!active || !myTurn || phase !== "playing" || busy}
+                            pending={pendingCard === (card ?? -1)}
+                            onClick={() => {
+                              if (game.canChooseAce && (card === null || card === 31))
+                                setAce(card ?? -1);
+                              else act("play", { card: card ?? -1 });
+                            }}
+                          />
+                        </div>
                       ))}
                     </div>
                     {(!active || blind) && (

@@ -35,7 +35,7 @@ export function PlayingCard({
 }) {
   const label = card
     ? `${cardLabel(card)}, ${card === 31 ? "lowest or highest" : `value ${card}`}`
-    : "Your hidden card";
+    : "Hidden card";
   const style = {
     "--deal-delay": `${delay}ms`,
   } as CSSProperties;
@@ -60,7 +60,7 @@ export function PlayingCard({
       {pending && <span className="card-pending" aria-hidden="true" />}
     </>
   );
-  const className = `playing-card ${small ? "small" : ""} ${onClick ? "playable" : ""} ${pending ? "pending-card" : ""}`;
+  const className = `playing-card ${card === null ? "card-back" : ""} ${small ? "small" : ""} ${onClick ? "playable" : ""} ${pending ? "pending-card" : ""}`;
   return onClick ? (
     <button
       type="button"
