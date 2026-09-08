@@ -339,24 +339,11 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const me = game?.players.find((p) => p.id === game.you);
   const seating = game ? tableOrder(game) : null;
   const myTurn = !!game && seating?.current === game.you && !me?.left;
-  const turnPlayer = game?.players.find((p) => p.id === game.order[game.turn]);
   const seconds = Math.max(0, Math.ceil(((game?.deadline || 0) - now) / 1000));
   const active = !!me && me.lives > 0 && !me.left;
   const phase = game?.phase;
   const waiting = phase === "lobby";
   const result = phase === "results" || phase === "finished";
-  const turnText =
-    phase === "bidding"
-      ? myTurn
-        ? "Your prediction"
-        : `${turnPlayer?.name}'s prediction`
-      : phase === "playing"
-        ? myTurn
-          ? "Your turn"
-          : `${turnPlayer?.name}'s turn`
-        : phase === "trick"
-          ? `${game?.players.find((p) => p.id === game.lastWinner)?.name} takes the trick`
-          : "";
   const trickNumber = game
     ? game.count -
       (game.players.find((p) => p.id === game.order[0])?.hand.length ?? 0) +
@@ -709,19 +696,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                       />
                     ))}
                     <section className="play-table">
-                      <div className="table-status">
-                        <div className="turn-line">
-                          <h1 aria-live="polite" aria-atomic="true">
-                            {turnText}
-                          </h1>
-                          {["bidding", "playing"].includes(phase!) && (
-                            <span className={`timer ${seconds < 10 ? "urgent" : ""}`}>
-                              <Clock3 size={14} />
-                              {seconds}s
-                            </span>
-                          )}
-                        </div>
-                      </div>
                       {phase === "bidding" ? (
                         <div className="bidding-area">
                           <div className="bid-options">
@@ -741,20 +715,14 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                         </div>
                       ) : (
                         <div className="trick-cards" key={`${game.round}-${trickNumber}`}>
-                          {game.trick.length ? (
-                            game.trick.map((p) => (
-                              <div
-                                className={`played-card ${phase === "trick" && p.player === game.lastWinner ? "winner-card" : ""}`}
-                                key={p.card}
-                              >
-                                <Card card={p.card} mode={p.mode} />
-                              </div>
-                            ))
-                          ) : (
-                            <p className="empty-trick">
-                              {myTurn ? "Choose a card" : "Waiting for a card…"}
-                            </p>
-                          )}
+                          {game.trick.map((p) => (
+                            <div
+                              className={`played-card ${phase === "trick" && p.player === game.lastWinner ? "winner-card" : ""}`}
+                              key={p.card}
+                            >
+                              <Card card={p.card} mode={p.mode} />
+                            </div>
+                          ))}
                         </div>
                       )}
                     </section>
