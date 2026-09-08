@@ -40,7 +40,7 @@ export function PlayerSeat({
     <section
       data-seat={player.id}
       data-seat-edge={position === 0 ? "bottom" : position === 0.5 ? "top" : undefined}
-      data-bubble-side={you || position === 0.5 ? "right" : undefined}
+      data-bubble-side={you || position === 0.5 ? "left" : undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
       style={
@@ -72,13 +72,15 @@ export function PlayerSeat({
         <strong className="seat-name" title={player.name} aria-label={you ? "You" : player.name}>
           {you ? "You" : visibleName}
         </strong>
-        <Lives n={player.lives} total={startingLives} />
-        <span
-          className="player-score"
-          aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
-        >
-          {player.taken} / {player.bid ?? "–"}
-        </span>
+        <div className="seat-stats">
+          <Lives n={player.lives} total={startingLives} />
+          <span
+            className="player-score"
+            aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
+          >
+            {player.taken} / {player.bid ?? "–"}
+          </span>
+        </div>
         {(player.left || player.lives <= 0) && (
           <span className="seat-status">{player.left ? "Left" : "Out"}</span>
         )}
