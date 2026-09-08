@@ -79,7 +79,6 @@ export function Preview() {
       <aside className="preview-controls" aria-label="Local preview controls">
         <div className="preview-heading">
           <strong>Local preview</strong>
-          <span>Independent tables · no saved matches</span>
         </div>
         <div className="preview-player-counts" role="group" aria-label="Player count">
           {counts.map((count) => (
@@ -153,9 +152,6 @@ export function Preview() {
           </button>
           <button onClick={step}>Next move</button>
           <button onClick={() => configure()}>Reset table</button>
-          <span role="status">
-            {running ? "Advancing every 1.8 seconds" : "Paused — play your cards or advance a move"}
-          </span>
         </div>
       </aside>
       <App

@@ -17,14 +17,6 @@
   flex-wrap: wrap;
   gap: 0.625rem;
 }
-.preview-heading {
-  justify-content: space-between;
-}
-.preview-heading span,
-.preview-actions > span {
-  color: #75606d;
-  font-size: 0.75rem;
-}
 .preview-player-counts,
 .preview-settings,
 .preview-actions {
