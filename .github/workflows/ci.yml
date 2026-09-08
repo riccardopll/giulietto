@@ -26,16 +26,7 @@ jobs:
           node-version-file: .node-version
           cache: npm
       - run: npm ci
-      - name: Lint
-        run: npm run lint
-      - name: Check formatting
-        run: npm run fmt:check
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Test
-        run: npm test
-      - name: Build
-        run: npm run build
+      - run: npm run check
       - name: Apply migrations and deploy
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
