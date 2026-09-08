@@ -506,8 +506,8 @@ h1 {
   --seat-inset-y: 5.5rem;
   --surface-inset-x: clamp(4.5rem, 14vw, 9rem);
   --surface-inset-y: 11.5rem;
-  --fan-inset: clamp(1rem, 5vw, 4rem);
-  --fan-inset-y: clamp(1.5rem, 4vw, 3rem);
+  --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
+  --fan-inset-y: calc(clamp(1.5rem, 4vw, 3rem) + 0.5rem);
   position: relative;
   isolation: isolate;
   height: clamp(44rem, 80vw, 52rem);
@@ -802,7 +802,7 @@ h1 {
     padding: 0.125rem 0.375rem;
   }
   .seated-table {
-    --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
+    --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 1rem);
   }
   .seated-table > .play-table:has(.bidding-area) {
     height: auto;
