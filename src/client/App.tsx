@@ -11,7 +11,6 @@ import {
   Check,
   Copy,
   Globe2,
-  EyeOff,
   Trophy,
   Clock3,
   LogOut,
@@ -790,17 +789,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                         </div>
                       ))}
                     </div>
-                    {(!active || blind) && (
-                      <div className="hand-hint">
-                        {!active ? (
-                          "Watching · you return if everyone is out"
-                        ) : (
-                          <>
-                            <EyeOff size={14} />
-                            Your card stays hidden until played
-                          </>
-                        )}
-                      </div>
+                    {!active && (
+                      <div className="hand-hint">Watching · you return if everyone is out</div>
                     )}
                   </section>
                 </div>
