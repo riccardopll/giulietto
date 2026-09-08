@@ -810,6 +810,9 @@ h1 {
   }
 }
 @media (min-width: 40rem) {
+  .table-seat[data-lower-side] .seat-identity {
+    translate: calc(var(--seat-x) * 1.5rem) 1rem;
+  }
   .seated-table {
     --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 1rem);
   }

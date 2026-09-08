@@ -40,6 +40,7 @@ export function PlayerSeat({
     <section
       data-seat={player.id}
       data-seat-edge={position === 0 ? "bottom" : position === 0.5 ? "top" : undefined}
+      data-lower-side={position !== 0 && seatY > 0.001 ? true : undefined}
       data-bubble-side={you || position === 0.5 ? "left" : undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
