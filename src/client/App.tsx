@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from 
 import { toast, Toaster } from "sonner";
 import { toRoman } from "@/client/utils";
 import { PlayerSeat } from "@/client/components/player-seat";
+import { TableSurface } from "@/client/components/table-surface";
 import { Lives } from "@/client/components/lives";
 import { PlayingCard as Card } from "@/client/components/playing-card";
 import {
@@ -661,6 +662,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               ) : (
                 <div className="match-board">
                   <div className="seated-table" aria-label="Game table">
+                    <TableSurface />
                     {game.players.map((p, i) => (
                       <PlayerSeat
                         key={p.id}
