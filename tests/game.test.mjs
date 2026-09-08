@@ -11,6 +11,8 @@ import {
   view,
   legalBids,
   strength,
+  MIN_STARTING_LIVES,
+  MAX_STARTING_LIVES,
 } from "../src/shared/game.ts";
 function setup(n = 3) {
   const g = makeGame("ABCDEFGH", player("p0", "P0", 100), false);
@@ -18,6 +20,35 @@ function setup(n = 3) {
   deal(g, 100);
   return g;
 }
+test("starting lives default to three and apply only on the first deal", () => {
+  const g = makeGame("ABCDEFGH", player("p0", "P0", 100), false);
+  assert.equal(g.startingLives, 3);
+  g.players.push(player("p1", "P1", 100));
+  g.startingLives = MAX_STARTING_LIVES;
+  deal(g, 100);
+  assert.ok(g.players.every((p) => p.lives === MAX_STARTING_LIVES));
+  g.players[0].lives = 2;
+  g.players[1].lives = 0;
+  deal(g, 200);
+  assert.deepEqual(
+    g.players.map((p) => p.lives),
+    [2, 0],
+  );
+});
+test("public countdown and full-table starts use the selected starting lives", () => {
+  for (const n of [2, 6]) {
+    const g = makeGame("ABCDEFGH", player("p0", "P0", 100), true);
+    g.startingLives = n === 2 ? MIN_STARTING_LIVES : MAX_STARTING_LIVES;
+    for (let i = 1; i < n; i++) g.players.push(player("p" + i, "P" + i, 100));
+    tick(g, 100);
+    if (n === 2) {
+      assert.equal(g.phase, "lobby");
+      tick(g, g.startAt);
+    }
+    assert.equal(g.phase, "bidding");
+    assert.ok(g.players.every((p) => p.lives === g.startingLives));
+  }
+});
 test("initial seating can produce every order while preserving the host", (t) => {
   let draws;
   t.mock.method(crypto, "getRandomValues", (values) => {
@@ -170,42 +201,46 @@ test("played cards are public for every viewer while unplayed cards retain their
     assertViews();
   }
 });
-test("blind ace choice is available only to its holder on their playing turn", () => {
+test("blind ace choice is available only to its holder on their playing turn", (t) => {
+  t.mock.method(crypto, "getRandomValues", (values) => values.fill(0));
   for (const n of [2, 3]) {
     const g = setup(n);
-    const [first, second] = g.players;
+    const [first, second] = g.order;
+    assert.notEqual(first, g.host);
     g.count = 1;
     for (let i = 0; i < n; i++) g.players[i].hand = [i === 1 ? 31 : 10 + i];
     for (const p of g.players) {
       assert.equal(view(g, p.id).canChooseAce, false);
       bid(g, p.id, 0, 100);
     }
-    assert.equal(view(g, first.id).canChooseAce, false);
-    assert.equal(view(g, second.id).canChooseAce, false);
-    play(g, first.id, 10, undefined, 100);
-    assert.deepEqual(g.trick[0], { player: first.id, card: 10 });
-    const holder = view(g, second.id);
+    assert.equal(view(g, first).canChooseAce, false);
+    assert.equal(view(g, second).canChooseAce, false);
+    play(g, first, 10, undefined, 100);
+    assert.deepEqual(g.trick[0], { player: first, card: 10 });
+    const holder = view(g, second);
     assert.deepEqual(holder.players[1].hand, [null]);
     assert.equal(holder.canChooseAce, true);
-    assert.equal(view(g, first.id).canChooseAce, false);
-    assert.throws(() => play(g, second.id, 31, undefined, 100), /Choose high or low/);
-    play(g, second.id, 31, "low", 100);
-    assert.deepEqual(g.trick[1], { player: second.id, card: 31, mode: "low" });
-    assert.equal(view(g, second.id).canChooseAce, false);
+    assert.equal(view(g, first).canChooseAce, false);
+    assert.throws(() => play(g, second, 31, undefined, 100), /Choose high or low/);
+    play(g, second, 31, "low", 100);
+    assert.deepEqual(g.trick[1], { player: second, card: 31, mode: "low" });
+    assert.equal(view(g, second).canChooseAce, false);
   }
 });
-test("normal ace choice requires the ace in the current player's hand", () => {
+test("normal ace choice requires the ace in the current player's hand", (t) => {
+  t.mock.method(crypto, "getRandomValues", (values) => values.fill(0));
   const g = setup(2);
-  const [first, second] = g.players;
-  first.hand = [10, 31];
-  second.hand = [20, 40];
+  const [first, second] = g.order;
+  assert.notEqual(first, g.host);
+  g.players[0].hand = [10, 31];
+  g.players[1].hand = [20, 40];
   for (const p of g.players) bid(g, p.id, 0, 100);
-  assert.equal(view(g, first.id).canChooseAce, true);
-  assert.equal(view(g, second.id).canChooseAce, false);
-  play(g, first.id, 10, undefined, 100);
-  assert.equal(view(g, first.id).canChooseAce, false);
-  assert.equal(view(g, second.id).canChooseAce, false);
-  assert.throws(() => play(g, second.id, 31, "high", 100), /not in your hand/);
+  assert.equal(view(g, first).canChooseAce, true);
+  assert.equal(view(g, second).canChooseAce, false);
+  play(g, first, 10, undefined, 100);
+  assert.equal(view(g, first).canChooseAce, false);
+  assert.equal(view(g, second).canChooseAce, false);
+  assert.throws(() => play(g, second, 31, "high", 100), /not in your hand/);
 });
 test("six rounds cycle from six to one then restart, with rotating first bidder", () => {
   const g = setup();

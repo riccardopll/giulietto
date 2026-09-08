@@ -1,12 +1,25 @@
 import { GameError } from "../shared/game-error";
-import { bid, deal, play, player, tick, type Game } from "../shared/game";
+import {
+  bid,
+  deal,
+  play,
+  player,
+  tick,
+  MIN_STARTING_LIVES,
+  MAX_STARTING_LIVES,
+  type Game,
+} from "../shared/game";
 
 export type Command = Record<string, unknown> & { action: string; commandId: string };
 export function command(value: unknown): Command {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new GameError("Invalid request.");
   const b = value as Record<string, unknown>;
-  if (!["create", "match", "join", "start", "bid", "play", "leave"].includes(String(b.action)))
+  if (
+    !["create", "match", "join", "settings", "start", "bid", "play", "leave"].includes(
+      String(b.action),
+    )
+  )
     throw new GameError("Unknown action.");
   if (typeof b.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.commandId))
     throw new GameError("Invalid command ID.");
@@ -22,7 +35,7 @@ export function join(g: Game, id: string, name: string, now: number) {
   }
   if (g.phase !== "lobby") throw new GameError("This game has already started.");
   if (g.players.length >= 6) throw new GameError("This table is full.");
-  g.players.push(player(id, name, now));
+  g.players.push({ ...player(id, name, now), lives: g.startingLives });
   if (!g.host) g.host = id;
   tick(g, now);
 }
@@ -35,7 +48,23 @@ export function apply(g: Game, id: string, b: Command, now: number) {
   if (!p) throw new GameError("Join this table first.");
   if (p.left && b.action !== "leave") throw new GameError("You have left the game.");
   p.seen = now;
-  if (b.action === "start") {
+  if (b.action === "settings") {
+    if (g.host !== id) throw new GameError("Only the host can change starting lives.");
+    if (g.phase !== "lobby")
+      throw new GameError("Starting lives cannot change after the game starts.");
+    const lives = b.startingLives;
+    if (
+      typeof lives !== "number" ||
+      !Number.isInteger(lives) ||
+      lives < MIN_STARTING_LIVES ||
+      lives > MAX_STARTING_LIVES
+    )
+      throw new GameError(
+        `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
+      );
+    g.startingLives = lives;
+    for (const member of g.players) member.lives = lives;
+  } else if (b.action === "start") {
     if (g.host !== id) throw new GameError("Only the host can start.");
     if (g.phase !== "lobby" || g.players.length < 2)
       throw new GameError("You need at least two players.");

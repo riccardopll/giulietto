@@ -43,7 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/client/components/ui/table";
-import type { view } from "@/shared/game";
+import { MIN_STARTING_LIVES, MAX_STARTING_LIVES, type view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
 type State = ReturnType<typeof view>;
 
@@ -84,15 +84,79 @@ function restoreSession() {
 function Lives({ n }: { n: number }) {
   return (
     <span className="lives" aria-label={`${n} ${n === 1 ? "life" : "lives"}`}>
-      {[0, 1, 2].map((i) => (
-        <Heart
-          key={i}
-          size={14}
-          fill={i < n ? "currentColor" : "none"}
-          className={i < n ? "" : "empty-heart"}
-        />
+      {Array.from({ length: Math.ceil(n / 3) }, (_, row) => (
+        <span className="lives-row" key={row} aria-hidden="true">
+          {Array.from({ length: Math.min(3, n - row * 3) }, (_, heart) => (
+            <Heart key={heart} size={14} fill="currentColor" />
+          ))}
+        </span>
       ))}
     </span>
+  );
+}
+function LobbyOptions({
+  lives,
+  host,
+  busy,
+  save,
+}: {
+  lives: number;
+  host: boolean;
+  busy: boolean;
+  save: (lives: number) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<number | null>(null);
+  const [queued, setQueued] = useState<number | null>(null);
+  const saving = useRef(false);
+  const selected = draft ?? lives;
+  const persist = useEffectEvent(async (value: number) => {
+    if (saving.current) return;
+    saving.current = true;
+    try {
+      if (value !== lives) await save(value);
+    } finally {
+      setDraft((current) => (current === value ? null : current));
+      setQueued((current) => (current === value ? null : current));
+      saving.current = false;
+    }
+  });
+  useEffect(() => {
+    if (host && !busy && queued !== null) void persist(queued);
+  }, [host, busy, queued]);
+  function commit() {
+    if (host && draft !== null) setQueued(draft);
+  }
+  return (
+    <section className="lobby-settings" aria-labelledby="lobby-options-heading">
+      <h2 id="lobby-options-heading">Lobby options</h2>
+      <div className="lives-setting-label">
+        <label htmlFor="starting-lives">Starting lives</label>
+        <output htmlFor="starting-lives" aria-live="polite">
+          <Lives n={selected} />
+        </output>
+      </div>
+      <input
+        id="starting-lives"
+        type="range"
+        min={MIN_STARTING_LIVES}
+        max={MAX_STARTING_LIVES}
+        step={1}
+        value={selected}
+        aria-valuetext={`${selected} ${selected === 1 ? "life" : "lives"}`}
+        disabled={!host}
+        onChange={(event) => setDraft(Number(event.target.value))}
+        onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
+        onPointerUp={commit}
+        onPointerCancel={() => setDraft(null)}
+        onKeyUp={commit}
+        onBlur={commit}
+      />
+      <div className="lives-scale" aria-hidden="true">
+        {Array.from({ length: MAX_STARTING_LIVES - MIN_STARTING_LIVES + 1 }, (_, i) => (
+          <span key={i}>{i + MIN_STARTING_LIVES}</span>
+        ))}
+      </div>
+    </section>
   );
 }
 export default function App() {
@@ -205,7 +269,7 @@ export default function App() {
       if (
         gameRef.current &&
         transport.current &&
-        ["start", "bid", "play", "leave"].includes(action)
+        ["settings", "start", "bid", "play", "leave"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -489,7 +553,7 @@ export default function App() {
                             </strong>
                             <span>{p.id === game.host ? "Host" : "Ready"}</span>
                           </div>
-                          <Lives n={3} />
+                          <Lives n={game.startingLives} />
                         </>
                       ) : (
                         <>
@@ -501,6 +565,12 @@ export default function App() {
                   );
                 })}
               </div>
+              <LobbyOptions
+                lives={game.startingLives}
+                host={game.host === game.you}
+                busy={busy}
+                save={(startingLives) => act("settings", { startingLives })}
+              />
               <div className="lobby-actions">
                 <Button variant="outline" className="secondary-action" onClick={copy}>
                   {copied ? <Check /> : <LinkIcon />}
