@@ -103,6 +103,58 @@ function Lives({ n }: { n: number }) {
     </span>
   );
 }
+function LobbyOptions({
+  lives,
+  host,
+  busy,
+  save,
+}: {
+  lives: number;
+  host: boolean;
+  busy: boolean;
+  save: (lives: number) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState<number | null>(null);
+  const selected = draft ?? lives;
+  async function commit() {
+    if (!host || busy || draft === null) return;
+    if (draft !== lives) await save(draft);
+    setDraft(null);
+  }
+  return (
+    <section className="lobby-settings" aria-labelledby="lobby-options-heading">
+      <h2 id="lobby-options-heading">Lobby options</h2>
+      <div className="lives-setting-label">
+        <label htmlFor="starting-lives">Starting lives</label>
+        <output htmlFor="starting-lives" aria-live="polite">
+          <Heart size={14} fill="currentColor" aria-hidden="true" />
+          {selected}
+        </output>
+      </div>
+      <input
+        id="starting-lives"
+        type="range"
+        min={MIN_STARTING_LIVES}
+        max={MAX_STARTING_LIVES}
+        step={1}
+        value={selected}
+        aria-valuetext={`${selected} ${selected === 1 ? "life" : "lives"}`}
+        disabled={!host || busy}
+        onChange={(event) => setDraft(Number(event.target.value))}
+        onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
+        onPointerUp={commit}
+        onPointerCancel={() => setDraft(null)}
+        onKeyUp={commit}
+        onBlur={commit}
+      />
+      <div className="lives-scale" aria-hidden="true">
+        {Array.from({ length: MAX_STARTING_LIVES - MIN_STARTING_LIVES + 1 }, (_, i) => (
+          <span key={i}>{i + MIN_STARTING_LIVES}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
 export default function App() {
   const [session] = useState(restoreSession);
   const [name, setName] = useState(session.name);
@@ -498,32 +550,6 @@ export default function App() {
                     : "Start when everyone is here."}
                 </p>
               </div>
-              <div className="lobby-settings">
-                <label htmlFor="starting-lives">Starting lives</label>
-                {game.host === game.you ? (
-                  <select
-                    id="starting-lives"
-                    value={game.startingLives}
-                    disabled={busy}
-                    onChange={(event) =>
-                      act("settings", { startingLives: Number(event.target.value) })
-                    }
-                  >
-                    {Array.from(
-                      { length: MAX_STARTING_LIVES - MIN_STARTING_LIVES + 1 },
-                      (_, i) => i + MIN_STARTING_LIVES,
-                    ).map((lives) => (
-                      <option key={lives} value={lives}>
-                        {lives}
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <output id="starting-lives" aria-live="polite">
-                    {game.startingLives}
-                  </output>
-                )}
-              </div>
               <div className="seats">
                 {Array.from({ length: 6 }, (_, i) => {
                   const p = game.players[i];
@@ -553,6 +579,12 @@ export default function App() {
                   );
                 })}
               </div>
+              <LobbyOptions
+                lives={game.startingLives}
+                host={game.host === game.you}
+                busy={busy}
+                save={(startingLives) => act("settings", { startingLives })}
+              />
               <div className="lobby-actions">
                 <Button variant="outline" className="secondary-action" onClick={copy}>
                   {copied ? <Check /> : <LinkIcon />}
