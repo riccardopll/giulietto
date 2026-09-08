@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { view } from "../../shared/game.ts";
+import { toRoman } from "../utils";
 import { Lives } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
@@ -35,7 +36,7 @@ export function PlayerSeat({
   return (
     <section
       data-seat={player.id}
-      aria-label={`Seat ${number}: ${player.name}${you ? " (you)" : ""}. ${status}`}
+      aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
       style={
         {
@@ -57,8 +58,8 @@ export function PlayerSeat({
           >
             {Array.from(player.name)[0]?.toLocaleUpperCase()}
           </div>
-          <span className="seat-number" aria-label={`Seat ${number}`}>
-            {number}
+          <span className="seat-number" aria-label={`Seat ${toRoman(number)}`}>
+            {toRoman(number)}
           </span>
         </div>
         <strong className="seat-name" title={player.name}>

@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { toast, Toaster } from "sonner";
+import { toRoman } from "@/client/utils";
 import { PlayerSeat } from "@/client/components/player-seat";
 import { Lives } from "@/client/components/lives";
 import { PlayingCard as Card } from "@/client/components/playing-card";
@@ -540,7 +541,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               <span>{game.players.length} / 6 players</span>
             </div>
           ) : (
-            <h2 className="round-title">Round {game.round}</h2>
+            <h2 className="round-title">Round {toRoman(game.round)}</h2>
           )}
           {waiting ? (
             <section className="lobby">
@@ -614,7 +615,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               {result ? (
                 <section className="results-panel" key={`results-${game.round}`}>
                   <span className="eyebrow">
-                    {phase === "finished" ? "Game over" : `Round ${game.round} complete`}
+                    {phase === "finished" ? "Game over" : `Round ${toRoman(game.round)} complete`}
                   </span>
                   {phase === "finished" ? (
                     <>
@@ -647,7 +648,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                         return (
                           <TableRow key={p.id}>
                             <TableCell>
-                              <span className="result-seat">Seat {seatNumber(p.id)}</span>
+                              <span className="result-seat">Seat {toRoman(seatNumber(p.id))}</span>
                               {p.name}
                               {p.id === game.you ? " (you)" : ""}
                             </TableCell>
