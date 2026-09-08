@@ -550,7 +550,6 @@ export default function App() {
                           </div>
                           <div className="seat-label">
                             <strong>
-                              <span className="result-seat">Seat {seatNumber(p.id)}</span>
                               {p.name}
                               {p.id === game.you ? " (you)" : ""}
                             </strong>
@@ -632,6 +631,7 @@ export default function App() {
                         return (
                           <TableRow key={p.id}>
                             <TableCell>
+                              <span className="result-seat">Seat {seatNumber(p.id)}</span>
                               {p.name}
                               {p.id === game.you ? " (you)" : ""}
                             </TableCell>
