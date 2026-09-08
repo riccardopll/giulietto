@@ -94,7 +94,6 @@ export function PlayerSeat({
                   {
                     "--fan-offset": offset,
                     "--fan-angle": `${offset * 7}deg`,
-                    "--fan-rise": `${Math.abs(offset) * 2}px`,
                   } as CSSProperties
                 }
               >

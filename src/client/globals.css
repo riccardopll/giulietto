@@ -671,8 +671,8 @@ h1 {
   position: absolute;
   left: calc(50% + var(--fan-offset) * var(--fan-step));
   bottom: 50%;
-  transform: translate(-50%, 50%) rotate(var(--fan-angle)) translateY(var(--fan-rise));
-  transform-origin: 50% 90%;
+  transform: translate(-50%, 50%) rotate(var(--fan-angle));
+  transform-origin: center;
 }
 .seat-hand .seat-fan-card .playing-card {
   width: var(--fan-width);
