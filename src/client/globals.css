@@ -564,6 +564,9 @@ h1 {
   width: clamp(3.5rem, 8vw, 5rem);
   pointer-events: auto;
 }
+.table-seat[data-seat-edge] .seat-identity {
+  --seat-inset-y: 6.5rem;
+}
 .table-seat .seat-hand {
   position: absolute;
   left: calc(50% + var(--seat-x) * (50% - var(--surface-inset-x) - var(--fan-inset)));
@@ -697,6 +700,9 @@ h1 {
 }
 .match-board .hand {
   padding: 0.75rem 0;
+}
+.match-board .hand-area {
+  margin-top: -2rem;
 }
 .match-board .hand-hint {
   margin: 0;
