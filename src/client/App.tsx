@@ -147,16 +147,27 @@ function LobbyOptions({
     </section>
   );
 }
-export default function App() {
-  const [session] = useState(restoreSession);
+export type PreviewSession = {
+  state: State;
+  command: (action: string, extra: Record<string, unknown>) => void;
+  reset: () => void;
+};
+
+export default function App({ preview }: { preview?: PreviewSession }) {
+  const isPreview = !!preview;
+  const [session] = useState(() =>
+    preview ? { name: "bot_1", code: "", saved: null, token: "", error: "" } : restoreSession(),
+  );
   const [name, setName] = useState(session.name);
   const [code, setCode] = useState(session.code);
-  const [game, setGame] = useState<State | null>(null);
+  const [liveGame, setGame] = useState<State | null>(null);
+  const game = preview?.state ?? liveGame;
   const [busy, setBusy] = useState(!!session.saved);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [connection, setConnection] = useState("");
   const [copied, setCopied] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [liveNow, setNow] = useState(Date.now());
+  const now = preview?.state.serverTime ?? liveNow;
   const [ace, setAce] = useState<number | null>(null);
   const ready = !session.error;
   const [pendingCard, setPendingCard] = useState<number | null>(null);
@@ -183,6 +194,7 @@ export default function App() {
     localStorage.setItem("giulietto-room", s.code);
   };
   useEffect(() => {
+    if (isPreview) return;
     if (session.error) setError(session.error);
     if (session.saved) {
       fetch(`/api/game?code=${encodeURIComponent(session.saved)}`, {
@@ -198,22 +210,23 @@ export default function App() {
     }
     const timer = setInterval(() => setNow(Date.now() + clockOffset.current), 500);
     return () => clearInterval(timer);
-  }, [session]);
+  }, [session, isPreview]);
   const receiveState = useEffectEvent((s: State) => accept(s));
   useEffect(() => {
-    if (!game?.code) return;
+    if (isPreview || !game?.code) return;
     const connection = new GameConnection(game.code, token.current, receiveState, setConnection);
     transport.current = connection;
     return () => {
       transport.current = null;
       connection.stop();
     };
-  }, [game?.code]);
+  }, [game?.code, isPreview]);
   useEffect(() => {
     if (connection) toast.error(connection, { id: "connection-error", duration: 4500 });
     else toast.dismiss("connection-error");
   }, [connection]);
   useEffect(() => {
+    if (isPreview) return;
     const onBack = () => {
       const current = gameRef.current;
       if (!current) return;
@@ -237,7 +250,7 @@ export default function App() {
       window.removeEventListener("popstate", onBack);
       window.removeEventListener("beforeunload", onUnload);
     };
-  }, []);
+  }, [isPreview]);
   useEffect(() => {
     if (!game?.code) return;
     for (let i = 0; i <= 40; i++) {
@@ -246,6 +259,15 @@ export default function App() {
     }
   }, [game?.code]);
   async function act(action: string, extra: Record<string, unknown> = {}) {
+    if (preview) {
+      try {
+        preview.command(action, extra);
+        setAce(null);
+      } catch (error) {
+        setError((error as Error).message);
+      }
+      return;
+    }
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
@@ -289,6 +311,10 @@ export default function App() {
     }
   }
   function reset() {
+    if (preview) {
+      preview.reset();
+      return;
+    }
     gameRef.current = null;
     setGame(null);
     setCode("");
@@ -339,7 +365,12 @@ export default function App() {
     : 0;
   const seatNumber = (id: string) => (game?.players.findIndex((p) => p.id === id) ?? -1) + 1;
   const animateTrick = useEffectEvent(() => {
-    if (!game || game.phase !== "trick" || matchMedia("(prefers-reduced-motion: reduce)").matches)
+    if (
+      isPreview ||
+      !game ||
+      game.phase !== "trick" ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
       return;
     const anchor = document.querySelector(`[data-seat="${game.lastWinner}"] .seat-avatar`);
     if (!anchor) return;
@@ -381,7 +412,7 @@ export default function App() {
         >
           Giulietto
         </a>
-        {game && (
+        {game && !isPreview && (
           <div className="header-right">
             <button className="code-button" onClick={copy} aria-label="Copy lobby invite">
               {game.code}
