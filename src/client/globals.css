@@ -669,8 +669,8 @@ h1 {
   font-size: 0.75rem;
 }
 .seat-hand {
-  --fan-width: clamp(0.875rem, 3.375vw, 2.25rem);
-  --fan-step: clamp(1px, 0.675vw, 7px);
+  --fan-width: clamp(0.95rem, 3.65vw, 2.4375rem);
+  --fan-step: clamp(1px, 0.73vw, 7.5px);
   position: relative;
   width: 100%;
   max-width: 8rem;
@@ -687,7 +687,10 @@ h1 {
   width: var(--fan-width);
   border: 2px solid #fffaf6;
   border-radius: 0.25rem;
-  box-shadow: 0 2px 4px #5c334b20;
+  box-shadow:
+    0 1px 2px #42233145,
+    1px 3px 5px #42233130,
+    2px 7px 10px #42233120;
 }
 .match-board .hand-card {
   flex: 0 0 min(6.5rem, calc((100% - 0.3125rem) / 6));
