@@ -189,7 +189,6 @@ h1 {
   white-space: normal;
   transition:
     background 0.18s,
-    transform 0.18s,
     box-shadow 0.18s;
 }
 .primary-action {
@@ -555,14 +554,14 @@ h1 {
   font-weight: 600;
   box-shadow: 0 2px 2px #34446504;
   transition:
-    transform 0.15s,
-    background 0.15s;
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
 }
 .bid-button:not(:disabled):hover {
   background: var(--primary);
   color: #fff;
   border-color: var(--primary);
-  transform: translateY(-2px);
 }
 .bid-button:disabled {
   opacity: 0.35;
@@ -1053,10 +1052,6 @@ div[data-slot="alert-dialog-content"] {
     box-shadow:
       0 7px 10px #1b294122,
       0 12px 20px #1b29410d;
-  }
-  .primary-action:not(:disabled):hover,
-  .secondary-action:not(:disabled):hover {
-    transform: translateY(-1px);
   }
 }
 @media (prefers-reduced-motion: reduce) {
