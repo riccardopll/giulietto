@@ -655,7 +655,6 @@ export default function App() {
                         position={seating!.positions[p.id]}
                         you={p.id === game.you}
                         current={seating!.current === p.id}
-                        next={seating!.next === p.id}
                         round={game.round}
                         startingLives={game.startingLives}
                         status={
@@ -747,12 +746,6 @@ export default function App() {
                     </section>
                   </div>
                   <section className="hand-area" aria-label="Your hand">
-                    <div className="self-player">
-                      <Lives n={me?.lives ?? 0} total={game.startingLives} />
-                      <span className="self-score">
-                        {me?.taken} / {me?.bid ?? "–"} tricks
-                      </span>
-                    </div>
                     <div className="hand" key={`hand-${game.round}`}>
                       {me?.hand.map((card, i) => (
                         <div

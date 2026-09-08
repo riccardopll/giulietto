@@ -19,7 +19,6 @@ export function PlayerSeat({
   position,
   you,
   current,
-  next,
   round,
   startingLives,
   status,
@@ -29,7 +28,6 @@ export function PlayerSeat({
   position: number;
   you: boolean;
   current: boolean;
-  next: boolean;
   round: number;
   startingLives: number;
   status: string;
@@ -43,12 +41,7 @@ export function PlayerSeat({
     >
       <div className="seat-identity">
         <div className="seat-bubble-slot">
-          <PredictionEmote
-            key={`${round}-${player.id}`}
-            bid={player.bid}
-            name={player.name}
-            next={next}
-          />
+          <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
         </div>
         <div className="seat-avatar-wrap">
           <div

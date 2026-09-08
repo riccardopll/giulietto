@@ -1,14 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-export function PredictionEmote({
-  bid,
-  name,
-  next = false,
-}: {
-  bid: number | null;
-  name: string;
-  next?: boolean;
-}) {
+export function PredictionEmote({ bid, name }: { bid: number | null; name: string }) {
   const previous = useRef(bid);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -19,15 +11,13 @@ export function PredictionEmote({
     const timer = setTimeout(() => setVisible(false), 2800);
     return () => clearTimeout(timer);
   }, [bid]);
-  return visible || next ? (
+  return visible ? (
     <span
-      className={`seat-bubble ${visible ? "prediction-emote" : "next-bubble"}`}
+      className="seat-bubble prediction-emote"
       role="status"
-      aria-label={
-        visible ? `${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}` : `${name} is next`
-      }
+      aria-label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}
     >
-      <span aria-hidden="true">{visible ? bid : "Next"}</span>
+      <span aria-hidden="true">{bid}</span>
     </span>
   ) : null;
 }
