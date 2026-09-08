@@ -85,21 +85,13 @@ function restoreSession() {
 function Lives({ n }: { n: number }) {
   return (
     <span className="lives" aria-label={`${n} ${n === 1 ? "life" : "lives"}`}>
-      {n > 3 ? (
-        <>
-          <Heart size={14} fill="currentColor" aria-hidden="true" />
-          {n}
-        </>
-      ) : (
-        [0, 1, 2].map((i) => (
-          <Heart
-            key={i}
-            size={14}
-            fill={i < n ? "currentColor" : "none"}
-            className={i < n ? "" : "empty-heart"}
-          />
-        ))
-      )}
+      {Array.from({ length: Math.ceil(n / 3) }, (_, row) => (
+        <span className="lives-row" key={row} aria-hidden="true">
+          {Array.from({ length: Math.min(3, n - row * 3) }, (_, heart) => (
+            <Heart key={heart} size={14} fill="currentColor" />
+          ))}
+        </span>
+      ))}
     </span>
   );
 }
@@ -141,8 +133,7 @@ function LobbyOptions({
       <div className="lives-setting-label">
         <label htmlFor="starting-lives">Starting lives</label>
         <output htmlFor="starting-lives" aria-live="polite">
-          <Heart size={14} fill="currentColor" aria-hidden="true" />
-          {selected}
+          <Lives n={selected} />
         </output>
       </div>
       <input
