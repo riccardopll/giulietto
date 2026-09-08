@@ -508,18 +508,19 @@ h1 {
   --seat-inset-y: 5.5rem;
   --surface-inset-x: clamp(3.5rem, 11vw, 8rem);
   --surface-inset-y: 11.5rem;
+  --table-end-radius: calc((100cqw - 2 * var(--surface-inset-x)) * 0.3);
   --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
   --fan-inset-y: calc(clamp(1.5rem, 4vw, 3rem) + 0.5rem);
   position: relative;
   isolation: isolate;
-  /* Keep the felt 10% wider than it is tall at every viewport size. */
-  height: calc((100cqw - 2 * var(--surface-inset-x)) / 1.1 + 2 * var(--surface-inset-y));
+  /* Keep the rounded table slightly wider than tall at every viewport size. */
+  height: calc((100cqw - 2 * var(--surface-inset-x)) / 1.2 + 2 * var(--surface-inset-y));
 }
 .seated-table::before,
 .seated-table::after {
   content: "";
   position: absolute;
-  border-radius: 50%;
+  border-radius: var(--table-end-radius) / 50%;
   pointer-events: none;
 }
 .seated-table::before {
@@ -527,7 +528,7 @@ h1 {
   inset: var(--surface-inset-y) var(--surface-inset-x);
   border: 1px solid #b57d89;
   background: linear-gradient(165deg, #d7a9af, #c18a98 55%, #d6a4ae);
-  /* Shade across the rim's width so the highlight follows the whole oval. */
+  /* Shade across the rim's width so the highlight follows its contour. */
   box-shadow:
     inset 0 0 1px 1px #8a536478,
     inset 0 0 3px 3px #fbe0e4d9,
@@ -539,6 +540,7 @@ h1 {
 }
 .seated-table::after {
   z-index: -1;
+  border-radius: calc(var(--table-end-radius) - var(--table-rim-width)) / 50%;
   inset: calc(var(--surface-inset-y) + var(--table-rim-width))
     calc(var(--surface-inset-x) + var(--table-rim-width));
   background:
