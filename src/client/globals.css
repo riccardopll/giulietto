@@ -498,7 +498,7 @@ h1 {
   flex-direction: column;
   gap: 1rem;
   max-width: 80rem;
-  margin: -1.5rem auto 0;
+  margin: -2.75rem auto 0;
 }
 /* One orbit per table: seat angles depend on player count, with you at the bottom. */
 .seated-table {
@@ -601,11 +601,11 @@ h1 {
 }
 .table-seat[data-bubble-side="left"] .seat-bubble-slot {
   right: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
-  top: calc(var(--seat-avatar-size) / 2);
+  top: calc(var(--seat-avatar-size) / 2 - 1rem);
   bottom: auto;
   width: auto;
   height: auto;
-  transform: translateY(-50%);
+  transform: translateY(-100%);
 }
 .table-seat[data-bubble-side="left"] .seat-bubble::after {
   left: auto;
@@ -658,6 +658,12 @@ h1 {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
+}
+.table-seat[data-seat-edge] .seat-name {
+  position: absolute;
+  right: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
+  top: calc(var(--seat-avatar-size) / 2);
+  transform: translateY(-50%);
 }
 .table-seat[data-seat-edge] .seat-stats {
   position: absolute;
@@ -783,6 +789,9 @@ h1 {
     --surface-inset-x: 0.5rem;
     --played-card-width: min(6.8vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.105));
   }
+  .match-board {
+    margin-top: -1.5rem;
+  }
   /* Stagger player identities along two mirrored arcs outside the wider felt. */
   .table-seat .seat-identity {
     --mobile-seat-clearance: 5.5rem;
@@ -791,6 +800,9 @@ h1 {
         (50% - var(--surface-inset-y) + var(--mobile-seat-clearance) - var(--mobile-seat-arc) *
           3.5rem)
     );
+  }
+  .table-seat[data-seat-edge="top"] .seat-identity {
+    translate: 0 -2.5rem;
   }
   .seated-table .trick-cards {
     max-width: calc(3 * var(--played-card-width) + 0.75rem);
