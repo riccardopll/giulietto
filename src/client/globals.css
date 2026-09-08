@@ -471,6 +471,8 @@ h1 {
 }
 /* One orbit per table: seat angles depend on player count, with you at the bottom. */
 .seated-table {
+  --played-card-width: clamp(1.5rem, 6.8vw, 4.5rem);
+  --table-status-offset: 5.5rem;
   --seat-inset-x: clamp(2rem, 5vw, 3.5rem);
   --seat-inset-y: 5.5rem;
   --surface-inset-x: clamp(4.5rem, 14vw, 9rem);
@@ -659,7 +661,7 @@ h1 {
   width: 100%;
 }
 .seated-table .played-card {
-  flex: 0 0 clamp(1.5rem, 6.8vw, 4.5rem);
+  flex: 0 0 var(--played-card-width);
   min-width: 0;
   max-width: 4.5rem;
 }
@@ -670,7 +672,7 @@ h1 {
 }
 .seated-table .table-status {
   position: absolute;
-  bottom: calc(50% + 5.5rem);
+  bottom: calc(50% + var(--table-status-offset));
   left: 50%;
   width: max(100%, 8rem);
   transform: translateX(-50%);
@@ -723,6 +725,10 @@ h1 {
 @media (min-width: 40rem) {
   .seated-table {
     --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
+  }
+  .seated-table > .play-table:has(.bidding-area) {
+    /* Match the heading-to-card gap; cards have a 300:480 aspect ratio. */
+    gap: calc(var(--table-status-offset) - var(--played-card-width) * 0.8);
   }
 }
 @media (min-width: 64rem) {
