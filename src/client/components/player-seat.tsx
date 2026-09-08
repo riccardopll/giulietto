@@ -37,7 +37,13 @@ export function PlayerSeat({
       data-seat={player.id}
       aria-label={`Seat ${number}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className={`table-seat table-seat-${position} ${current ? "current-player" : ""} ${you ? "your-seat" : ""} ${player.lives <= 0 || player.left ? "eliminated" : ""}`}
+      style={
+        {
+          "--seat-x": -Math.sin(position * Math.PI * 2),
+          "--seat-y": Math.cos(position * Math.PI * 2),
+        } as CSSProperties
+      }
+      className={`table-seat ${current ? "current-player" : ""} ${you ? "your-seat" : ""} ${player.lives <= 0 || player.left ? "eliminated" : ""}`}
     >
       <div className="seat-identity">
         <div className="seat-bubble-slot">
