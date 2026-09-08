@@ -474,52 +474,69 @@ h1 {
   isolation: isolate;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-areas:
-    "seat1 seat2 seat3"
-    "center center center"
-    "seat6 seat5 seat4";
-  align-items: start;
-  gap: 0.75rem 0.5rem;
+  grid-template-rows: auto 6rem 24rem 6rem 14rem auto;
+  column-gap: 0.5rem;
 }
 .seated-table::before {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: 4.5rem 0 6rem;
-  border: 1px solid #e3d5dd;
-  border-radius: 45% / 14%;
-  background: linear-gradient(135deg, #ede1e8, #f4edf1);
-  box-shadow: inset 0 0 0 8px #ffffff35;
-}
-.table-seat-1 {
-  grid-area: seat1;
-}
-.table-seat-2 {
-  grid-area: seat2;
-}
-.table-seat-3 {
-  grid-area: seat3;
-}
-.table-seat-4 {
-  grid-area: seat4;
-}
-.table-seat-5 {
-  grid-area: seat5;
-}
-.table-seat-6 {
-  grid-area: seat6;
+  grid-column: 1 / -1;
+  grid-row: 2 / 6;
+  inset: 0;
+  border: 1px solid #e0ced8;
+  border-radius: 3rem;
+  background: linear-gradient(145deg, #efe3ea, #f6edf2);
+  box-shadow:
+    inset 0 0 0 6px #ffffff50,
+    0 8px 24px #75435c08;
 }
 .table-seat {
   position: relative;
   display: grid;
-  grid-template-rows: auto 5rem;
+  grid-template-rows: subgrid;
+  grid-row: 1 / 3;
   justify-items: center;
-  align-content: start;
-  gap: 0.5rem;
+  align-items: center;
   min-width: 0;
-  padding: 0 0.125rem;
   text-align: center;
   font-size: 0.75rem;
+}
+.table-seat-1,
+.table-seat-6 {
+  grid-column: 1;
+}
+.table-seat-2,
+.table-seat-5 {
+  grid-column: 2;
+}
+.table-seat-3,
+.table-seat-4 {
+  grid-column: 3;
+}
+.table-seat-4,
+.table-seat-5,
+.table-seat-6 {
+  grid-row: 4 / 7;
+}
+.table-seat .seat-identity {
+  grid-row: 1;
+  padding-bottom: 1rem;
+}
+.table-seat .seat-hand {
+  grid-row: 2;
+}
+.table-seat-4 .seat-identity,
+.table-seat-5 .seat-identity,
+.table-seat-6 .seat-identity {
+  grid-row: 3;
+  padding-top: 0.5rem;
+  padding-bottom: 0;
+}
+.table-seat-4 .seat-hand,
+.table-seat-5 .seat-hand,
+.table-seat-6 .seat-hand {
+  grid-row: 1;
 }
 .seat-identity {
   display: flex;
@@ -623,27 +640,34 @@ h1 {
 .seat-fan-card:only-child .playing-card {
   width: 2.5rem;
 }
-.table-seat-4,
-.table-seat-5,
-.table-seat-6 {
-  grid-template-rows: 5rem auto;
+.seated-table .hand-area {
+  grid-column: 1 / -1;
+  grid-row: 5;
+  min-width: 0;
+  align-self: center;
+  padding: 0.5rem 0;
 }
-.table-seat-4 .seat-identity,
-.table-seat-5 .seat-identity,
-.table-seat-6 .seat-identity {
-  grid-row: 2;
+.seated-table .hand-card {
+  flex-basis: 4rem;
 }
-.table-seat-4 .seat-hand,
-.table-seat-5 .seat-hand,
-.table-seat-6 .seat-hand {
-  grid-row: 1;
+.seated-table .self-player {
+  margin-bottom: 0;
+  padding: 0 0.5rem;
+}
+.seated-table .hand {
+  padding: 0.75rem 0;
+}
+.seated-table .hand-hint {
+  margin: 0;
+  font-size: 0.75rem;
 }
 .seated-table > .play-table {
-  grid-area: center;
+  grid-column: 1 / -1;
+  grid-row: 3;
   min-width: 0;
   padding: 1rem 0.75rem;
   display: grid;
-  grid-template-rows: 8rem 16rem;
+  grid-template-rows: 8rem 14rem;
 }
 .seated-table .trick-cards {
   display: grid;
@@ -667,15 +691,6 @@ h1 {
   grid-row: 1 / -1;
   align-self: center;
 }
-.played-seat {
-  display: grid;
-  place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  background: #fff9fc;
-  border: 1px solid #e6ceda;
-}
 .result-seat {
   display: block;
   font-size: 0.75rem;
@@ -683,32 +698,105 @@ h1 {
 }
 @media (min-width: 64rem) {
   .seated-table {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-areas:
-      ". seat1 seat1 seat1 seat1 . . seat2 seat2 seat2 seat2 ."
-      "seat6 seat6 seat6 center center center center center center seat3 seat3 seat3"
-      ". seat5 seat5 seat5 seat5 . . seat4 seat4 seat4 seat4 .";
-    gap: 1rem;
-    align-items: center;
+    grid-template-columns: 5.5rem minmax(6rem, 1fr) repeat(5, minmax(0, 1fr)) minmax(
+        6rem,
+        1fr
+      ) 5.5rem;
+    grid-template-rows: auto 7rem 18rem 14rem auto;
+    column-gap: 1rem;
   }
   .seated-table::before {
-    inset: 4rem 2rem 3.5rem;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 10px #ffffff35;
+    grid-column: 2 / 9;
+    grid-row: 2 / 5;
+    border-radius: 5rem;
+    box-shadow:
+      inset 0 0 0 8px #ffffff50,
+      0 12px 32px #75435c0a;
   }
-  .table-seat {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0;
+  .table-seat-4,
+  .table-seat-5 {
+    grid-row: 4 / 6;
+  }
+  .table-seat-4 .seat-identity,
+  .table-seat-5 .seat-identity {
+    grid-row: 2;
+  }
+  .seated-table .hand-area {
+    grid-column: 5 / 9;
+    grid-row: 4;
+    padding: 1rem;
+    align-self: center;
+  }
+  .table-seat-1,
+  .table-seat-5 {
+    grid-column: 3 / 5;
   }
   .table-seat-2,
-  .table-seat-3,
   .table-seat-4 {
-    flex-direction: row-reverse;
+    grid-column: 6 / 8;
   }
-  .seat-identity {
-    flex: 0 0 5.5rem;
+  .table-seat-3,
+  .table-seat-6 {
+    grid-row: 3;
+    grid-template-rows: 1fr;
+    grid-template-columns: subgrid;
+  }
+  .table-seat-6 {
+    grid-column: 1 / 3;
+  }
+  .table-seat-3 {
+    grid-column: 8 / 10;
+  }
+  .table-seat-3 .seat-identity,
+  .table-seat-6 .seat-identity {
+    grid-row: 1;
+    padding: 0;
+  }
+  .table-seat-3 .seat-hand,
+  .table-seat-6 .seat-hand {
+    grid-row: 1;
+  }
+  .table-seat-6 .seat-identity,
+  .table-seat-3 .seat-hand {
+    grid-column: 1;
+  }
+  .table-seat-3 .seat-identity,
+  .table-seat-6 .seat-hand {
+    grid-column: 2;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .seat-identity {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    column-gap: 0.75rem;
+    max-width: 12rem;
+    width: fit-content;
+    text-align: left;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .seat-bubble-slot {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .seat-avatar-wrap {
+    grid-column: 1;
+    grid-row: 2 / 6;
+    margin: 0;
+    align-self: center;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .seat-name {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .lives {
+    grid-column: 2;
+    grid-row: 3;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .player-score {
+    grid-column: 2;
+    grid-row: 4;
+  }
+  .table-seat:is(.table-seat-1, .table-seat-2, .table-seat-4, .table-seat-5) .seat-status {
+    grid-column: 2;
+    grid-row: 5;
   }
   .seat-avatar {
     width: 4.5rem;
@@ -720,22 +808,24 @@ h1 {
     height: 1.75rem;
     font-size: 0.875rem;
   }
-  .seat-name {
+  .seat-name,
+  .player-score {
     font-size: 0.875rem;
   }
   .seat-identity .lives {
     --heart-size: 12px;
   }
-  .player-score {
-    font-size: 0.875rem;
-  }
   .seat-hand {
     --fan-width: 2.25rem;
     --fan-step: 10px;
-    flex: 1;
     height: 7rem;
     min-width: 0;
     max-width: 9rem;
+  }
+  .table-seat-3 .seat-hand,
+  .table-seat-6 .seat-hand {
+    --fan-width: 2rem;
+    --fan-step: 8px;
   }
   .seat-fan-card {
     bottom: 1.5rem;
@@ -744,7 +834,8 @@ h1 {
     width: 3rem;
   }
   .seated-table > .play-table {
-    grid-template-rows: 8rem 10rem;
+    grid-column: 3 / 8;
+    grid-template-rows: 7rem 9rem;
     padding: 1rem 0;
   }
   .seated-table .trick-cards {
