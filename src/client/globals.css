@@ -727,8 +727,13 @@ h1 {
     --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
   }
   .seated-table > .play-table:has(.bidding-area) {
+    height: auto;
+  }
+  .seated-table .play-table:has(.bidding-area) .table-status {
+    position: absolute;
     /* Match the heading-to-card gap; cards have a 300:480 aspect ratio. */
-    gap: calc(var(--table-status-offset) - var(--played-card-width) * 0.8);
+    bottom: calc(100% + var(--table-status-offset) - var(--played-card-width) * 0.8);
+    transform: translateX(-50%);
   }
 }
 @media (min-width: 64rem) {
