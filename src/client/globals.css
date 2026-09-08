@@ -504,13 +504,13 @@ h1 {
   --table-status-offset: 5.5rem;
   --seat-inset-x: clamp(2rem, 5vw, 3.5rem);
   --seat-inset-y: 5.5rem;
-  --surface-inset-x: clamp(4.5rem, 14vw, 9rem);
+  --surface-inset-x: clamp(4rem, 13vw, 8rem);
   --surface-inset-y: 11.5rem;
   --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
   --fan-inset-y: calc(clamp(1.5rem, 4vw, 3rem) + 0.5rem);
   position: relative;
   isolation: isolate;
-  height: clamp(44rem, 80vw, 52rem);
+  height: clamp(46rem, 84vw, 55rem);
 }
 .seated-table::before,
 .seated-table::after {
