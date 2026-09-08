@@ -613,9 +613,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             <>
               {result ? (
                 <section className="results-panel" key={`results-${game.round}`}>
-                  <span className="eyebrow">
-                    {phase === "finished" ? "Game over" : `Round ${toRoman(game.round)} complete`}
-                  </span>
+                  {phase === "finished" && <span className="eyebrow">Game over</span>}
                   {phase === "finished" ? (
                     <>
                       <Trophy className="trophy" size={36} />
