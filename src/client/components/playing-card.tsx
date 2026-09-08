@@ -37,18 +37,24 @@ export function PlayingCard({
     ? `${cardLabel(card)}, ${card === 31 ? "lowest or highest" : `value ${card}`}`
     : "Your hidden card";
   const style = {
-    viewTransitionName: card ? `card-${card}` : undefined,
     "--deal-delay": `${delay}ms`,
   } as CSSProperties;
   const content = (
     <>
+      <span className="card-fallback" aria-hidden="true">
+        {card === null ? "Hidden card" : cardLabel(card)}
+      </span>
       <img
+        key={card ?? "back"}
         className="card-art"
         src={`/cards/neapolitan/${card ?? "back"}.webp`}
         alt=""
         draggable={false}
         width={300}
         height={480}
+        onError={(event) => {
+          event.currentTarget.style.visibility = "hidden";
+        }}
       />
       {mode && <span className="played-mode">{mode}</span>}
       {pending && <span className="card-pending" aria-hidden="true" />}

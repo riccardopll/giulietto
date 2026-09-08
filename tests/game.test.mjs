@@ -166,6 +166,41 @@ test("normal rounds reveal only your hand; blind rounds reveal only others", () 
   const spectator = view(g, g.players[2].id);
   assert.ok(spectator.players.every((p) => p.hand.every((n) => n === null)));
 });
+test("played cards are public for every viewer while unplayed cards retain their visibility", () => {
+  for (const count of [2, 1]) {
+    const g = setup();
+    const [first, second, spectator] = g.players;
+    g.count = count;
+    g.order = [first.id, second.id];
+    first.hand = count === 1 ? [31] : [31, 2];
+    second.hand = count === 1 ? [40] : [40, 3];
+    spectator.hand = [];
+    spectator.lives = 0;
+    for (const id of g.order) bid(g, id, 0, 100);
+
+    const assertViews = () => {
+      for (const viewer of g.players) {
+        const snapshot = view(g, viewer.id);
+        assert.deepEqual(snapshot.trick, g.trick);
+        for (const p of g.players) {
+          const visible = viewer !== spectator && (count === 1 ? p !== viewer : p === viewer);
+          assert.deepEqual(
+            snapshot.players.find((entry) => entry.id === p.id).hand,
+            p.hand.map((card) => (visible ? card : null)),
+          );
+        }
+      }
+    };
+    assertViews();
+    play(g, first.id, 31, "low", 100);
+    assert.equal(g.phase, "playing");
+    assert.deepEqual(g.trick, [{ player: first.id, card: 31, mode: "low" }]);
+    assertViews();
+    play(g, second.id, 40, undefined, 100);
+    assert.equal(g.phase, "trick");
+    assertViews();
+  }
+});
 test("blind ace choice is available only to its holder on their playing turn", (t) => {
   t.mock.method(crypto, "getRandomValues", (values) => values.fill(0));
   for (const n of [2, 3]) {
