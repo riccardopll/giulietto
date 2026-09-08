@@ -637,9 +637,6 @@ h1 {
   border-radius: 0.25rem;
   box-shadow: 0 2px 4px #5c334b20;
 }
-.seat-fan-card:only-child .playing-card {
-  width: 2.5rem;
-}
 .seated-table .hand-area {
   grid-column: 1 / -1;
   grid-row: 5;
@@ -648,7 +645,7 @@ h1 {
   padding: 0.5rem 0;
 }
 .seated-table .hand-card {
-  flex-basis: 4rem;
+  flex: 0 0 min(4rem, calc((100% - 0.3125rem) / 6));
 }
 .seated-table .self-player {
   margin-bottom: 0;
@@ -816,7 +813,7 @@ h1 {
     --heart-size: 12px;
   }
   .seat-hand {
-    --fan-width: 2.25rem;
+    --fan-width: 2rem;
     --fan-step: 10px;
     height: 7rem;
     min-width: 0;
@@ -824,14 +821,10 @@ h1 {
   }
   .table-seat-3 .seat-hand,
   .table-seat-6 .seat-hand {
-    --fan-width: 2rem;
     --fan-step: 8px;
   }
   .seat-fan-card {
     bottom: 1.5rem;
-  }
-  .seat-fan-card:only-child .playing-card {
-    width: 3rem;
   }
   .seated-table > .play-table {
     grid-column: 3 / 8;
