@@ -626,7 +626,7 @@ export default function App() {
                               {r ? (r.lost ? `−${r.lost}` : "✓") : "–"}
                             </TableCell>
                             <TableCell>
-                              <Lives n={p.lives} />
+                              <Lives n={p.lives} total={game.startingLives} />
                             </TableCell>
                           </TableRow>
                         );
@@ -657,6 +657,7 @@ export default function App() {
                         current={seating!.current === p.id}
                         next={seating!.next === p.id}
                         round={game.round}
+                        startingLives={game.startingLives}
                         status={
                           p.left
                             ? game.order.includes(p.id)
@@ -754,7 +755,7 @@ export default function App() {
                   </div>
                   <section className="hand-area" aria-label="Your hand">
                     <div className="self-player">
-                      <Lives n={me?.lives ?? 0} />
+                      <Lives n={me?.lives ?? 0} total={game.startingLives} />
                       <span className="self-score">
                         {me?.taken} / {me?.bid ?? "–"} tricks
                       </span>

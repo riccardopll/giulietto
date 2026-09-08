@@ -576,9 +576,6 @@ h1 {
   font-weight: 600;
 }
 .seat-identity .lives {
-  flex-direction: row;
-  width: auto;
-  min-height: 1rem;
   --heart-size: 10px;
   --heart-gap: 2px;
 }

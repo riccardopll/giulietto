@@ -31,6 +31,7 @@ function renderSeats(state) {
         current: p.id === state.order[state.turn],
         next: false,
         round: state.round,
+        startingLives: state.startingLives,
         status: "Waiting",
       }),
     );

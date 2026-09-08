@@ -21,6 +21,7 @@ export function PlayerSeat({
   current,
   next,
   round,
+  startingLives,
   status,
 }: {
   player: SeatPlayer;
@@ -30,6 +31,7 @@ export function PlayerSeat({
   current: boolean;
   next: boolean;
   round: number;
+  startingLives: number;
   status: string;
 }) {
   return (
@@ -63,7 +65,7 @@ export function PlayerSeat({
         <strong className="seat-name" title={player.name}>
           {you ? "You" : player.name}
         </strong>
-        <Lives n={player.lives} />
+        <Lives n={player.lives} total={startingLives} />
         <span
           className="player-score"
           aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
