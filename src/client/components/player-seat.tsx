@@ -70,21 +70,23 @@ export function PlayerSeat({
             {toRoman(number)}
           </span>
         </div>
-        <strong className="seat-name" title={player.name} aria-label={you ? "You" : player.name}>
-          {you ? "You" : visibleName}
-        </strong>
-        <div className="seat-stats">
-          <Lives n={player.lives} total={startingLives} />
-          <span
-            className="player-score"
-            aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
-          >
-            {player.taken} / {player.bid ?? "–"}
-          </span>
+        <div className="seat-details">
+          <strong className="seat-name" title={player.name} aria-label={you ? "You" : player.name}>
+            {you ? "You" : visibleName}
+          </strong>
+          <div className="seat-stats">
+            <Lives n={player.lives} total={startingLives} />
+            <span
+              className="player-score"
+              aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
+            >
+              {player.taken} / {player.bid ?? "–"}
+            </span>
+          </div>
+          {(player.left || player.lives <= 0) && (
+            <span className="seat-status">{player.left ? "Left" : "Out"}</span>
+          )}
         </div>
-        {(player.left || player.lives <= 0) && (
-          <span className="seat-status">{player.left ? "Left" : "Out"}</span>
-        )}
       </div>
       {!you && (
         <div

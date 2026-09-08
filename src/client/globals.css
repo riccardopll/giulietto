@@ -567,10 +567,10 @@ h1 {
   pointer-events: auto;
 }
 .table-seat[data-seat-edge="top"] .seat-identity {
-  --seat-inset-y: 6.5rem;
+  --seat-inset-y: 8rem;
 }
 .table-seat[data-seat-edge="bottom"] .seat-identity {
-  --seat-inset-y: 6rem;
+  --seat-inset-y: 7.5rem;
 }
 .table-seat .seat-hand {
   position: absolute;
@@ -601,11 +601,11 @@ h1 {
 }
 .table-seat[data-bubble-side="left"] .seat-bubble-slot {
   right: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
-  top: calc(var(--seat-avatar-size) / 2 - 1rem);
+  top: calc(var(--seat-avatar-size) / 2);
   bottom: auto;
   width: auto;
   height: auto;
-  transform: translateY(-100%);
+  transform: translateY(-50%);
 }
 .table-seat[data-bubble-side="left"] .seat-bubble::after {
   left: auto;
@@ -659,18 +659,19 @@ h1 {
   align-items: center;
   gap: 0.25rem;
 }
-.table-seat[data-seat-edge] .seat-name {
-  position: absolute;
-  right: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
-  top: calc(var(--seat-avatar-size) / 2);
-  transform: translateY(-50%);
+.seat-details {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
-.table-seat[data-seat-edge] .seat-stats {
+.table-seat[data-seat-edge] .seat-details {
   position: absolute;
+  align-items: flex-start;
   left: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
   top: calc(var(--seat-avatar-size) / 2);
   transform: translateY(-50%);
-  white-space: nowrap;
+  width: max-content;
 }
 .seat-identity .lives {
   --heart-size: 11px;
@@ -802,7 +803,10 @@ h1 {
     );
   }
   .table-seat[data-seat-edge="top"] .seat-identity {
-    translate: 0 -2.5rem;
+    translate: 0 -1.5rem;
+  }
+  .table-seat[data-seat-edge="bottom"] .seat-identity {
+    --mobile-seat-clearance: 2.5rem;
   }
   .seated-table .trick-cards {
     max-width: calc(3 * var(--played-card-width) + 0.75rem);
