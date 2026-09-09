@@ -849,6 +849,9 @@ h1 {
   .table-seat:not([data-seat-edge]) .seat-hand {
     translate: 0 calc(var(--seat-y) * 1rem);
   }
+  .table-seat[data-seat-edge="top"] .seat-hand {
+    translate: 0 0.75rem;
+  }
   .table-seat[data-seat-edge] .seat-details {
     position: absolute;
     align-items: flex-start;
