@@ -107,7 +107,13 @@ export function MatchBoard({
         key={id}
         className="seat-slot min-w-0"
         data-center={position.column === 3 || undefined}
-        style={{ gridColumn: `${position.column} / span 2` }}
+        style={
+          {
+            gridColumn: `${position.column} / span 2`,
+            gridRow: position.side === "top" ? 1 : 3,
+            "--seat-progress": `${(seating.seats.indexOf(id) / seating.seats.length) * 100}%`,
+          } as CSSProperties
+        }
       >
         <PlayerSeat
           player={player}
@@ -129,8 +135,8 @@ export function MatchBoard({
     <div ref={board} className="match-board grid h-full min-h-0" data-phase={game.phase}>
       <section className="table-arena relative isolate grid min-h-0 w-full" aria-label="Game table">
         <TableSurface />
-        <div className="seats-row grid grid-cols-6" data-side="top">
-          {topSeats.map(seat)}
+        <div className="seats pointer-events-none absolute inset-0 grid grid-cols-6">
+          {seating.seats.map(seat)}
         </div>
         <section
           className="play-table grid min-h-0 min-w-0 place-items-center"
@@ -168,11 +174,6 @@ export function MatchBoard({
             </div>
           )}
         </section>
-        <div className="seats-row grid grid-cols-6" data-side="bottom">
-          {hasBottomNeighbors && seat(opponents[0])}
-          {me && seat(me.id)}
-          {hasBottomNeighbors && seat(opponents.at(-1)!)}
-        </div>
       </section>
       <section className="hand-area flex min-w-0 flex-col items-center" aria-label="Your hand">
         <div

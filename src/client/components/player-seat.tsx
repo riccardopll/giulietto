@@ -47,7 +47,7 @@ export function PlayerSeat({
       className="table-seat min-w-0 text-[11px] sm:text-xs"
     >
       <div
-        className="seat-identity relative flex min-w-0 max-w-full items-center justify-center gap-1.5"
+        className="seat-identity pointer-events-auto relative flex min-w-0 max-w-full items-center justify-center gap-1.5"
         data-seat-identity
       >
         <div className="seat-bubble-slot absolute bottom-[calc(100%+.5rem)] left-0 z-30 flex w-full justify-center">
