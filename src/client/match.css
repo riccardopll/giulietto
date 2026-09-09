@@ -256,10 +256,6 @@
     0 2px 3px #1b294126,
     0 7px 14px #1b29410d;
 }
-.winner-card .playing-card {
-  outline: 2px solid #b54877;
-  outline-offset: 3px;
-}
 .played-mode {
   box-shadow: 0 2px 5px #19284233;
 }

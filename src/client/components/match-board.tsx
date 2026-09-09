@@ -163,11 +163,7 @@ export function MatchBoard({
               key={`${game.round}-${trickNumber}`}
             >
               {game.trick.map((play) => (
-                <div
-                  className={`played-card ${game.phase === "trick" && play.player === game.lastWinner ? "winner-card" : ""}`}
-                  key={play.card}
-                  data-owner={play.player}
-                >
+                <div className="played-card" key={play.card} data-owner={play.player}>
                   <PlayingCard card={play.card} mode={play.mode} />
                 </div>
               ))}
