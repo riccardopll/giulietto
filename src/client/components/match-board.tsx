@@ -136,16 +136,14 @@ export function MatchBoard({
     <div
       ref={board}
       className="match-board @container/board mx-auto grid size-full max-h-[60rem] max-w-5xl grid-rows-[clamp(2.75rem,8dvh,8.25rem)_minmax(0,1fr)_auto] gap-1.5
-        [--opponent-card-width:clamp(2.5rem,7dvh,4rem)] [--opponent-hand-height:calc(var(--opponent-card-width)*1.6)]
-        short-landscape:grid-cols-[minmax(0,1fr)_clamp(9rem,26vw,12rem)] short-landscape:grid-rows-[2.75rem_minmax(0,1fr)]"
+        [--opponent-card-width:clamp(2.5rem,7dvh,4rem)] [--opponent-hand-height:calc(var(--opponent-card-width)*1.6)]"
       data-phase={game.phase}
       data-blind={game.count === 1 || undefined}
     >
       <MatchEventFeed key={`${game.code}-${game.matchId}-${game.you}`} game={game} />
       <section
         className="table-arena relative isolate grid min-h-0 w-full grid-cols-6 gap-x-2 grid-rows-[4.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_4.5rem]
-          @min-2xl/board:grid-rows-[5.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_5.5rem]
-          short-landscape:col-start-1 short-landscape:row-span-2 short-landscape:row-start-1 short-landscape:grid-rows-[4.5rem_0_minmax(0,1fr)_0_4.5rem]"
+          @min-2xl/board:grid-rows-[5.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_5.5rem]"
         aria-label="Game table"
       >
         <TableSurface />
@@ -171,7 +169,7 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1] short-landscape:[--trick-width:70cqw] short-landscape:[--trick-height:80cqh]"
+              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1]"
               style={
                 {
                   "--trick-players": game.order.length,
@@ -195,13 +193,11 @@ export function MatchBoard({
         </section>
       </section>
       <section
-        className="hand-area flex min-w-0 items-center justify-center pt-2 [--hand-card-width:min(5rem,10dvh,calc((100cqw-2rem)/6))]
-          short-landscape:col-start-2 short-landscape:row-start-2 short-landscape:pt-0 short-landscape:[--hand-card-width:clamp(2.75rem,14dvh,3.5rem)]"
+        className="hand-area flex min-w-0 items-center justify-center pt-2 [--hand-card-width:min(5rem,10dvh,calc((100cqw-2rem)/6))]"
         aria-label="Your hand"
       >
         <div
-          className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center gap-1.5
-            short-landscape:min-h-[calc(var(--hand-card-width)*3.2+.375rem)] short-landscape:w-[calc(var(--hand-card-width)*3+.75rem)] short-landscape:flex-wrap short-landscape:content-center"
+          className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center gap-1.5"
           key={`hand-${game.round}`}
           data-active-turn={(canPlay && !!me?.hand.length) || undefined}
         >

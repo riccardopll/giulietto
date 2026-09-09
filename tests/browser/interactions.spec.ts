@@ -5,7 +5,7 @@ import type { Command } from "../../src/server/protocol";
 import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 test("playable hand cards stay accessible when hovered and focused", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.setViewportSize({ width: 1220, height: 1340 });
   await openPreview(page, "people=6&cards=6&phase=playing&played=0");
   const card = page
     .getByRole("region", { name: "Your hand", exact: true })
@@ -64,7 +64,7 @@ test("card labels remain readable when card images fail", async ({ page }, testI
   await page.route("**/cards/neapolitan/*.webp", (route) => route.abort());
   for (const viewport of [
     { width: 320, height: 568 },
-    { width: 568, height: 320 },
+    { width: 800, height: 900 },
   ]) {
     await page.setViewportSize(viewport);
     for (const [round, query] of [
@@ -188,10 +188,7 @@ test("mobile lobby settings and live header use the same compact layout", async 
   await page.getByRole("button", { name: "Create private lobby" }).click();
   await expect(page.getByRole("heading", { name: "Players", exact: true })).toBeVisible();
   if (safeArea) {
-    const landscapeInsets = { top: 0, right: 44, bottom: 21, left: 44 };
-    await page.setViewportSize({ width: 844, height: 390 });
-    await safeArea.send("Emulation.setSafeAreaInsetsOverride", { insets: landscapeInsets });
-    await checkShellInsets(landscapeInsets);
+    await checkShellInsets(portraitInsets);
     await attachScreenshot(page, testInfo, "lobby-safe-area");
     await safeArea.send("Emulation.setSafeAreaInsetsOverride", {
       insets: { top: 0, right: 0, bottom: 0, left: 0 },

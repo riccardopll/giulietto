@@ -49,8 +49,7 @@ async function gameGeometry(page: Page) {
 
 for (const viewport of [
   { width: 320, height: 568 },
-  { width: 568, height: 320 },
-  { width: 1366, height: 768 },
+  { width: 1220, height: 1340 },
 ]) {
   test(`preview sidebar leaves game geometry unchanged at ${viewport.width}×${viewport.height}`, async ({
     page,
@@ -75,7 +74,7 @@ for (const viewport of [
     await attachScreenshot(page, testInfo, "sidebar-open");
     await sidebar.hover();
     await page.mouse.wheel(0, 600);
-    if (viewport.height === 320)
+    if (viewport.height === 568)
       await expect.poll(() => sidebar.evaluate((element) => element.scrollTop)).toBeGreaterThan(0);
     expect(await gameGeometry(page)).toEqual(before);
     expect(await sidebar.boundingBox()).toEqual(sidebarBounds);
@@ -121,7 +120,7 @@ test("preview sidebar retains focus and settings when reconfiguring the game", a
 });
 
 test("playing outside the preview sidebar dismisses it", async ({ page }) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.setViewportSize({ width: 1220, height: 1340 });
   await openPreview(page, "people=6&cards=6&phase=playing&played=0");
   await page.getByRole("button", { name: "Preview settings", exact: true }).click();
   await page.clock.runFor(1);

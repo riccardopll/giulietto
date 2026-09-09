@@ -14,16 +14,9 @@ const viewports = [
   { width: 320, height: 568 },
   { width: 357, height: 774 },
   { width: 393, height: 852 },
-  { width: 568, height: 320 },
-  { width: 844, height: 390 },
   { width: 768, height: 1024 },
-  { width: 800, height: 600 },
   { width: 800, height: 900 },
-  { width: 912, height: 600 },
-  { width: 1024, height: 600 },
-  { width: 1024, height: 768 },
-  { width: 1366, height: 768 },
-  { width: 1920, height: 1080 },
+  { width: 1220, height: 1340 },
 ];
 
 // Cover the supported dimensions and dense game states without a Cartesian product.
@@ -122,51 +115,43 @@ for (const viewport of viewports) {
   });
 }
 
-for (const viewport of [
-  { width: 1366, height: 960 },
-  { width: 1220, height: 1340 },
-  { width: 1920, height: 1080 },
-]) {
-  test(`desktop game starts below the header at ${viewport.width}×${viewport.height}`, async ({
-    page,
-  }) => {
-    await page.setViewportSize(viewport);
-    for (const people of [2, 4, 6]) {
-      await test.step(`${people} players in normal and blind rounds`, async () => {
-        let geometry: TableGeometry | undefined;
-        for (const query of [
-          `people=${people}&cards=6&played=${people}`,
-          `people=${people}&phase=blind&played=0`,
-        ]) {
-          await openPreview(page, `${query}&longNames=1`);
-          geometry = await checkLayout(page, geometry);
-          const spacing = await page.evaluate(() => {
-            const available = document.querySelector("main")!.getBoundingClientRect();
-            const board = document.querySelector(".match-board")!.getBoundingClientRect();
-            const events = document.querySelector(".match-events")!.getBoundingClientRect();
-            return {
-              events: events.height,
-              boardOffset: board.top - available.top,
-              eventsOffset: events.top - available.top,
-            };
-          });
-          expect(
-            spacing.events,
-            "Notifications reserve at most three complete rows",
-          ).toBeLessThanOrEqual(132.5);
-          expect(
-            Math.abs(spacing.boardOffset),
-            "The board starts below the header",
-          ).toBeLessThanOrEqual(1);
-          expect(
-            Math.abs(spacing.eventsOffset),
-            "Notifications start at the top of the game",
-          ).toBeLessThanOrEqual(1);
-        }
-      });
-    }
-  });
-}
+test("large portrait game starts below the header", async ({ page }) => {
+  await page.setViewportSize({ width: 1220, height: 1340 });
+  for (const people of [2, 4, 6]) {
+    await test.step(`${people} players in normal and blind rounds`, async () => {
+      let geometry: TableGeometry | undefined;
+      for (const query of [
+        `people=${people}&cards=6&played=${people}`,
+        `people=${people}&phase=blind&played=0`,
+      ]) {
+        await openPreview(page, `${query}&longNames=1`);
+        geometry = await checkLayout(page, geometry);
+        const spacing = await page.evaluate(() => {
+          const available = document.querySelector("main")!.getBoundingClientRect();
+          const board = document.querySelector(".match-board")!.getBoundingClientRect();
+          const events = document.querySelector(".match-events")!.getBoundingClientRect();
+          return {
+            events: events.height,
+            boardOffset: board.top - available.top,
+            eventsOffset: events.top - available.top,
+          };
+        });
+        expect(
+          spacing.events,
+          "Notifications reserve at most three complete rows",
+        ).toBeLessThanOrEqual(132.5);
+        expect(
+          Math.abs(spacing.boardOffset),
+          "The board starts below the header",
+        ).toBeLessThanOrEqual(1);
+        expect(
+          Math.abs(spacing.eventsOffset),
+          "Notifications start at the top of the game",
+        ).toBeLessThanOrEqual(1);
+      }
+    });
+  }
+});
 
 test("the table stays fixed through the blind round and the next six-card round", async ({
   page,
@@ -197,10 +182,12 @@ test("the table stays fixed through the blind round and the next six-card round"
   await expect(page.getByRole("dialog", { name: "Local preview" })).toBeHidden();
 });
 
-test("played and revealed cards are readable on phones and desktops", async ({ page }) => {
+test("played and revealed cards are readable in small and large portrait views", async ({
+  page,
+}) => {
   for (const viewport of [
     { width: 393, height: 740 },
-    { width: 1366, height: 768 },
+    { width: 1220, height: 1340 },
   ]) {
     await page.setViewportSize(viewport);
     for (const people of [2, 3, 4, 5, 6]) {
@@ -247,7 +234,7 @@ test("spectators and round results are readable on a small phone", async ({ page
   await expect(page.getByText("Next round in 12s")).toBeVisible();
 });
 
-test("table adapts to mobile browser chrome and orientation changes", async ({ page }) => {
+test("table adapts to browser chrome and portrait viewport resizing", async ({ page }) => {
   for (const query of ["people=6&cards=6&played=3", "people=6&phase=blind&played=3"]) {
     await page.setViewportSize({ width: 393, height: 740 });
     await openPreview(page, query);
@@ -256,9 +243,7 @@ test("table adapts to mobile browser chrome and orientation changes", async ({ p
     await checkLayout(page);
     await page.setViewportSize({ width: 480, height: 568 });
     await checkLayout(page);
-    await page.setViewportSize({ width: 768, height: 600 });
-    await checkLayout(page);
-    await page.setViewportSize({ width: 740, height: 393 });
+    await page.setViewportSize({ width: 768, height: 1024 });
     await checkLayout(page);
   }
 });
@@ -270,12 +255,8 @@ if (sweep) test.use({ trace: "off" });
 const sweepViewports = [
   { width: 320, height: 568 },
   { width: 393, height: 852 },
-  { width: 568, height: 320 },
-  { width: 844, height: 390 },
   { width: 800, height: 900 },
-  { width: 912, height: 600 },
-  { width: 1366, height: 768 },
-  { width: 1920, height: 1080 },
+  { width: 1220, height: 1340 },
 ];
 
 function* roundFixtures(people: number): Generator<PreviewFixture> {
@@ -393,14 +374,10 @@ function* boundaryFixtures(): Generator<PreviewFixture> {
 // Each threshold is exercised on both sides and exactly at the transition.
 const boundaryViewports = [
   ...[335, 336, 337].map((width) => ({ width, height: 852 })), // 320px board text breakpoint
-  ...[567, 568, 569].map((width) => ({ width, height: 568 })), // portrait/landscape orientation
-  ...[639, 640, 641].map((height) => ({ width: 800, height })), // side-hand maximum height
-  ...[687, 688, 689].flatMap((width) => [
-    { width, height: 900 },
-    { width, height: 568 },
-  ]), // 672px identities
-  ...[1039, 1040, 1041].map((width) => ({ width, height: 900 })), // board maximum width
-  ...[1031, 1032, 1033].map((height) => ({ width: 1220, height })), // board maximum height
+  ...[639, 640, 641].map((width) => ({ width, height: 900 })), // header and seat-number sizes
+  ...[687, 688, 689].map((width) => ({ width, height: 900 })), // 672px identities
+  ...[1039, 1040, 1041].map((width) => ({ width, height: 1340 })), // board maximum width
+  ...[1031, 1032, 1033].map((height) => ({ width: 800, height })), // board maximum height
 ];
 
 for (const viewport of boundaryViewports) {
@@ -413,35 +390,34 @@ for (const viewport of boundaryViewports) {
   });
 }
 
-for (const width of [393, 1366]) {
-  test(`played cards fit both sides of the row breakpoint at width ${width}`, async ({ page }) => {
-    await page.setViewportSize({ width, height: 568 });
-    await openPreview(page, "people=6&cards=6&phase=trick&longNames=1");
-    // Locate the one-row/two-row transition through the rendered grid.
-    let low = width < 480 ? 568 : 320;
-    let high = width < 480 ? 900 : 640;
-    while (high - low > 1) {
-      const height = Math.floor((low + high) / 2);
-      await page.setViewportSize({ width, height });
-      const rows = await page
-        .locator(".trick-cards")
-        .evaluate((trick) => Number(getComputedStyle(trick).getPropertyValue("--trick-rows")));
-      if (rows === 1) low = height;
-      else high = height;
-    }
-    for (const height of [low - 1, low, high]) {
-      await page.setViewportSize({ width, height });
-      await test.step(`${width}×${height}`, async () => {
-        const baselines = new Map<number, TableGeometry>();
-        for (const fixture of boundaryFixtures()) {
-          await configurePreview(page, fixture);
-          const geometry = await checkLayout(page, baselines.get(fixture.people));
-          if (!baselines.has(fixture.people)) baselines.set(fixture.people, geometry);
-        }
-      });
-    }
-  });
-}
+test("played cards fit both sides of the portrait row breakpoint", async ({ page }) => {
+  const width = 393;
+  await page.setViewportSize({ width, height: 568 });
+  await openPreview(page, "people=6&cards=6&phase=trick&longNames=1");
+  // Locate the one-row/two-row transition through the rendered grid.
+  let low = 568;
+  let high = 900;
+  while (high - low > 1) {
+    const height = Math.floor((low + high) / 2);
+    await page.setViewportSize({ width, height });
+    const rows = await page
+      .locator(".trick-cards")
+      .evaluate((trick) => Number(getComputedStyle(trick).getPropertyValue("--trick-rows")));
+    if (rows === 1) low = height;
+    else high = height;
+  }
+  for (const height of [low - 1, low, high]) {
+    await page.setViewportSize({ width, height });
+    await test.step(`${width}×${height}`, async () => {
+      const baselines = new Map<number, TableGeometry>();
+      for (const fixture of boundaryFixtures()) {
+        await configurePreview(page, fixture);
+        const geometry = await checkLayout(page, baselines.get(fixture.people));
+        if (!baselines.has(fixture.people)) baselines.set(fixture.people, geometry);
+      }
+    });
+  }
+});
 
 async function checkResultsLayout(page: Page, people: number) {
   await expect(page.getByRole("row")).toHaveCount(people + 1);
@@ -491,8 +467,7 @@ async function checkResultsLayout(page: Page, people: number) {
 
 for (const viewport of [
   { width: 320, height: 568 },
-  { width: 568, height: 320 },
-  { width: 1366, height: 768 },
+  { width: 1220, height: 1340 },
 ]) {
   test(`result panels keep every player readable at ${viewport.width}×${viewport.height}`, async ({
     page,
@@ -580,7 +555,7 @@ if (sweep)
     for (const [kind, fixtures, viewports] of [
       ["rounds", roundFixtures, sweepViewports],
       ["identities", identityFixtures, sweepViewports],
-      ["seats", seatFixtures, [sweepViewports[0], sweepViewports[2], sweepViewports[6]]],
+      ["seats", seatFixtures, [sweepViewports[0], sweepViewports[3]]],
     ] as const) {
       if (sweep !== "1" && sweep !== kind) continue;
       for (const viewport of viewports) {

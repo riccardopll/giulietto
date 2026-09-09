@@ -45,11 +45,11 @@ export function PlayerSeat({
       data-you={you || undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className="table-seat row-span-2 grid min-w-0 grid-rows-subgrid text-[10px] leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4 short-landscape:flex short-landscape:items-center short-landscape:gap-1"
+      className="table-seat row-span-2 grid min-w-0 grid-rows-subgrid text-[10px] leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4"
     >
       <div
         className={cn(
-          "seat-identity relative flex size-full min-w-0 items-center justify-center gap-1 px-1 short-landscape:min-w-0 short-landscape:flex-1 short-landscape:px-0",
+          "seat-identity relative flex size-full min-w-0 items-center justify-center gap-1 px-1",
           side === "bottom" ? "row-start-2" : "row-start-1",
         )}
         data-seat-identity
@@ -115,7 +115,7 @@ export function PlayerSeat({
               "seat-name block max-w-full font-semibold [overflow-wrap:anywhere]",
               you
                 ? "text-sm text-primary @min-2xl/board:text-lg"
-                : "text-[10px] leading-[11px] @min-xs/board:text-[11px] @min-xs/board:leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4 short-landscape:text-[10px] short-landscape:leading-[11px]",
+                : "text-[10px] leading-[11px] @min-xs/board:text-[11px] @min-xs/board:leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4",
             )}
             title={player.name}
             aria-label={you ? "You" : player.name}
@@ -143,7 +143,7 @@ export function PlayerSeat({
       {!you && (
         <div
           className={cn(
-            "seat-hand relative h-full w-full short-landscape:h-(--opponent-hand-height) short-landscape:w-(--opponent-card-width) short-landscape:shrink-0",
+            "seat-hand relative h-full w-full",
             side === "bottom" ? "row-start-1" : "row-start-2",
           )}
           data-revealed={player.hand.some((card) => card !== null) || undefined}

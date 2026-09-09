@@ -1,17 +1,12 @@
-/* Shared layout primitives. The board uses Tailwind grid tracks; game state never sizes them. */
-@custom-variant short-landscape (@media (orientation: landscape) and (max-height: 40rem));
-/* Two rows of 40px cards need 168px, including the curved-felt inset. */
-@custom-variant short-trick (@container play (max-height: 10.5rem));
+@custom-variant short-trick (@container play (max-height: 9rem));
 
 @utility trick-grid {
   --trick-columns: var(--default-trick-columns);
   --trick-rows: var(--default-trick-rows);
-  --trick-width: 90cqw;
-  --trick-height: 100cqh;
   --played-card-width: min(
     5rem,
-    calc((var(--trick-width) - (var(--trick-columns) - 1) * 0.375rem) / var(--trick-columns)),
-    calc((var(--trick-height) - (var(--trick-rows) - 1) * 0.375rem) / (var(--trick-rows) * 1.6))
+    calc((90cqw - (var(--trick-columns) - 1) * 0.375rem) / var(--trick-columns)),
+    calc((100cqh - (var(--trick-rows) - 1) * 0.375rem) / (var(--trick-rows) * 1.6))
   );
   display: grid;
   grid-template-columns: repeat(var(--trick-columns), var(--played-card-width));

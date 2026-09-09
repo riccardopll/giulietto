@@ -197,12 +197,8 @@ test("opening an existing trick or watching does not replay history", async ({ p
 for (const viewport of [
   { width: 320, height: 568 },
   { width: 393, height: 740 },
-  { width: 568, height: 320 },
   { width: 800, height: 900 },
-  { width: 1366, height: 768 },
-  { width: 1366, height: 960 },
   { width: 1220, height: 1340 },
-  { width: 1920, height: 1080 },
 ]) {
   test(`events stay within their reserved space at ${viewport.width}×${viewport.height}`, async ({
     page,

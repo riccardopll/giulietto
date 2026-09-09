@@ -49,7 +49,7 @@ export function MatchEventFeed({ game }: { game: State }) {
 
   return (
     <div
-      className="match-events pointer-events-none relative min-h-0 min-w-0 overflow-hidden short-landscape:col-start-2 short-landscape:row-start-1"
+      className="match-events pointer-events-none relative min-h-0 min-w-0 overflow-hidden"
       role="log"
       aria-label="Game events"
       aria-relevant="additions"
@@ -61,21 +61,21 @@ export function MatchEventFeed({ game }: { game: State }) {
           style={{ "--event-position": events.length - index - 1 } as CSSProperties}
         >
           <div
-            className="match-event grid max-w-full animate-[match-event-rise_var(--event-duration)_ease-out_both] items-center px-2 py-0.5 text-xs leading-tight text-muted-foreground short-landscape:px-0 short-landscape:text-[10px]"
+            className="match-event grid max-w-full animate-[match-event-rise_var(--event-duration)_ease-out_both] items-center px-2 py-0.5 text-xs leading-tight text-muted-foreground"
             data-event-type={event.type}
             style={{ "--event-duration": `${EVENT_DURATION}ms` } as CSSProperties}
           >
             <span className="sr-only">{description(event, game.you)}</span>
             <div
-              className="match-event-content flex min-w-0 items-center justify-center gap-1.5 short-landscape:gap-1"
+              className="match-event-content flex min-w-0 items-center justify-center gap-1.5"
               aria-hidden="true"
             >
               {event.type === "trick-won" && (
-                <Trophy className="event-trophy size-3.5 shrink-0 text-primary short-landscape:hidden" />
+                <Trophy className="event-trophy size-3.5 shrink-0 text-primary" />
               )}
               <span className="match-event-copy min-w-0">
                 <strong
-                  className="match-event-name inline-block max-w-32 truncate align-bottom text-foreground short-landscape:max-w-20"
+                  className="match-event-name inline-block max-w-32 truncate align-bottom text-foreground"
                   title={event.name}
                 >
                   {event.player === game.you ? "You" : event.name}
