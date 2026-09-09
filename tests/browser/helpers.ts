@@ -1,4 +1,12 @@
 import { expect, test as base, type Page, type TestInfo } from "@playwright/test";
+import type { PreviewOptions } from "../../src/client/preview/games";
+
+export type PreviewFixture = PreviewOptions & { viewer?: number };
+export type TableGeometry = {
+  table: Record<string, { x: number; y: number; width: number; height: number }>;
+  seats: Record<string, { centerX: number; centerY: number; width: number; height: number }>;
+};
+const fixtureChanges = new WeakMap<Page, number>();
 
 export const test = base.extend<{ previewMotion: "system" | null }>({
   previewMotion: ["system", { option: true }],
@@ -17,6 +25,7 @@ export const test = base.extend<{ previewMotion: "system" | null }>({
 
 export async function openPreview(page: Page, query: string) {
   await page.goto(`/preview?${query}`);
+  fixtureChanges.set(page, 0);
   await expect(page.locator("[data-seat]").first()).toBeVisible();
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -24,8 +33,36 @@ export async function openPreview(page: Page, query: string) {
   });
 }
 
-export async function checkLayout(page: Page) {
-  const failures = await page.evaluate(() => {
+export async function configurePreview(page: Page, fixture: PreviewFixture) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(fixture)) {
+    if (value === undefined) continue;
+    query.set(
+      key === "seatStates" ? "seats" : key,
+      Array.isArray(value)
+        ? value.join(",")
+        : String(typeof value === "boolean" ? Number(value) : value),
+    );
+  }
+  // The normal URL serialization effect removes this marker after React commits the fixture.
+  query.set("pending", "1");
+  const changes = fixtureChanges.get(page) ?? 0;
+  // WebKit limits a document to 100 History API writes per 10s. Each fixture writes twice.
+  if (page.context().browser()?.browserType().name() === "webkit" && changes >= 35) {
+    await page.goto(`/preview?${query}`);
+    fixtureChanges.set(page, 0);
+  } else {
+    await page.evaluate((query) => {
+      history.replaceState(null, "", `/preview?${query}`);
+      dispatchEvent(new PopStateEvent("popstate"));
+    }, query.toString());
+    fixtureChanges.set(page, changes + 1);
+  }
+  await expect(page).not.toHaveURL(/[?&]pending=/);
+}
+
+export async function checkLayout(page: Page, expected?: TableGeometry): Promise<TableGeometry> {
+  const result = await page.evaluate((expected) => {
     const errors: string[] = [];
     const viewport = { width: innerWidth, height: innerHeight };
     if (document.documentElement.scrollWidth > innerWidth + 1)
@@ -42,8 +79,6 @@ export async function checkLayout(page: Page) {
       Math.abs(titleBounds.x + titleBounds.width / 2 - headerBounds.x - headerBounds.width / 2) > 1
     )
       errors.push("The round title is not centered in the header");
-    const board = document.querySelector(".match-board")!.getBoundingClientRect();
-    const desktop = board.width >= 896 && board.height >= 480;
     const seats = [...document.querySelectorAll<HTMLElement>("[data-seat]")];
     const arena = document.querySelector(".table-arena")!.getBoundingClientRect();
     const center = { x: arena.x + arena.width / 2, y: arena.y + arena.height / 2 };
@@ -67,60 +102,34 @@ export async function checkLayout(page: Page) {
       .map((seat) => seat.querySelector(".seat-avatar")!.getBoundingClientRect().width);
     if (!localAvatar || localAvatar.width <= Math.max(...opponentAvatarWidths) + 1)
       errors.push("The local player avatar is not larger than the opponents");
-    const normalize = (angle: number) => ((angle % 360) + 360) % 360;
-    if (desktop) {
-      const distances = seats
-        .map((seat) => {
-          const style = getComputedStyle(seat.querySelector(".seat-identity")!);
-          if (!style.offsetPath.startsWith("ellipse(") || !style.offsetDistance.endsWith("%"))
-            errors.push(`Player is not on the table perimeter: ${seat.getAttribute("aria-label")}`);
-          return ((parseFloat(style.offsetDistance) % 100) + 100) % 100;
-        })
-        .sort((a, b) => a - b);
-      if (
-        distances.some(
-          (distance, i) =>
-            Math.abs(
-              ((distances[(i + 1) % distances.length] - distance + 100) % 100) - 100 / seats.length,
-            ) > 0.01,
-        )
-      )
-        errors.push("Desktop players are not evenly spaced around the table");
-    } else {
-      for (const side of ["top", "bottom"]) {
-        const row = seats.filter((seat) => seat.dataset.side === side);
-        if (row.length > 3) errors.push("More than three players in a seating row");
-        if (
-          row.some(
-            (seat) =>
-              positions.find((position) => position.seat === seat)!.y < 0 !== (side === "top"),
-          )
-        )
-          errors.push(`Player is on the wrong side of the table: ${side}`);
-      }
-    }
     for (const owner of seats) {
-      const cards = owner.querySelector<HTMLElement>(".seat-fan-orientation");
-      if (!cards) continue;
-      const hand = cards.closest<HTMLElement>(".seat-hand")!;
-      const revealed = hand.hasAttribute("data-revealed");
-      const expected = !desktop && !revealed && owner.dataset.side === "top" ? 180 : 0;
-      const rotation = normalize(parseFloat(getComputedStyle(cards).rotate) || 0);
-      if (Math.min(normalize(rotation - expected), normalize(expected - rotation)) > 3)
-        errors.push(`Card fan faces away from its owner: ${owner.dataset.seat}`);
-      if (desktop) {
-        const style = getComputedStyle(hand);
-        const identity = getComputedStyle(owner.querySelector(".seat-identity")!);
-        if (style.offsetDistance !== identity.offsetDistance)
-          errors.push(`Card fan is away from its owner: ${owner.dataset.seat}`);
-        if (
-          (!revealed && style.offsetRotate !== "auto 180deg") ||
-          (revealed && style.offsetRotate !== "0deg")
-        )
-          errors.push(`Card fan has the wrong orientation: ${owner.dataset.seat}`);
-      }
+      const cards = [...owner.querySelectorAll(".seat-hand .playing-card")];
+      if (!cards.length) continue;
+      const bounds = cards.map((card) => card.getBoundingClientRect());
+      const handCenter = {
+        x: (Math.min(...bounds.map((b) => b.left)) + Math.max(...bounds.map((b) => b.right))) / 2,
+        y: (Math.min(...bounds.map((b) => b.top)) + Math.max(...bounds.map((b) => b.bottom))) / 2,
+      };
+      const distances = seats.map((seat) => {
+        const rect = seat.querySelector(".seat-identity")!.getBoundingClientRect();
+        return {
+          seat,
+          distance: Math.hypot(
+            handCenter.x - rect.x - rect.width / 2,
+            handCenter.y - rect.y - rect.height / 2,
+          ),
+        };
+      });
+      const ownDistance = distances.find(({ seat }) => seat === owner)!.distance;
+      if (distances.some(({ seat, distance }) => seat !== owner && distance < ownDistance - 1))
+        errors.push(`Opponent cards are closer to another player: ${owner.dataset.seat}`);
     }
     const trick = document.querySelector(".trick-cards");
+    const bidding =
+      document.querySelector<HTMLElement>(".match-board")!.dataset.phase === "bidding";
+    if (bidding && !document.querySelector(".bid-options"))
+      errors.push("Prediction controls are missing");
+    if (!bidding && !trick) errors.push("The current trick container is missing");
     if (trick) {
       const cards = trick.getBoundingClientRect();
       const area = document.querySelector(".play-table")!.getBoundingClientRect();
@@ -134,7 +143,7 @@ export async function checkLayout(page: Page) {
     }
     const elements = [
       ...document.querySelectorAll<HTMLElement>(
-        ".seat-identity, .seat-avatar, .seat-name, [data-seat-stats], .seat-number, .hand .playing-card, .trick-cards .playing-card, .bid-options button, header a, header h2, header button, .seat-hand .playing-card",
+        ".seat-identity, .seat-avatar, .seat-name, .seat-status, [data-seat-stats], .seat-number, .hand .playing-card, .trick-cards .playing-card, .bid-options button, header a, header h2, header button, .seat-hand .playing-card",
       ),
     ];
     const bounds = elements.map((element) => ({
@@ -167,7 +176,20 @@ export async function checkLayout(page: Page) {
         parseFloat(getComputedStyle(element).width) < 39.5
       )
         errors.push(`Unreadable played card: ${label}`);
-      if (element.matches(".playing-card")) {
+      if (element.matches(".seat-name, .seat-status, [data-seat-stats]")) {
+        const text = document.createRange();
+        text.selectNodeContents(element);
+        for (const line of text.getClientRects()) {
+          if (
+            line.left < rect.left - 1 ||
+            line.right > rect.right + 1 ||
+            line.top < rect.top - 1 ||
+            line.bottom > rect.bottom + 1
+          )
+            errors.push(`Clipped player text: ${label}`);
+        }
+      }
+      {
         for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
           const style = getComputedStyle(ancestor);
           const clip = ancestor.getBoundingClientRect();
@@ -177,12 +199,12 @@ export async function checkLayout(page: Page) {
             (clipsX && (rect.left < clip.left - 1 || rect.right > clip.right + 1)) ||
             (clipsY && (rect.top < clip.top - 1 || rect.bottom > clip.bottom + 1))
           )
-            errors.push(`Clipped card: ${label}`);
+            errors.push(`Clipped content: ${label}`);
         }
       }
-      if (element.matches(".hand .playing-card") && !element.hasAttribute("disabled")) {
+      if (element.matches("button, a") && !element.hasAttribute("disabled")) {
         const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-        if (!hit || !element.contains(hit)) errors.push(`Covered playable card: ${label}`);
+        if (!hit || !element.contains(hit)) errors.push(`Covered control: ${label}`);
       }
     }
     for (let i = 0; i < bounds.length; i++) {
@@ -200,10 +222,14 @@ export async function checkLayout(page: Page) {
         if (overlapX > 1 && overlapY > 1) errors.push(`Overlap: ${a.label} / ${b.label}`);
       }
     }
-    const contour = document.querySelector<SVGGeometryElement>(".table-rail-edge");
+    const contour = document.querySelector<SVGGeometryElement>(".table-contour > path");
     const tableCoordinates = contour?.getScreenCTM()?.inverse();
+    if (!contour || !tableCoordinates)
+      errors.push("The table contour or its viewport transform is missing");
     if (contour && tableCoordinates) {
-      for (const card of document.querySelectorAll(".trick-cards .playing-card")) {
+      for (const card of document.querySelectorAll(
+        ".trick-cards .playing-card, .bid-options button",
+      )) {
         const rect = card.getBoundingClientRect();
         const outsideFelt = [0, 1].some((x) =>
           [0, 1].some(
@@ -216,7 +242,8 @@ export async function checkLayout(page: Page) {
               ),
           ),
         );
-        if (outsideFelt) errors.push(`Played card extends outside the felt: ${card.ariaLabel}`);
+        if (outsideFelt)
+          errors.push(`Card or prediction extends outside the felt: ${card.ariaLabel}`);
       }
       for (const stats of document.querySelectorAll("[data-seat-stats]")) {
         const rect = stats.getBoundingClientRect();
@@ -232,9 +259,45 @@ export async function checkLayout(page: Page) {
         if (overlapsFelt) errors.push(`Player stats overlap the table: ${stats.textContent}`);
       }
     }
-    return errors;
-  });
-  expect(failures).toEqual([]);
+    const geometry = {
+      table: Object.fromEntries(
+        [".table-arena", ".table-surface", ".play-table"].map((selector) => {
+          const { x, y, width, height } = document.querySelector(selector)!.getBoundingClientRect();
+          return [selector, { x, y, width, height }];
+        }),
+      ),
+      seats: Object.fromEntries(
+        seats.map((seat) => {
+          const { x, y, width, height } = seat
+            .querySelector(".seat-identity")!
+            .getBoundingClientRect();
+          return [
+            seat.dataset.seat!,
+            { centerX: x + width / 2, centerY: y + height / 2, width, height },
+          ];
+        }),
+      ),
+    };
+    if (expected) {
+      for (const [selector, before] of Object.entries(expected.table)) {
+        for (const key of ["x", "y", "width", "height"] as const)
+          if (Math.abs(geometry.table[selector][key] - before[key]) > 0.5)
+            errors.push(`Table moved between configurations: ${selector} ${key}`);
+      }
+      for (const [id, before] of Object.entries(expected.seats)) {
+        if (!geometry.seats[id]) {
+          errors.push(`Seat disappeared between configurations: ${id}`);
+          continue;
+        }
+        for (const key of ["centerX", "centerY", "width", "height"] as const)
+          if (Math.abs(geometry.seats[id][key] - before[key]) > 0.5)
+            errors.push(`Seat moved between configurations: ${id} ${key}`);
+      }
+    }
+    return { errors, geometry };
+  }, expected);
+  expect(result.errors).toEqual([]);
+  return result.geometry;
 }
 
 export async function attachScreenshot(page: Page, testInfo: TestInfo, name: string) {

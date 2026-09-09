@@ -1,9 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { command, displayName, failure } from "./protocol";
-import type { view } from "../shared/game";
-
-type State = ReturnType<typeof view>;
 export class MatchQueue extends DurableObject<Env> {
   async fetch(req: Request) {
     // Serialize the seat reservation through the room's commit, including concurrent strangers.
@@ -56,7 +53,6 @@ export class MatchQueue extends DurableObject<Env> {
         ).join("");
         const res = await send(code, b.action, true);
         if (!res.ok) return res;
-        const state = (await res.json()) as State;
         if (b.action === "match") candidates.push({ code, at: Date.now() });
         this.ctx.storage.kv.put(
           "lobbies",
@@ -64,7 +60,7 @@ export class MatchQueue extends DurableObject<Env> {
         );
         this.ctx.storage.kv.put(key, { code, at: Date.now() });
         if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + DAY);
-        return Response.json(state);
+        return res;
       } catch (error) {
         return failure(error);
       }

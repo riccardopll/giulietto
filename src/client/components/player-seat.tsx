@@ -45,13 +45,16 @@ export function PlayerSeat({
       data-you={you || undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className={cn("table-seat min-w-0", you ? "text-sm sm:text-base" : "text-xs sm:text-sm")}
+      className="table-seat row-span-2 grid min-w-0 grid-rows-subgrid text-[10px] leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4 short-landscape:flex short-landscape:items-center short-landscape:gap-1"
     >
       <div
-        className="seat-identity pointer-events-auto relative flex min-w-0 max-w-full items-center justify-center gap-1.5"
+        className={cn(
+          "seat-identity relative flex size-full min-w-0 items-center justify-center gap-1 px-1 short-landscape:min-w-0 short-landscape:flex-1 short-landscape:px-0",
+          side === "bottom" ? "row-start-2" : "row-start-1",
+        )}
         data-seat-identity
       >
-        <div className="seat-bubble-slot absolute bottom-[calc(100%+.5rem)] left-0 z-30 flex w-full justify-center">
+        <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.5rem)] left-0 z-30 flex w-full justify-center">
           <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
         </div>
         <div className="seat-avatar-wrap relative shrink-0">
@@ -78,8 +81,10 @@ export function PlayerSeat({
           )}
           <div
             className={cn(
-              "seat-avatar grid size-(--seat-avatar-size) place-items-center rounded-full border-2 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
-              "text-[length:calc(var(--seat-avatar-size)/2)]",
+              "seat-avatar grid place-items-center rounded-full border-2 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
+              you
+                ? "size-9 text-lg @min-2xl/board:size-12 @min-2xl/board:text-2xl"
+                : "size-7 text-sm @min-2xl/board:size-10 @min-2xl/board:text-xl",
               player.lives <= 0 || player.left
                 ? "bg-[#e6e0e3] text-[#80727b]"
                 : "bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642]",
@@ -98,27 +103,27 @@ export function PlayerSeat({
           >
             {toRoman(number)}
           </span>
+          {(player.left || player.lives <= 0) && (
+            <span className="seat-status absolute top-full left-1/2 -translate-x-1/2 text-[9px] leading-3 whitespace-nowrap text-muted-foreground">
+              {player.left ? "Left" : "Out"}
+            </span>
+          )}
         </div>
-        <div className="seat-details flex min-w-0 flex-col items-start gap-0.5">
-          <div className="flex w-full min-w-0 items-baseline gap-1">
-            <strong
-              className={cn(
-                "seat-name block truncate leading-tight font-semibold",
-                you ? "text-base text-primary sm:text-lg" : "text-sm",
-              )}
-              title={player.name}
-              aria-label={you ? "You" : player.name}
-            >
-              {you ? "You" : player.name}
-            </strong>
-            {(player.left || player.lives <= 0) && (
-              <span className="seat-status shrink-0 text-[10px] leading-none text-muted-foreground">
-                {player.left ? "Left" : "Out"}
-              </span>
+        <div className="seat-details flex min-w-0 flex-col items-start justify-center gap-0.5">
+          <strong
+            className={cn(
+              "seat-name block max-w-full font-semibold [overflow-wrap:anywhere]",
+              you
+                ? "text-sm text-primary @min-2xl/board:text-lg"
+                : "text-[10px] leading-[11px] @min-xs/board:text-[11px] @min-xs/board:leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4 short-landscape:text-[10px] short-landscape:leading-[11px]",
             )}
-          </div>
-          <div className="seat-stats flex shrink-0 flex-col items-center" data-seat-stats>
-            <Lives n={player.lives} total={startingLives} compact={!you} />
+            title={player.name}
+            aria-label={you ? "You" : player.name}
+          >
+            {you ? "You" : player.name}
+          </strong>
+          <div className="seat-stats flex shrink-0 items-center gap-1" data-seat-stats>
+            <Lives n={player.lives} total={startingLives} compact />
             <span
               className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
               aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
@@ -137,7 +142,10 @@ export function PlayerSeat({
       </div>
       {!you && (
         <div
-          className="seat-hand relative w-full"
+          className={cn(
+            "seat-hand relative h-full w-full short-landscape:h-(--opponent-hand-height) short-landscape:w-(--opponent-card-width) short-landscape:shrink-0",
+            side === "bottom" ? "row-start-1" : "row-start-2",
+          )}
           data-revealed={player.hand.some((card) => card !== null) || undefined}
           role="group"
           aria-label={`${player.name}: ${player.hand.length} ${player.hand.length === 1 ? "card" : "cards"}`}
@@ -147,12 +155,14 @@ export function PlayerSeat({
               const offset = i - (player.hand.length - 1) / 2;
               return (
                 <div
-                  className="seat-fan-card absolute top-1/2"
+                  className={cn(
+                    "seat-fan-card absolute top-1/2 left-[calc(50%+var(--fan-offset)*2px)] -translate-x-1/2 -translate-y-1/2",
+                    card === null ? "w-7 @min-2xl/board:w-8" : "w-(--opponent-card-width)",
+                  )}
                   key={card ?? i}
                   style={
                     {
                       "--fan-offset": offset,
-                      "--fan-angle": `${offset * 7}deg`,
                     } as CSSProperties
                   }
                 >

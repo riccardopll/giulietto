@@ -8,7 +8,10 @@ export function TableSurface() {
   const id = useId();
   const clip = `${id}-felt`;
   return (
-    <div className="table-surface pointer-events-none absolute -z-1" aria-hidden="true">
+    <div
+      className="table-surface pointer-events-none relative -z-1 col-span-full row-start-2 row-end-5 drop-shadow-[0_4px_6px_#75404b50]"
+      aria-hidden="true"
+    >
       <div
         className="table-felt absolute inset-0 size-full"
         style={{ clipPath: `url(#${clip})` }}
@@ -23,9 +26,21 @@ export function TableSurface() {
             <path d={contour} />
           </clipPath>
         </defs>
-        <path className="table-rail-edge" d={contour} vectorEffect="non-scaling-stroke" />
-        <path className="table-rail" d={contour} vectorEffect="non-scaling-stroke" />
-        <path className="table-rail-highlight" d={contour} vectorEffect="non-scaling-stroke" />
+        <path
+          className="stroke-[#8a5364] stroke-[6]"
+          d={contour}
+          vectorEffect="non-scaling-stroke"
+        />
+        <path
+          className="stroke-[#b7798c] stroke-[4]"
+          d={contour}
+          vectorEffect="non-scaling-stroke"
+        />
+        <path
+          className="stroke-[#f8dae080] stroke-[1.5]"
+          d={contour}
+          vectorEffect="non-scaling-stroke"
+        />
       </svg>
     </div>
   );

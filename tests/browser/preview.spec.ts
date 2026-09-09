@@ -206,6 +206,48 @@ test("preview shortcut follows the selected table and ignores select input and k
   await expect(cards).toHaveCount(1);
 });
 
+test("preview follows configuration URLs and browser history", async ({ page }) => {
+  await openPreview(page, "people=3&cards=6&phase=playing&played=0");
+  await page.evaluate(() => {
+    const query = new URLSearchParams({
+      people: "5",
+      cards: "6",
+      phase: "playing",
+      played: "2",
+      viewer: "1",
+      seats: "eliminated,active,left,leaving,active",
+      startingLives: "2",
+      completedTricks: "4",
+      pending: "1",
+    });
+    history.pushState(null, "", `/preview?${query}`);
+    dispatchEvent(new PopStateEvent("popstate"));
+  });
+  await expect(page).not.toHaveURL(/pending=/);
+  await expect(page.locator("[data-seat]")).toHaveCount(5);
+  await expect(page.locator(".trick-cards .playing-card")).toHaveCount(2);
+  await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+  const sidebar = page.getByRole("dialog", { name: "Local preview" });
+  await expect(sidebar.getByRole("combobox", { name: "Starting lives", exact: true })).toHaveValue(
+    "2",
+  );
+  await expect(
+    sidebar.getByRole("combobox", { name: "Completed tricks", exact: true }),
+  ).toHaveValue("4");
+  await expect(sidebar.getByRole("combobox", { name: "Seat 4", exact: true })).toHaveValue(
+    "leaving",
+  );
+  await expect(sidebar.getByRole("button", { name: "Autoplay", exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  await page.goBack();
+  await expect(page.locator("[data-seat]")).toHaveCount(3);
+  await expect(page.locator(".trick-cards .playing-card")).toHaveCount(0);
+  await page.goForward();
+  await expect(page.locator("[data-seat]")).toHaveCount(5);
+  await expect(page.locator(".trick-cards .playing-card")).toHaveCount(2);
+});
+
 test.describe("preview motion settings", () => {
   test.use({ previewMotion: null });
 
@@ -214,21 +256,21 @@ test.describe("preview motion settings", () => {
   }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await openPreview(page, "people=6&cards=6&phase=playing&played=0");
+    await openPreview(page, "people=6&cards=6&phase=playing&played=1");
     await page.getByRole("button", { name: "Preview settings", exact: true }).click();
     await page.getByRole("button", { name: "Pause", exact: true }).click();
     const motion = page.getByRole("combobox", { name: "Motion", exact: true });
     const animation = () =>
       page
-        .locator(".hand .playing-card")
+        .locator(".played-card")
         .first()
-        .evaluate((card) => getComputedStyle(card, "::after").animationName);
+        .evaluate((card) => getComputedStyle(card).animationName);
     const cards = await page
       .locator(".hand .card-art")
       .evaluateAll((images) => images.map((image) => image.getAttribute("src")));
 
     await expect(motion).toHaveValue("full");
-    await expect.poll(animation).toBe("card-orbit");
+    await expect.poll(animation).toBe("card-land");
     await motion.selectOption("reduced");
     await expect.poll(animation).toBe("none");
     await page.emulateMedia({ reducedMotion: "no-preference" });
@@ -241,7 +283,7 @@ test.describe("preview motion settings", () => {
     ).toEqual(cards);
 
     await motion.selectOption("system");
-    await expect.poll(animation).toBe("card-orbit");
+    await expect.poll(animation).toBe("card-land");
     await page.emulateMedia({ reducedMotion: "reduce" });
     await expect.poll(animation).toBe("none");
     await page.reload();
@@ -249,11 +291,11 @@ test.describe("preview motion settings", () => {
     await expect(motion).toHaveValue("system");
     await expect.poll(animation).toBe("none");
     await motion.selectOption("full");
-    await expect.poll(animation).toBe("card-orbit");
+    await expect.poll(animation).toBe("card-land");
     await page.reload();
     await page.getByRole("button", { name: "Preview settings", exact: true }).click();
     await expect(motion).toHaveValue("full");
-    await expect.poll(animation).toBe("card-orbit");
+    await expect.poll(animation).toBe("card-land");
 
     await page.goto("/");
     await expect(page.locator("html")).not.toHaveAttribute("data-preview-motion");

@@ -7,12 +7,13 @@ import { bid, play, view, type Game } from "../../shared/game";
 import {
   advancePreview,
   makePreview,
-  type PreviewInactive,
+  normalizePreview,
   type PreviewOptions,
   type PreviewPhase,
+  type PreviewSeatState,
 } from "./games";
 
-type Entry = { options: PreviewOptions; game: Game; reset: number };
+type Entry = { options: Required<PreviewOptions>; game: Game; reset: number };
 type Motion = "full" | "reduced" | "system";
 const motionKey = "giulietto-preview-motion";
 
@@ -28,12 +29,12 @@ function savedMotion(): Motion {
 
 const counts = [2, 3, 4, 5, 6];
 const phases: PreviewPhase[] = ["playing", "bidding", "trick", "results", "blind"];
-const inactiveStates: PreviewInactive[] = ["none", "eliminated", "left"];
+const seatStates: PreviewSeatState[] = ["active", "eliminated", "left", "leaving"];
 const selectClass =
   "h-11 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
 const labelClass = "grid min-w-0 gap-1 text-xs text-muted-foreground";
 
-function initialSettings() {
+function readSettings() {
   const query = new URLSearchParams(window.location.search);
   const number = (key: string, fallback: number, min: number, max: number) => {
     const value = Number(query.get(key) ?? fallback);
@@ -41,16 +42,26 @@ function initialSettings() {
   };
   const people = number("people", 6, 2, 6);
   const phase = query.get("phase") as PreviewPhase;
-  const inactive = query.get("inactive") as PreviewInactive;
   return {
-    people,
     viewer: number("viewer", 0, 0, people - 1),
-    cards: number("cards", 6, 1, 6),
-    played: number("played", 0, 0, people),
-    phase: phases.includes(phase) ? phase : "playing",
-    inactive: inactiveStates.includes(inactive) ? inactive : "none",
-    longNames: query.get("longNames") === "1",
-  } satisfies PreviewOptions & { viewer: number };
+    options: normalizePreview({
+      people,
+      cards: number("cards", 6, 1, 6),
+      played: number("played", 0, 0, people),
+      phase: phases.includes(phase) ? phase : "playing",
+      seatStates: query
+        .get("seats")
+        ?.split(",")
+        .map((state) =>
+          seatStates.includes(state as PreviewSeatState) ? (state as PreviewSeatState) : "active",
+        ),
+      startingLives: number("startingLives", 5, 1, 5),
+      completedTricks: number("completedTricks", 0, 0, 5),
+      bids: number("bids", 0, 0, people - 1),
+      cycle: number("cycle", 0, 0, 4),
+      longNames: query.get("longNames") === "1",
+    }),
+  };
 }
 
 function nextEntry(old: Entry): Entry {
@@ -63,8 +74,8 @@ function nextEntry(old: Entry): Entry {
 }
 
 export function Preview() {
-  const [initial] = useState(initialSettings);
-  const [people, setPeople] = useState(initial.people);
+  const [initial] = useState(readSettings);
+  const [people, setPeople] = useState(initial.options.people);
   const [viewer, setViewer] = useState(initial.viewer);
   const [running, setRunning] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
@@ -72,21 +83,15 @@ export function Preview() {
   const [tables, setTables] = useState<Record<number, Entry>>(() =>
     Object.fromEntries(
       counts.map((people) => {
-        const inactive = people > 2 ? initial.inactive : "none";
-        const options: PreviewOptions = {
-          people,
-          cards: initial.cards,
-          phase: initial.phase,
-          longNames: initial.longNames,
-          played: Math.min(initial.played, people - Number(inactive !== "none")),
-          inactive,
-        };
+        const options = normalizePreview({ ...initial.options, people });
         return [people, { options, game: makePreview(options), reset: 0 }];
       }),
     ),
   );
   const entry = tables[people];
-  const active = people - Number(people > 2 && entry.options.inactive !== "none");
+  const active = entry.options.seatStates.filter(
+    (state) => state === "active" || state === "leaving",
+  ).length;
   const hasTrick = ["playing", "blind"].includes(entry.options.phase);
 
   useLayoutEffect(() => {
@@ -105,9 +110,7 @@ export function Preview() {
     setRunning(false);
     setTables((tables) => {
       const old = tables[people];
-      const options = { ...old.options, ...patch };
-      const active = people - Number(people > 2 && options.inactive !== "none");
-      options.played = Math.min(options.played ?? 0, active);
+      const options = normalizePreview({ ...old.options, ...patch });
       return { ...tables, [people]: { options, game: makePreview(options), reset: old.reset + 1 } };
     });
   }
@@ -155,15 +158,39 @@ export function Preview() {
     return () => clearInterval(timer);
   }, [running, people]);
 
+  const navigate = useEffectEvent(() => {
+    const { options, viewer } = readSettings();
+    setPeople(options.people);
+    setViewer(viewer);
+    setRunning(false);
+    setTables((tables) => ({
+      ...tables,
+      [options.people]: {
+        options,
+        game: makePreview(options),
+        reset: tables[options.people].reset + 1,
+      },
+    }));
+  });
+  useEffect(() => {
+    const onPopState = () => navigate();
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   useEffect(() => {
     const query = new URLSearchParams({
       people: String(people),
       cards: String(entry.options.cards),
       phase: entry.options.phase,
-      played: String(entry.options.played ?? 0),
+      played: String(entry.options.played),
       viewer: String(viewer),
       longNames: entry.options.longNames ? "1" : "0",
-      inactive: entry.options.inactive ?? "none",
+      seats: entry.options.seatStates.join(","),
+      startingLives: String(entry.options.startingLives),
+      completedTricks: String(entry.options.completedTricks),
+      bids: String(entry.options.bids),
+      cycle: String(entry.options.cycle),
     });
     window.history.replaceState(null, "", `${window.location.pathname}?${query}`);
   }, [people, viewer, entry.options]);
@@ -251,6 +278,20 @@ export function Preview() {
               </select>
             </label>
             <label className={labelClass}>
+              Cycle
+              <select
+                className={selectClass}
+                value={entry.options.cycle}
+                onChange={(e) => configure({ cycle: Number(e.target.value) })}
+              >
+                {[0, 1, 2, 3, 4].map((cycle) => (
+                  <option value={cycle} key={cycle}>
+                    {cycle + 1}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
               Cards each
               <select
                 className={selectClass}
@@ -296,19 +337,68 @@ export function Preview() {
               </select>
             </label>
             <label className={labelClass}>
-              Last player
+              Starting lives
               <select
                 className={selectClass}
-                disabled={people === 2}
-                value={entry.options.inactive}
-                onChange={(e) => configure({ inactive: e.target.value as PreviewInactive })}
+                value={entry.options.startingLives}
+                onChange={(e) => configure({ startingLives: Number(e.target.value) })}
               >
-                <option value="none">Active</option>
-                <option value="eliminated">Eliminated</option>
-                <option value="left">Left table</option>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <option key={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
+              Completed tricks
+              <select
+                className={selectClass}
+                disabled={!hasTrick && entry.options.phase !== "trick"}
+                value={entry.options.completedTricks}
+                onChange={(e) => configure({ completedTricks: Number(e.target.value) })}
+              >
+                {Array.from({ length: entry.options.cards }, (_, n) => (
+                  <option key={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+            <label className={labelClass}>
+              Predictions made
+              <select
+                className={selectClass}
+                disabled={entry.options.phase !== "bidding"}
+                value={entry.options.bids}
+                onChange={(e) => configure({ bids: Number(e.target.value) })}
+              >
+                {Array.from({ length: active }, (_, n) => (
+                  <option key={n}>{n}</option>
+                ))}
               </select>
             </label>
           </div>
+          <fieldset className="grid grid-cols-2 gap-3">
+            <legend className="mb-2 text-xs text-muted-foreground">Seats</legend>
+            {entry.options.seatStates.map((state, index) => (
+              <label key={index} className={labelClass}>
+                Seat {index + 1}
+                <select
+                  className={selectClass}
+                  value={state}
+                  onChange={(e) =>
+                    configure({
+                      seatStates: entry.options.seatStates.map((value, seat) =>
+                        seat === index ? (e.target.value as PreviewSeatState) : value,
+                      ),
+                    })
+                  }
+                >
+                  <option value="active">Active</option>
+                  <option value="eliminated">Eliminated</option>
+                  <option value="left">Left before round</option>
+                  <option value="leaving">Left during round</option>
+                </select>
+              </label>
+            ))}
+          </fieldset>
           <label className={labelClass}>
             Motion
             <select

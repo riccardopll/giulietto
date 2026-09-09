@@ -20,6 +20,7 @@
     "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy",
     "logs": "node scripts/logs.mjs",
     "test:ui": "playwright test",
+    "test:layout": "LAYOUT_SWEEP=1 playwright test tests/browser/layout.spec.ts --grep sweep",
     "test:watch": "vitest",
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration"
