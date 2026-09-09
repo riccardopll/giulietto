@@ -58,11 +58,11 @@ export function PlayerSeat({
           {current && (
             <svg
               key={`${deadline}-${serverTime}`}
-              className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 overflow-visible"
+              className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 -scale-y-100 overflow-visible"
               aria-hidden="true"
               style={
                 {
-                  "--timer-offset": -100 * (1 - remaining / TURN_MS),
+                  "--timer-remaining": 100 * (remaining / TURN_MS),
                   "--timer-duration": `${remaining}ms`,
                 } as CSSProperties
               }

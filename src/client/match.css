@@ -257,13 +257,13 @@
   stroke-width: calc(var(--table-rim-width) * 0.4);
 }
 .seat-timer circle {
-  stroke-dasharray: 100;
-  stroke-dashoffset: var(--timer-offset);
+  /* The mirrored circle starts at twelve o'clock and loses length clockwise. */
+  stroke-dasharray: var(--timer-remaining) 100;
   animation: seat-countdown var(--timer-duration) linear forwards;
 }
 @keyframes seat-countdown {
   to {
-    stroke-dashoffset: -100;
+    stroke-dasharray: 0 100;
   }
 }
 @media (prefers-reduced-motion: reduce) {
