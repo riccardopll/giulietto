@@ -54,7 +54,7 @@ export function PlayerSeat({
         )}
         data-seat-identity
       >
-        <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.5rem)] left-0 z-30 flex w-full justify-center">
+        <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.25rem)] left-0 z-30 flex w-full justify-center">
           <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
         </div>
         <div className="seat-avatar-wrap relative shrink-0">
