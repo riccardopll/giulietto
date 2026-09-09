@@ -575,12 +575,18 @@ h1 {
 }
 .table-seat .seat-hand {
   position: absolute;
-  left: calc(50% + var(--seat-x) * (50% - var(--surface-inset-x) - var(--fan-inset)));
+  left: calc(
+    50% + var(--seat-x) *
+      (50% - var(--surface-inset-x) - var(--fan-inset) - var(--fan-center-offset, 0rem))
+  );
   top: calc(
     50% + var(--seat-y) *
       (50% - var(--surface-inset-y) - var(--fan-inset-y) - 1.5rem * var(--seat-y) * var(--seat-y))
   );
   transform: translate(-50%, -50%) rotate(var(--seat-angle));
+}
+.seated-table[data-player-count="4"] .table-seat:not([data-seat-edge]) .seat-hand {
+  --fan-center-offset: 0.5rem;
 }
 .seat-identity {
   display: flex;

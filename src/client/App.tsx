@@ -661,7 +661,11 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 </section>
               ) : (
                 <div className="match-board">
-                  <div className="seated-table" aria-label="Game table">
+                  <div
+                    className="seated-table"
+                    data-player-count={game.players.length}
+                    aria-label="Game table"
+                  >
                     <TableSurface />
                     {game.players.map((p, i) => (
                       <PlayerSeat
