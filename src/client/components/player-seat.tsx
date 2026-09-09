@@ -70,7 +70,6 @@ export function PlayerSeat({
             <svg
               key={`${deadline}-${serverTime}`}
               className="seat-timer"
-              viewBox="0 0 100 100"
               aria-hidden="true"
               style={
                 {
@@ -79,7 +78,7 @@ export function PlayerSeat({
                 } as CSSProperties
               }
             >
-              <circle cx="50" cy="50" r="48" pathLength="100" />
+              <circle cx="50%" cy="50%" r="calc(50% - 2.5px)" pathLength="100" />
             </svg>
           )}
           <div

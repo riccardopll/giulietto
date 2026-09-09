@@ -688,7 +688,6 @@ h1 {
   fill: none;
   stroke: var(--primary);
   stroke-width: 5px;
-  vector-effect: non-scaling-stroke;
   stroke-dasharray: 100;
   stroke-dashoffset: var(--timer-offset);
   animation: seat-countdown var(--timer-duration) linear forwards;
