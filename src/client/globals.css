@@ -675,8 +675,34 @@ h1 {
   color: #75606d;
   font-variant-numeric: tabular-nums;
 }
-.current-player .seat-avatar {
-  box-shadow: 0 0 0 3px var(--primary);
+.seat-timer {
+  position: absolute;
+  inset: -3px;
+  width: calc(100% + 6px);
+  height: calc(100% + 6px);
+  overflow: visible;
+  pointer-events: none;
+  rotate: -90deg;
+}
+.seat-timer circle {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 3px;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 100;
+  stroke-dashoffset: var(--timer-offset);
+  animation: seat-countdown var(--timer-duration) linear forwards;
+}
+@keyframes seat-countdown {
+  to {
+    stroke-dashoffset: 100;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* The ring communicates remaining time rather than decorative motion. */
+  .seat-timer circle {
+    animation: seat-countdown var(--timer-duration) linear forwards !important;
+  }
 }
 .current-player .seat-number {
   border-color: var(--primary);

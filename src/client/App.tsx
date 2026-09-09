@@ -671,6 +671,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                         position={seating!.positions[p.id]}
                         you={p.id === game.you}
                         current={seating!.current === p.id}
+                        deadline={game.deadline}
+                        serverTime={game.serverTime}
                         round={game.round}
                         startingLives={game.startingLives}
                         status={

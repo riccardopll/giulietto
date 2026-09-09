@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { view } from "../../shared/game.ts";
+import { TURN_MS, type view } from "../../shared/game.ts";
 import { toRoman } from "../utils";
 import { Lives } from "./lives";
 import { PlayingCard } from "./playing-card";
@@ -20,6 +20,8 @@ export function PlayerSeat({
   position,
   you,
   current,
+  deadline,
+  serverTime,
   round,
   startingLives,
   status,
@@ -29,12 +31,15 @@ export function PlayerSeat({
   position: number;
   you: boolean;
   current: boolean;
+  deadline: number;
+  serverTime: number;
   round: number;
   startingLives: number;
   status: string;
 }) {
   const name = Array.from(player.name);
   const visibleName = name.length > 12 ? `${name.slice(0, 12).join("")}…` : player.name;
+  const remaining = Math.max(0, Math.min(TURN_MS, deadline - serverTime));
   const seatY = Math.cos(position * Math.PI * 2);
   return (
     <section
@@ -61,6 +66,22 @@ export function PlayerSeat({
           <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
         </div>
         <div className="seat-avatar-wrap">
+          {current && (
+            <svg
+              key={`${deadline}-${serverTime}`}
+              className="seat-timer"
+              viewBox="0 0 100 100"
+              aria-hidden="true"
+              style={
+                {
+                  "--timer-offset": 100 * (1 - remaining / TURN_MS),
+                  "--timer-duration": `${remaining}ms`,
+                } as CSSProperties
+              }
+            >
+              <circle cx="50" cy="50" r="48" pathLength="100" />
+            </svg>
+          )}
           <div
             className="seat-avatar"
             style={{ "--avatar-hue": avatarHue(player.id) } as CSSProperties}
