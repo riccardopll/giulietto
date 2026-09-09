@@ -73,7 +73,7 @@ export function PlayerSeat({
               aria-hidden="true"
               style={
                 {
-                  "--timer-offset": 100 * (1 - remaining / TURN_MS),
+                  "--timer-offset": -100 * (1 - remaining / TURN_MS),
                   "--timer-duration": `${remaining}ms`,
                 } as CSSProperties
               }

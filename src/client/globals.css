@@ -694,7 +694,7 @@ h1 {
 }
 @keyframes seat-countdown {
   to {
-    stroke-dashoffset: 100;
+    stroke-dashoffset: -100;
   }
 }
 @media (prefers-reduced-motion: reduce) {
