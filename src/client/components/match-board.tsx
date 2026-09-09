@@ -135,7 +135,7 @@ export function MatchBoard({
   return (
     <div
       ref={board}
-      className="match-board @container/board mx-auto grid size-full max-h-[60rem] max-w-5xl grid-rows-[clamp(2.75rem,8dvh,8.25rem)_minmax(0,1fr)_auto] gap-1.5
+      className="match-board @container/board mx-auto grid size-full max-h-[60rem] max-w-5xl grid-rows-[clamp(2.75rem,calc(30dvh-10rem),8.25rem)_minmax(0,1fr)_auto] gap-1.5
         [--opponent-card-width:clamp(2.5rem,7dvh,4rem)] [--opponent-hand-height:calc(var(--opponent-card-width)*1.6)]"
       data-phase={game.phase}
       data-blind={game.count === 1 || undefined}
