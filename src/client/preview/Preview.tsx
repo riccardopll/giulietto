@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Settings2, X } from "lucide-react";
-import { Popover } from "radix-ui";
+import { Dialog } from "radix-ui";
 import App from "../App";
 import { Button } from "../components/ui/button";
 import { bid, play, view, type Game } from "../../shared/game";
@@ -129,36 +129,37 @@ export function Preview() {
     setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
   }
 
-  const controls = (
-    <Popover.Root open={controlsOpen} onOpenChange={setControlsOpen}>
-      <Popover.Trigger asChild>
-        <Button
-          variant="ghost"
-          className="h-11 min-w-11 rounded-lg px-2 text-muted-foreground sm:px-3"
-          aria-label="Preview settings"
+  const exitControl = (
+    <Dialog.Trigger asChild>
+      <Button
+        variant="ghost"
+        className="size-11 rounded-lg p-0 text-muted-foreground"
+        aria-label="Preview settings"
+      >
+        <Settings2 className="size-4" />
+      </Button>
+    </Dialog.Trigger>
+  );
+
+  return (
+    <Dialog.Root modal={false} open={controlsOpen} onOpenChange={setControlsOpen}>
+      <App
+        key={`${people}-${entry.reset}-${viewer}`}
+        preview={{ state: snapshot, command, reset: () => configure(), exitControl }}
+      />
+      <Dialog.Portal>
+        <Dialog.Content
+          aria-describedby={undefined}
+          onInteractOutside={(event) => event.preventDefault()}
+          className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[calc(100vw-1rem)] space-y-4 overflow-y-auto overscroll-contain border-l bg-background pl-4 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)] text-foreground shadow-xl outline-none"
         >
-          <span className="font-mono text-[10px] tracking-wide sm:text-xs">{entry.game.code}</span>
-          <Settings2 className="size-4" />
-        </Button>
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="bottom"
-          align="end"
-          sideOffset={8}
-          collisionPadding={8}
-          aria-labelledby="preview-title"
-          className="z-50 grid max-h-[calc(100dvh-5rem)] w-88 max-w-[calc(100vw-1rem)] gap-4 overflow-y-auto rounded-xl border bg-background p-4 text-foreground shadow-xl outline-none"
-        >
-          <div className="flex items-center justify-between gap-2">
-            <strong id="preview-title" className="text-sm">
-              Local preview
-            </strong>
-            <Popover.Close asChild>
-              <Button variant="ghost" size="icon" aria-label="Close preview settings">
+          <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-background py-2">
+            <Dialog.Title className="text-sm font-semibold">Local preview</Dialog.Title>
+            <Dialog.Close asChild>
+              <Button variant="ghost" className="size-11 p-0" aria-label="Close preview settings">
                 <X />
               </Button>
-            </Popover.Close>
+            </Dialog.Close>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <label className={labelClass}>
@@ -280,15 +281,8 @@ export function Preview() {
             {entry.game.phase} · {entry.game.trick.length} of {entry.game.order.length} cards on
             table
           </p>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  );
-
-  return (
-    <App
-      key={`${people}-${entry.reset}-${viewer}`}
-      preview={{ state: snapshot, command, reset: () => configure(), controls }}
-    />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

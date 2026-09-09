@@ -64,7 +64,7 @@ function restoreSession() {
 
 export type PreviewSession = {
   state: State;
-  controls?: ReactNode;
+  exitControl?: ReactNode;
   command: (action: string, extra: Record<string, unknown>) => void;
   reset: () => void;
 };
@@ -287,27 +287,25 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           )}
           {game && (
             <div className="col-start-3 row-start-1 flex items-center justify-self-end">
-              {preview?.controls ?? (
-                <Button
-                  variant="ghost"
-                  className="h-11 min-w-11 rounded-lg px-2 text-muted-foreground sm:px-3"
-                  onClick={copy}
-                  aria-label="Copy lobby invite"
-                >
-                  <span className="font-mono text-[10px] tracking-wide sm:text-xs">
-                    {game.code}
-                  </span>
-                  {copied ? <Check /> : <Copy />}
-                </Button>
-              )}
               <Button
                 variant="ghost"
-                className="size-11 rounded-lg p-0 text-muted-foreground"
-                aria-label="Leave table"
-                onClick={() => setLeaveOpen(true)}
+                className="h-11 min-w-11 rounded-lg px-2 text-muted-foreground sm:px-3"
+                onClick={copy}
+                aria-label="Copy lobby invite"
               >
-                <LogOut size={18} />
+                <span className="font-mono text-[10px] tracking-wide sm:text-xs">{game.code}</span>
+                {copied ? <Check /> : <Copy />}
               </Button>
+              {preview?.exitControl ?? (
+                <Button
+                  variant="ghost"
+                  className="size-11 rounded-lg p-0 text-muted-foreground"
+                  aria-label="Leave table"
+                  onClick={() => setLeaveOpen(true)}
+                >
+                  <LogOut size={18} />
+                </Button>
+              )}
             </div>
           )}
         </header>

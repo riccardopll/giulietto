@@ -10,8 +10,13 @@ tricks. Include bidding, trick winners, round results, blind rounds, long names,
 and inactive spectators. During play, the header, players, hand, and actions must
 fit within the viewport without horizontal scrolling or clipped controls.
 
-The Preview settings button in the header opens scenario controls without changing
-the game layout. Scenarios can also be opened directly using query parameters:
+The preview uses the running-game header, including the room code and copy-invite
+control. Its Preview settings button replaces the exit button and opens a fixed
+sidebar over the game. Opening, scrolling, and closing it must not shift or resize
+the header, table, seats, or hand. The sidebar scrolls independently on short
+screens, stays open while playing the visible game, and preserves focus when
+changing scenarios, players, or the viewing seat. Escape and its close button
+dismiss it. Scenarios can also be opened directly using query parameters:
 `/preview?people=6&cards=6&phase=playing&played=3&viewer=0&longNames=1&inactive=none`.
 `people` accepts 2–6, `cards` accepts 1–6, and `played` accepts 0 through the active
 player count. A complete trick enters the trick-winner phase. `phase` accepts
