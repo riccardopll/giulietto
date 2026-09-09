@@ -269,7 +269,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             : "mx-auto min-h-svh max-w-6xl px-4 pb-4 sm:px-8"
         }
       >
-        <header className="site-header grid min-h-14 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-16">
+        <header className="site-header grid min-h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1 sm:min-h-16">
           <a
             href="/"
             className={`wordmark row-start-1 text-primary ${game ? "col-start-1 justify-self-start text-xl sm:text-3xl" : "col-span-3 justify-self-center text-3xl"}`}
@@ -281,7 +281,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             Giulietto
           </a>
           {game && !waiting && (
-            <h2 className="col-start-2 row-start-1 text-center text-sm leading-tight font-semibold [overflow-wrap:anywhere] sm:text-xl">
+            <h2 className="col-start-2 row-start-1 text-center text-sm leading-tight font-semibold whitespace-nowrap sm:text-xl">
               Round {toRoman(game.round)}
             </h2>
           )}
@@ -289,11 +289,14 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             <div className="col-start-3 row-start-1 flex items-center justify-self-end">
               <Button
                 variant="ghost"
-                className="h-11 min-w-11 rounded-lg px-2 text-muted-foreground sm:px-3"
+                size="icon"
+                className="h-11 w-14 flex-col-reverse gap-0.5 rounded-lg p-0 text-muted-foreground sm:w-auto sm:flex-row sm:gap-2 sm:px-3"
                 onClick={copy}
                 aria-label="Copy lobby invite"
               >
-                <span className="font-mono text-[10px] tracking-wide sm:text-xs">{game.code}</span>
+                <span className="font-mono text-[10px] leading-none sm:text-xs sm:tracking-wide">
+                  {game.code}
+                </span>
                 {copied ? <Check /> : <Copy />}
               </Button>
               {preview?.exitControl ?? (

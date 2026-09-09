@@ -25,6 +25,16 @@ export async function checkLayout(page: Page) {
       errors.push("Horizontal page overflow");
     if (document.documentElement.scrollHeight > innerHeight + 1)
       errors.push("Vertical page overflow");
+    const header = document.querySelector("header")!;
+    const heading = header.querySelector("h2")!;
+    const title = document.createRange();
+    title.selectNodeContents(heading);
+    const headerBounds = header.getBoundingClientRect();
+    const titleBounds = title.getBoundingClientRect();
+    if (
+      Math.abs(titleBounds.x + titleBounds.width / 2 - headerBounds.x - headerBounds.width / 2) > 1
+    )
+      errors.push("The round title is not centered in the header");
     const board = document.querySelector(".match-board")!.getBoundingClientRect();
     const desktop = board.width >= 768 && board.height >= 480;
     const seats = [...document.querySelectorAll<HTMLElement>("[data-seat]")];
@@ -44,6 +54,12 @@ export async function checkLayout(page: Page) {
     const local = positions.find(({ seat }) => seat === localSeat);
     if (!local || Math.abs(local.x) > 1 || local.y <= 0)
       errors.push("The local player is not seated at the bottom center");
+    const localAvatar = localSeat?.querySelector(".seat-avatar")?.getBoundingClientRect();
+    const opponentAvatarWidths = seats
+      .filter((seat) => seat !== localSeat)
+      .map((seat) => seat.querySelector(".seat-avatar")!.getBoundingClientRect().width);
+    if (!localAvatar || localAvatar.width <= Math.max(...opponentAvatarWidths) + 1)
+      errors.push("The local player avatar is not larger than the opponents");
     const normalize = (angle: number) => ((angle % 360) + 360) % 360;
     if (desktop) {
       const distances = seats

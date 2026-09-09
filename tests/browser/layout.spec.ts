@@ -3,6 +3,7 @@ import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 const viewports = [
   { width: 320, height: 568 },
+  { width: 357, height: 774 },
   { width: 393, height: 852 },
   { width: 568, height: 320 },
   { width: 844, height: 390 },

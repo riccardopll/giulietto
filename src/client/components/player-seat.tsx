@@ -42,9 +42,10 @@ export function PlayerSeat({
     <section
       data-seat={player.id}
       data-side={side}
+      data-you={you || undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className="table-seat min-w-0 text-[11px] sm:text-xs"
+      className={cn("table-seat min-w-0", you ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs")}
     >
       <div
         className="seat-identity pointer-events-auto relative flex min-w-0 max-w-full items-center justify-center gap-1.5"
@@ -101,7 +102,10 @@ export function PlayerSeat({
         <div className="seat-details flex min-w-0 flex-col items-start gap-0.5">
           <div className="flex w-full min-w-0 items-baseline gap-1">
             <strong
-              className="seat-name block truncate leading-tight font-semibold"
+              className={cn(
+                "seat-name block truncate leading-tight font-semibold",
+                you && "text-sm text-primary",
+              )}
               title={player.name}
               aria-label={you ? "You" : player.name}
             >
@@ -113,7 +117,10 @@ export function PlayerSeat({
               </span>
             )}
           </div>
-          <div className="seat-stats flex shrink-0 items-center gap-1" data-seat-stats>
+          <div
+            className={cn("seat-stats flex shrink-0 items-center", you ? "flex-col" : "gap-1")}
+            data-seat-stats
+          >
             <Lives n={player.lives} total={startingLives} compact />
             <span
               className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"

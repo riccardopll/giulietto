@@ -7,7 +7,8 @@
   container-name: match;
   container-type: size;
   --seat-avatar-size: clamp(1.875rem, 4cqw, 2.625rem);
-  --identity-height: clamp(2.5rem, 5cqw, 3.25rem);
+  --local-avatar-size: clamp(2.5rem, 5.5cqw, 3.25rem);
+  --identity-height: clamp(3.5rem, 6cqw, 3.75rem);
   --seat-inset: clamp(0.375rem, 1cqw, 0.625rem);
   --fan-width: clamp(1.75rem, 4cqw, 2.5rem);
   --fan-height: calc(max(var(--fan-width), 2rem) * 1.6 + 0.75rem);
@@ -46,6 +47,9 @@
   grid-row: 1;
   align-self: start;
   min-height: var(--identity-height);
+}
+.table-seat[data-you] .seat-avatar-wrap {
+  --seat-avatar-size: var(--local-avatar-size);
 }
 .table-seat[data-side="bottom"] .seat-identity {
   grid-row: 2;
@@ -119,6 +123,7 @@
 @media (max-height: 30rem) and (min-width: 30rem) {
   .match-board {
     --seat-avatar-size: 1.75rem;
+    --local-avatar-size: 2rem;
     --identity-height: 2.25rem;
     --seat-inset: 0.25rem;
     --fan-width: clamp(1.5rem, 9cqh, 1.875rem);
@@ -137,6 +142,16 @@
   }
   .table-seat {
     font-size: 10px;
+  }
+  .table-seat[data-you] {
+    font-size: 11px;
+  }
+  .table-seat[data-you] .seat-name {
+    font-size: 12px;
+  }
+  .table-seat[data-you] .seat-stats {
+    flex-direction: row;
+    gap: 0.25rem;
   }
   .seat-hand {
     --fan-step: 3px;
@@ -195,6 +210,13 @@
       calc(50cqw - var(--identity-width) / 2 - 0.25rem)
         calc(50cqh - var(--identity-height) / 2 - 0.25rem) at 50cqw 50cqh
     );
+  }
+  .table-seat[data-you] .seat-identity {
+    width: 10rem;
+  }
+  .table-seat[data-you] .seat-stats {
+    flex-direction: row;
+    gap: 0.25rem;
   }
   .seat-hand {
     width: var(--fan-height);
