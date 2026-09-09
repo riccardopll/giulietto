@@ -150,19 +150,23 @@ export function PlayerSeat({
           role="group"
           aria-label={`${player.name}: ${player.hand.length} ${player.hand.length === 1 ? "card" : "cards"}`}
         >
-          <div className="seat-fan-orientation absolute inset-0">
+          <div
+            className={cn("seat-fan-orientation absolute inset-0", side === "top" && "rotate-180")}
+          >
             {player.hand.map((card, i) => {
               const offset = i - (player.hand.length - 1) / 2;
               return (
                 <div
                   className={cn(
-                    "seat-fan-card absolute top-1/2 left-[calc(50%+var(--fan-offset)*2px)] -translate-x-1/2 -translate-y-1/2",
+                    "seat-fan-card absolute top-[calc(50%+var(--fan-curve))] left-[calc(50%+var(--fan-offset)*2px)] origin-bottom -translate-x-1/2 -translate-y-1/2 rotate-(--fan-angle)",
                     card === null ? "w-7 @min-2xl/board:w-8" : "w-(--opponent-card-width)",
                   )}
                   key={card ?? i}
                   style={
                     {
                       "--fan-offset": offset,
+                      "--fan-angle": `${offset * 3}deg`,
+                      "--fan-curve": `${offset ** 2 * 0.4}px`,
                     } as CSSProperties
                   }
                 >
