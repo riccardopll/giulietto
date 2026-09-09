@@ -22,6 +22,13 @@ import {
 } from "@/client/components/ui/alert-dialog";
 import type { view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
+import {
+  cookieError,
+  readStored,
+  restorePlayer,
+  savePlayerName,
+  storeRoom,
+} from "./player-session";
 import { MatchBoard } from "./components/match-board";
 import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
@@ -36,17 +43,11 @@ async function readResponse<T>(response: Response): Promise<T> {
 
 function restoreSession() {
   try {
-    const token =
-      localStorage.getItem("giulietto-token") ||
-      Array.from(crypto.getRandomValues(new Uint8Array(32)), (n) =>
-        n.toString(16).padStart(2, "0"),
-      ).join("");
-    localStorage.setItem("giulietto-token", token);
+    const player = restorePlayer();
     const invite = new URLSearchParams(location.search).get("table")?.toUpperCase() || "";
-    const saved = localStorage.getItem("giulietto-room");
+    const saved = readStored("giulietto-room");
     return {
-      token,
-      name: localStorage.getItem("giulietto-name") || "",
+      ...player,
       code: invite,
       saved: saved && (!invite || saved === invite) ? saved : null,
       error: "",
@@ -57,7 +58,7 @@ function restoreSession() {
       name: "",
       code: "",
       saved: null,
-      error: "Allow browser storage to keep your guest seat when you reconnect.",
+      error: cookieError,
     };
   }
 }
@@ -100,6 +101,15 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     const previous = gameRef.current;
     if (previous && previous.code === s.code && s.revision < previous.revision) return;
     clockOffset.current = s.serverTime - Date.now();
+    if (!previous || previous.code !== s.code) {
+      const playerName = s.players.find((player) => player.id === s.you)!.name;
+      setName(playerName);
+      try {
+        savePlayerName(playerName);
+      } catch {
+        setError(cookieError);
+      }
+    }
     gameRef.current = s;
     if (!previous && history.state?.giuliettoTable !== s.code) {
       // Keep a dashboard entry below the table, including direct invite links.
@@ -107,7 +117,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       history.pushState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
     }
     setGame(s);
-    localStorage.setItem("giulietto-room", s.code);
+    storeRoom(s.code);
   };
   useEffect(() => {
     if (isPreview) return;
@@ -118,7 +128,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       })
         .then(readResponse<State>)
         .then(accept)
-        .catch(() => localStorage.removeItem("giulietto-room"))
+        .catch(() => storeRoom(null))
         .finally(() => {
           setBusy(false);
           busyRef.current = false;
@@ -187,13 +197,12 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       }
       return;
     }
-    if (busyRef.current) return;
+    if (!ready || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError("");
     if (action === "play") setPendingCard(Number(extra.card));
     try {
-      localStorage.setItem("giulietto-name", name);
       let s: State;
       if (
         gameRef.current &&
@@ -241,7 +250,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     setConnection("");
     setAce(null);
     setPendingCard(null);
-    localStorage.removeItem("giulietto-room");
+    storeRoom(null);
     setLeaveOpen(false);
     if (history.state?.giuliettoTable) history.back();
     else history.replaceState({ ...history.state, giuliettoTable: null }, "", location.pathname);
