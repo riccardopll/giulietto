@@ -20,12 +20,7 @@ export function tableOrder(game: State) {
   const order = [...game.order.slice(start), ...game.order.slice(0, start)];
   const currentIndex = order.indexOf(current ?? "");
   return {
-    positions: Object.fromEntries(
-      game.players.map((p, i) => [
-        p.id,
-        ((i - viewer + game.players.length) % game.players.length) / game.players.length,
-      ]),
-    ),
+    seats: [...game.players.slice(viewer), ...game.players.slice(0, viewer)].map((p) => p.id),
     current,
     order,
     nextTrick,

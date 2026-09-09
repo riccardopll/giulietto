@@ -13,7 +13,7 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
   }, [bid]);
   return visible ? (
     <span
-      className="seat-bubble prediction-emote"
+      className="seat-bubble prediction-emote pointer-events-none relative inline-flex h-7 min-w-10 items-center justify-center rounded-full bg-primary px-3 text-xs leading-none font-semibold text-primary-foreground"
       role="status"
       aria-label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}
     >
