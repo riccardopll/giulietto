@@ -1,5 +1,34 @@
 # Testing
 
+Tests describe the current game and UI. This is a work in progress: remove tests
+for deleted behavior, old storage formats, and compatibility paths. Avoid tests
+that inspect source text, freeze implementation details, or only record a past
+bug. Cover a requirement at the lowest useful level instead of repeating it in
+every suite.
+
+All tests are TypeScript and included in `npm run typecheck`.
+
+| Location             | Runner             | Scope                                                                                       |
+| -------------------- | ------------------ | ------------------------------------------------------------------------------------------- |
+| `tests/unit/`        | Vitest             | Game rules, hand visibility, turn/seat order, events, preview fixtures                      |
+| `tests/integration/` | Vitest + Miniflare | Public HTTP/WebSocket flows against the production Worker with local Durable Objects and D1 |
+| `tests/browser/`     | Playwright         | Responsive layout and user interactions in Chromium and WebKit                              |
+
+`vitest.config.ts` separates unit and integration projects. Integration tests use
+isolated local storage and close their sockets and Worker runtime after use.
+Playwright runs the actual Vite app; it owns browser checks, so there is no second
+DOM simulator or component bundling harness.
+
+Run `npm run check` for lint, formatting, typechecking, Vitest, and the production
+build. Use `npm run test:watch` while developing, `npm run test:unit` for game and
+preview logic, or `npm run test:integration` for the Worker API. A single file can
+be selected with `npm test -- tests/unit/game.test.ts`.
+
+For browser checks, install the browsers once with
+`npx playwright install chromium webkit`, then run `npm run test:ui`. The suite
+starts a local server on port 5174. Failure screenshots and traces are written to
+`test-results/`; layout screenshots are attached to the corresponding test.
+
 After implementing a visual change requested by the user, open `/preview` on the
 local development server to check the layout and let the user review it.
 
@@ -24,12 +53,6 @@ player count. A complete trick enters the trick-winner phase. `phase` accepts
 index. `inactive=eliminated` or `inactive=left` makes the last seat inactive in
 games with at least three players. Use that seat as the viewer to check spectator
 layout and hidden cards.
-
-Run `npm run check` for static checks, unit/integration tests, and the production build.
-For responsive layout and browser interaction tests, install the test browsers with
-`npx playwright install chromium webkit`, then run `npm run test:ui`. The suite
-starts a local server on port 5174 and checks Chromium and WebKit. Failure
-screenshots and traces are written to `test-results/`.
 
 For live test matches, name automated players `bot_1` through `bot_6`, using
 consecutive numbers starting at 1 for the number of players in the match.
