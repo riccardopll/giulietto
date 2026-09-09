@@ -1,0 +1,79 @@
+.preview-controls {
+  max-width: 74rem;
+  margin: 1rem auto 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid #e0ced8;
+  border-radius: 1rem;
+  background: #fffafd;
+  color: #493642;
+  font-size: 0.875rem;
+}
+.preview-heading,
+.preview-player-counts,
+.preview-settings,
+.preview-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+.preview-player-counts,
+.preview-settings,
+.preview-actions {
+  margin-top: 0.875rem;
+}
+.preview-controls button,
+.preview-controls select {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #dfc9d4;
+  border-radius: 0.5rem;
+  background: white;
+  color: inherit;
+  font: inherit;
+}
+.preview-controls button[aria-pressed="true"] {
+  color: white;
+  background: #9b285a;
+  border-color: #9b285a;
+}
+.preview-controls button:focus-visible,
+.preview-controls select:focus-visible,
+.preview-controls input:focus-visible {
+  outline: 2px solid #9b285a;
+  outline-offset: 3px;
+}
+.preview-settings label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+}
+.preview-settings select {
+  max-width: 13rem;
+}
+.preview-settings .preview-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.5rem 0 0.5rem;
+}
+.preview-checkbox input {
+  accent-color: #9b285a;
+  width: 1rem;
+  height: 1rem;
+}
+@media (max-width: 40rem) {
+  .preview-controls {
+    margin: 0.75rem;
+    padding: 0.875rem;
+  }
+  .preview-player-counts button {
+    flex: 1 0 28%;
+  }
+  .preview-settings label {
+    max-width: 100%;
+  }
+  .preview-settings select {
+    max-width: 100%;
+  }
+}

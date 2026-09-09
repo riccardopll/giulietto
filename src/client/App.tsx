@@ -1,16 +1,17 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { toast, Toaster } from "sonner";
-import { PredictionEmote } from "@/client/components/prediction-emote";
+import { toRoman } from "@/client/utils";
+import { PlayerSeat } from "@/client/components/player-seat";
+import { TableSurface } from "@/client/components/table-surface";
+import { Lives } from "@/client/components/lives";
 import { PlayingCard as Card } from "@/client/components/playing-card";
 import {
   ArrowRight,
-  Heart,
   Users,
   Link as LinkIcon,
   Check,
   Copy,
   Globe2,
-  EyeOff,
   Trophy,
   Clock3,
   LogOut,
@@ -45,6 +46,7 @@ import {
 } from "@/client/components/ui/table";
 import { MIN_STARTING_LIVES, MAX_STARTING_LIVES, type view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
+import { tableOrder } from "./table-order";
 type State = ReturnType<typeof view>;
 
 async function readResponse<T>(response: Response): Promise<T> {
@@ -81,19 +83,6 @@ function restoreSession() {
   }
 }
 
-function Lives({ n }: { n: number }) {
-  return (
-    <span className="lives" aria-label={`${n} ${n === 1 ? "life" : "lives"}`}>
-      {Array.from({ length: Math.ceil(n / 3) }, (_, row) => (
-        <span className="lives-row" key={row} aria-hidden="true">
-          {Array.from({ length: Math.min(3, n - row * 3) }, (_, heart) => (
-            <Heart key={heart} size={14} fill="currentColor" />
-          ))}
-        </span>
-      ))}
-    </span>
-  );
-}
 function LobbyOptions({
   lives,
   host,
@@ -159,16 +148,27 @@ function LobbyOptions({
     </section>
   );
 }
-export default function App() {
-  const [session] = useState(restoreSession);
+export type PreviewSession = {
+  state: State;
+  command: (action: string, extra: Record<string, unknown>) => void;
+  reset: () => void;
+};
+
+export default function App({ preview }: { preview?: PreviewSession }) {
+  const isPreview = !!preview;
+  const [session] = useState(() =>
+    preview ? { name: "bot_1", code: "", saved: null, token: "", error: "" } : restoreSession(),
+  );
   const [name, setName] = useState(session.name);
   const [code, setCode] = useState(session.code);
-  const [game, setGame] = useState<State | null>(null);
+  const [liveGame, setGame] = useState<State | null>(null);
+  const game = preview?.state ?? liveGame;
   const [busy, setBusy] = useState(!!session.saved);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [connection, setConnection] = useState("");
   const [copied, setCopied] = useState(false);
-  const [now, setNow] = useState(Date.now());
+  const [liveNow, setNow] = useState(Date.now());
+  const now = preview?.state.serverTime ?? liveNow;
   const [ace, setAce] = useState<number | null>(null);
   const ready = !session.error;
   const [pendingCard, setPendingCard] = useState<number | null>(null);
@@ -195,6 +195,7 @@ export default function App() {
     localStorage.setItem("giulietto-room", s.code);
   };
   useEffect(() => {
+    if (isPreview) return;
     if (session.error) setError(session.error);
     if (session.saved) {
       fetch(`/api/game?code=${encodeURIComponent(session.saved)}`, {
@@ -210,22 +211,23 @@ export default function App() {
     }
     const timer = setInterval(() => setNow(Date.now() + clockOffset.current), 500);
     return () => clearInterval(timer);
-  }, [session]);
+  }, [session, isPreview]);
   const receiveState = useEffectEvent((s: State) => accept(s));
   useEffect(() => {
-    if (!game?.code) return;
+    if (isPreview || !game?.code) return;
     const connection = new GameConnection(game.code, token.current, receiveState, setConnection);
     transport.current = connection;
     return () => {
       transport.current = null;
       connection.stop();
     };
-  }, [game?.code]);
+  }, [game?.code, isPreview]);
   useEffect(() => {
     if (connection) toast.error(connection, { id: "connection-error", duration: 4500 });
     else toast.dismiss("connection-error");
   }, [connection]);
   useEffect(() => {
+    if (isPreview) return;
     const onBack = () => {
       const current = gameRef.current;
       if (!current) return;
@@ -249,7 +251,7 @@ export default function App() {
       window.removeEventListener("popstate", onBack);
       window.removeEventListener("beforeunload", onUnload);
     };
-  }, []);
+  }, [isPreview]);
   useEffect(() => {
     if (!game?.code) return;
     for (let i = 0; i <= 40; i++) {
@@ -258,6 +260,15 @@ export default function App() {
     }
   }, [game?.code]);
   async function act(action: string, extra: Record<string, unknown> = {}) {
+    if (preview) {
+      try {
+        preview.command(action, extra);
+        setAce(null);
+      } catch (error) {
+        setError((error as Error).message);
+      }
+      return;
+    }
     if (busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
@@ -301,6 +312,10 @@ export default function App() {
     }
   }
   function reset() {
+    if (preview) {
+      preview.reset();
+      return;
+    }
     gameRef.current = null;
     setGame(null);
     setCode("");
@@ -323,36 +338,28 @@ export default function App() {
     }
   }
   const me = game?.players.find((p) => p.id === game.you);
-  const myTurn = !!game && game.order[game.turn] === game.you && !me?.left;
-  const turnPlayer = game?.players.find((p) => p.id === game.order[game.turn]);
+  const seating = game ? tableOrder(game) : null;
+  const myTurn = !!game && seating?.current === game.you && !me?.left;
   const seconds = Math.max(0, Math.ceil(((game?.deadline || 0) - now) / 1000));
-  const blind = game?.count === 1;
   const active = !!me && me.lives > 0 && !me.left;
   const phase = game?.phase;
   const waiting = phase === "lobby";
   const result = phase === "results" || phase === "finished";
-  const turnText =
-    phase === "bidding"
-      ? myTurn
-        ? "Your prediction"
-        : `${turnPlayer?.name}'s prediction`
-      : phase === "playing"
-        ? myTurn
-          ? "Your turn"
-          : `${turnPlayer?.name}'s turn`
-        : phase === "trick"
-          ? `${game?.players.find((p) => p.id === game.lastWinner)?.name} takes the trick`
-          : "";
   const trickNumber = game
     ? game.count -
       (game.players.find((p) => p.id === game.order[0])?.hand.length ?? 0) +
       (game.trick.some((p) => p.player === game.order[0]) ? 0 : 1)
     : 0;
-  const opponents = game?.players.filter((p) => p.id !== game.you) ?? [];
+  const seatNumber = (id: string) => (game?.players.findIndex((p) => p.id === id) ?? -1) + 1;
   const animateTrick = useEffectEvent(() => {
-    if (!game || game.phase !== "trick" || matchMedia("(prefers-reduced-motion: reduce)").matches)
+    if (
+      isPreview ||
+      !game ||
+      game.phase !== "trick" ||
+      matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
       return;
-    const anchor = document.querySelector(`[data-seat="${game.lastWinner}"]`);
+    const anchor = document.querySelector(`[data-seat="${game.lastWinner}"] .seat-avatar`);
     if (!anchor) return;
     const target = anchor.getBoundingClientRect();
     const animations = Array.from(
@@ -392,7 +399,8 @@ export default function App() {
         >
           Giulietto
         </a>
-        {game && (
+        {game && !waiting && <h2 className="round-title">Round {toRoman(game.round)}</h2>}
+        {game && !isPreview && (
           <div className="header-right">
             <button className="code-button" onClick={copy} aria-label="Copy lobby invite">
               {game.code}
@@ -514,16 +522,12 @@ export default function App() {
         </main>
       ) : (
         <main className={`game-main ${waiting ? "" : "in-game"}`}>
-          <div className="match-meta">
-            <span>
-              {waiting ? (game.public ? "Public lobby" : "Private lobby") : `Round ${game.round}`}
-            </span>
-            <span>
-              {waiting
-                ? `${game.players.length} / 6 players`
-                : `${game.count} ${game.count === 1 ? "card" : "cards"} each`}
-            </span>
-          </div>
+          {waiting && (
+            <div className="match-meta">
+              <span>{game.public ? "Public lobby" : "Private lobby"}</span>
+              <span>{game.players.length} / 6 players</span>
+            </div>
+          )}
           {waiting ? (
             <section className="lobby">
               <div className="lobby-heading">
@@ -595,9 +599,7 @@ export default function App() {
             <>
               {result ? (
                 <section className="results-panel" key={`results-${game.round}`}>
-                  <span className="eyebrow">
-                    {phase === "finished" ? "Game over" : `Round ${game.round} complete`}
-                  </span>
+                  {phase === "finished" && <span className="eyebrow">Game over</span>}
                   {phase === "finished" ? (
                     <>
                       <Trophy className="trophy" size={36} />
@@ -629,6 +631,7 @@ export default function App() {
                         return (
                           <TableRow key={p.id}>
                             <TableCell>
+                              <span className="result-seat">Seat {toRoman(seatNumber(p.id))}</span>
                               {p.name}
                               {p.id === game.you ? " (you)" : ""}
                             </TableCell>
@@ -638,7 +641,7 @@ export default function App() {
                               {r ? (r.lost ? `−${r.lost}` : "✓") : "–"}
                             </TableCell>
                             <TableCell>
-                              <Lives n={p.lives} />
+                              <Lives n={p.lives} total={game.startingLives} />
                             </TableCell>
                           </TableRow>
                         );
@@ -658,146 +661,109 @@ export default function App() {
                 </section>
               ) : (
                 <div className="match-board">
-                  <div className={`opponents ${blind ? "blind-opponents" : ""}`}>
-                    {opponents.map((p) => {
-                      const i = game.players.indexOf(p);
-                      return (
-                        <div
-                          data-seat={p.id}
-                          key={p.id}
-                          className={`opponent ${game.order[game.turn] === p.id && ["bidding", "playing"].includes(phase!) ? "current-player" : ""} ${p.lives <= 0 || p.left ? "eliminated" : ""}`}
-                        >
-                          <PredictionEmote
-                            key={`${game.round}-${p.id}`}
-                            bid={p.bid}
-                            name={p.name}
-                          />
-                          <div className={`avatar avatar-${i}`}>
-                            {p.name.slice(0, 1).toUpperCase()}
+                  <div
+                    className="seated-table"
+                    data-player-count={game.players.length}
+                    aria-label="Game table"
+                  >
+                    <TableSurface />
+                    {game.players.map((p, i) => (
+                      <PlayerSeat
+                        key={p.id}
+                        player={p}
+                        number={i + 1}
+                        position={seating!.positions[p.id]}
+                        you={p.id === game.you}
+                        current={seating!.current === p.id}
+                        deadline={game.deadline}
+                        serverTime={game.serverTime}
+                        round={game.round}
+                        startingLives={game.startingLives}
+                        status={
+                          p.left
+                            ? game.order.includes(p.id)
+                              ? "Left · auto play"
+                              : "Left"
+                            : p.lives <= 0
+                              ? "Out"
+                              : seating!.current === p.id
+                                ? phase === "bidding"
+                                  ? "Predicting now"
+                                  : "Playing now"
+                                : phase === "trick" && game.lastWinner === p.id
+                                  ? "Trick winner"
+                                  : seating!.next === p.id
+                                    ? "Up next"
+                                    : game.trick.some((play) => play.player === p.id)
+                                      ? "Played"
+                                      : phase === "bidding" && p.bid !== null
+                                        ? "Predicted"
+                                        : "Waiting"
+                        }
+                      />
+                    ))}
+                    <section className="play-table">
+                      {phase === "bidding" ? (
+                        <div className="bidding-area">
+                          <div className="bid-options">
+                            {Array.from({ length: game.count + 1 }, (_, i) => i).map((n) => (
+                              <Button
+                                key={n}
+                                variant="outline"
+                                disabled={!myTurn || !active || busy || !game.legalBids.includes(n)}
+                                className="bid-button"
+                                aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
+                                onClick={() => act("bid", { bid: n })}
+                              >
+                                {n}
+                              </Button>
+                            ))}
                           </div>
-                          <strong title={p.name}>{p.name}</strong>
-                          <Lives n={p.lives} />
-                          <span className="player-score">
-                            {p.left
-                              ? "Left"
-                              : p.lives <= 0
-                                ? "Out"
-                                : `${p.taken} / ${p.bid ?? "–"}`}
-                          </span>
-                          {blind && p.hand[0] != null && <Card card={p.hand[0]} small />}
                         </div>
-                      );
-                    })}
-                  </div>
-                  <section className="play-table">
-                    <div className="table-status">
-                      <span className="eyebrow">
-                        {phase === "bidding"
-                          ? "Predictions"
-                          : phase === "trick"
-                            ? "Trick won"
-                            : `Trick ${trickNumber}`}
-                      </span>
-                      <div className="turn-line">
-                        <h1 key={turnText}>{turnText}</h1>
-                        {["bidding", "playing"].includes(phase!) && (
-                          <span className={`timer ${seconds < 10 ? "urgent" : ""}`}>
-                            <Clock3 size={14} />
-                            {seconds}s
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {phase === "bidding" ? (
-                      <div className="bidding-area">
-                        <div className="bid-options">
-                          {Array.from({ length: game.count + 1 }, (_, i) => i).map((n) => (
-                            <Button
-                              key={n}
-                              variant="outline"
-                              disabled={!myTurn || !active || busy || !game.legalBids.includes(n)}
-                              className="bid-button"
-                              aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
-                              onClick={() => act("bid", { bid: n })}
-                            >
-                              {n}
-                            </Button>
-                          ))}
-                        </div>
-                        <p className="bid-total">
-                          {game.players.reduce((n, p) => n + (p.bid ?? 0), 0)} predicted ·{" "}
-                          {game.count} available
-                        </p>
-                        {game.turn === game.order.length - 1 && (
-                          <p className="last-bid-note">The total cannot equal {game.count}.</p>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="trick-cards" key={`${game.round}-${trickNumber}`}>
-                        {game.trick.length ? (
-                          game.trick.map((p) => (
+                      ) : (
+                        <div className="trick-cards" key={`${game.round}-${trickNumber}`}>
+                          {game.trick.map((p) => (
                             <div
                               className={`played-card ${phase === "trick" && p.player === game.lastWinner ? "winner-card" : ""}`}
                               key={p.card}
                             >
                               <Card card={p.card} mode={p.mode} />
-                              <span>
-                                {p.player === game.you
-                                  ? "You"
-                                  : game.players.find((x) => x.id === p.player)?.name}
-                              </span>
                             </div>
-                          ))
-                        ) : (
-                          <p className="empty-trick">
-                            {myTurn ? "Choose a card" : "Waiting for a card…"}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </section>
-                  <section className={`hand-area ${myTurn && active ? "your-turn" : ""}`}>
-                    <div className="self-player" data-seat={game.you}>
-                      <div className="self-name">
-                        <strong>You</strong>
-                        <Lives n={me?.lives ?? 0} />
-                      </div>
-                      <span className="self-score">
-                        {me?.taken} / {me?.bid ?? "–"} tricks
-                      </span>
-                    </div>
+                          ))}
+                        </div>
+                      )}
+                    </section>
+                  </div>
+                  <section className="hand-area" aria-label="Your hand">
                     <div className="hand" key={`hand-${game.round}`}>
                       {me?.hand.map((card, i) => (
-                        <Card
+                        <div
+                          className="hand-card"
                           key={card ?? i}
-                          card={card}
-                          delay={i * 40}
-                          disabled={!active || !myTurn || phase !== "playing" || busy}
-                          pending={pendingCard === (card ?? -1)}
-                          onClick={() => {
-                            if (game.canChooseAce && (card === null || card === 31))
-                              setAce(card ?? -1);
-                            else act("play", { card: card ?? -1 });
-                          }}
-                        />
+                          style={
+                            {
+                              "--hand-angle": `${(i - (me.hand.length - 1) / 2) * 3}deg`,
+                              "--hand-rise": `${Math.abs(i - (me.hand.length - 1) / 2) * 3}px`,
+                            } as CSSProperties
+                          }
+                        >
+                          <Card
+                            card={card}
+                            delay={i * 40}
+                            disabled={!active || !myTurn || phase !== "playing" || busy}
+                            pending={pendingCard === (card ?? -1)}
+                            onClick={() => {
+                              if (game.canChooseAce && (card === null || card === 31))
+                                setAce(card ?? -1);
+                              else act("play", { card: card ?? -1 });
+                            }}
+                          />
+                        </div>
                       ))}
                     </div>
-                    <div className="hand-hint">
-                      {!active ? (
-                        "Watching · you return if everyone is out"
-                      ) : blind ? (
-                        <>
-                          <EyeOff size={14} />
-                          Your card stays hidden until played
-                        </>
-                      ) : phase === "bidding" ? (
-                        "Predict your tricks"
-                      ) : myTurn ? (
-                        "Choose a card to play"
-                      ) : (
-                        "Waiting for your turn"
-                      )}
-                    </div>
+                    {!active && (
+                      <div className="hand-hint">Watching · you return if everyone is out</div>
+                    )}
                   </section>
                 </div>
               )}

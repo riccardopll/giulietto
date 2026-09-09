@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 
 export function cardLabel(card: number) {
   const suits = ["Clubs", "Swords", "Cups", "Coins"];
@@ -33,15 +33,20 @@ export function PlayingCard({
   pending?: boolean;
   delay?: number;
 }) {
+  const [failedCard, setFailedCard] = useState<number | null | undefined>(undefined);
   const label = card
     ? `${cardLabel(card)}, ${card === 31 ? "lowest or highest" : `value ${card}`}`
-    : "Your hidden card";
+    : "Hidden card";
   const style = {
     "--deal-delay": `${delay}ms`,
   } as CSSProperties;
   const content = (
     <>
-      <span className="card-fallback" aria-hidden="true">
+      <span
+        className="card-fallback"
+        aria-hidden="true"
+        style={{ visibility: failedCard === card ? "visible" : "hidden" }}
+      >
         {card === null ? "Hidden card" : cardLabel(card)}
       </span>
       <img
@@ -53,6 +58,7 @@ export function PlayingCard({
         width={300}
         height={480}
         onError={(event) => {
+          setFailedCard(card);
           event.currentTarget.style.visibility = "hidden";
         }}
       />
@@ -60,7 +66,7 @@ export function PlayingCard({
       {pending && <span className="card-pending" aria-hidden="true" />}
     </>
   );
-  const className = `playing-card ${small ? "small" : ""} ${onClick ? "playable" : ""} ${pending ? "pending-card" : ""}`;
+  const className = `playing-card ${card === null ? "card-back" : ""} ${small ? "small" : ""} ${onClick ? "playable" : ""} ${pending ? "pending-card" : ""}`;
   return onClick ? (
     <button
       type="button"
