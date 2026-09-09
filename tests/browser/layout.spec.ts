@@ -377,7 +377,7 @@ const boundaryViewports = [
   ...[639, 640, 641].map((width) => ({ width, height: 900 })), // header and seat-number sizes
   ...[687, 688, 689].map((width) => ({ width, height: 900 })), // 672px identities
   ...[1039, 1040, 1041].map((width) => ({ width, height: 1340 })), // board maximum width
-  ...[1031, 1032, 1033].map((height) => ({ width: 800, height })), // board maximum height
+  ...[999, 1000, 1001].map((height) => ({ width: 800, height })), // board maximum height
 ];
 
 for (const viewport of boundaryViewports) {
