@@ -1,8 +1,4 @@
 /* Geometry belongs to the board; identities stay outside the felt. */
-.match-screen {
-  padding: env(safe-area-inset-top) max(0.5rem, env(safe-area-inset-right))
-    max(0.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-left));
-}
 .match-board {
   container-name: match;
   container-type: size;
@@ -12,7 +8,7 @@
   --seat-inset: clamp(0.375rem, 1cqw, 0.625rem);
   --fan-width: clamp(1.75rem, 4cqw, 2.5rem);
   --fan-height: calc(max(var(--fan-width), 2rem) * 1.6 + 0.75rem);
-  --hand-card-width: min(5rem, calc((100cqw - 1.5rem) / 6));
+  --hand-card-width: min(clamp(2.75rem, 12cqh, 5rem), calc((100cqw - 1.5rem) / 6));
   --hand-height: calc(var(--hand-card-width) * 1.6 + 1rem);
   --seat-row-height: calc(var(--identity-height) + var(--seat-inset) + var(--fan-height));
   --play-height: min(
@@ -235,8 +231,11 @@
   .table-surface {
     inset: calc(var(--identity-height) + var(--seat-inset) + 1rem) calc(var(--table-gutter) + 1rem);
   }
+  .play-table {
+    padding-block: 0.25rem;
+  }
   .trick-cards {
-    --played-width: clamp(3rem, 6cqw, 3.5rem);
+    --played-width: min(clamp(3rem, 6cqw, 3.5rem), calc((var(--play-height) - 1rem) / 3.2));
   }
 }
 .table-felt {

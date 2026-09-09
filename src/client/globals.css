@@ -48,6 +48,11 @@
   --radius-xl: 1rem;
   --font-sans: Arial, Helvetica, sans-serif;
 }
+@utility safe-area {
+  padding: env(safe-area-inset-top) max(var(--page-gutter, 0.5rem), env(safe-area-inset-right))
+    max(var(--page-bottom, 0.5rem), env(safe-area-inset-bottom))
+    max(var(--page-gutter, 0.5rem), env(safe-area-inset-left));
+}
 @layer base {
   * {
     @apply border-border;

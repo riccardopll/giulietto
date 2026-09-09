@@ -113,6 +113,18 @@ export async function checkLayout(page: Page) {
           errors.push(`Card fan has the wrong orientation: ${owner.dataset.seat}`);
       }
     }
+    const trick = document.querySelector(".trick-cards");
+    if (trick) {
+      const cards = trick.getBoundingClientRect();
+      const area = document.querySelector(".play-table")!.getBoundingClientRect();
+      if (
+        cards.left < area.left - 1 ||
+        cards.top < area.top - 1 ||
+        cards.right > area.right + 1 ||
+        cards.bottom > area.bottom + 1
+      )
+        errors.push("Played cards extend outside the play area");
+    }
     const elements = [
       ...document.querySelectorAll<HTMLElement>(
         ".seat-identity, .seat-avatar, .seat-name, [data-seat-stats], .seat-number, .hand .playing-card, .trick-cards .playing-card, .bid-options button, header a, header h2, header button, .seat-hand .playing-card",

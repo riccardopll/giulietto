@@ -8,6 +8,7 @@ const viewports = [
   { width: 568, height: 320 },
   { width: 844, height: 390 },
   { width: 768, height: 1024 },
+  { width: 800, height: 600 },
   { width: 800, height: 900 },
   { width: 1024, height: 768 },
   { width: 1366, height: 768 },

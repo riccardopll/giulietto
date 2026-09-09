@@ -265,8 +265,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       <div
         className={
           game && !waiting
-            ? "match-screen mx-auto grid h-dvh max-w-6xl grid-rows-[auto_minmax(0,1fr)]"
-            : "mx-auto min-h-svh max-w-6xl px-4 pb-4 sm:px-8"
+            ? "match-screen safe-area mx-auto grid h-dvh max-w-6xl grid-rows-[auto_minmax(0,1fr)]"
+            : "safe-area mx-auto min-h-svh max-w-6xl [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
         }
       >
         <header className="site-header grid min-h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1 sm:min-h-16">

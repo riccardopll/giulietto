@@ -54,8 +54,42 @@ test("players can predict and play cards with the keyboard on mobile", async ({ 
   await checkLayout(page);
 });
 
-test("mobile lobby settings and live header use the same compact layout", async ({ page }) => {
+test("mobile lobby settings and live header use the same compact layout", async ({
+  page,
+  browserName,
+}, testInfo) => {
   await page.setViewportSize({ width: 320, height: 568 });
+  const safeArea = browserName === "chromium" ? await page.context().newCDPSession(page) : null;
+  const portraitInsets = { top: 47, right: 0, bottom: 34, left: 0 };
+  async function checkShellInsets(insets: typeof portraitInsets) {
+    await page.evaluate(() => scrollTo(0, 0));
+    const failures = await page.evaluate((insets) => {
+      return [...document.querySelectorAll<HTMLElement>("a, button, input")].flatMap((element) => {
+        const rect = element.getBoundingClientRect();
+        if (!rect.width || !rect.height) return [];
+        const label = element.getAttribute("aria-label") ?? (element.id || element.textContent);
+        if (rect.left < insets.left - 1 || rect.right > innerWidth - insets.right + 1)
+          return [`Control outside horizontal safe area: ${label}`];
+        if (element.closest("header") && rect.top < insets.top - 1)
+          return [`Header control above safe area: ${label}`];
+        return [];
+      });
+    }, insets);
+    expect(failures).toEqual([]);
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    const bottomClear = await page.evaluate((bottom) => {
+      const controls = [...document.querySelectorAll<HTMLElement>("a, button, input")];
+      return controls.every(
+        (element) => element.getBoundingClientRect().bottom <= innerHeight - bottom + 1,
+      );
+    }, insets.bottom);
+    expect(bottomClear).toBe(true);
+    await page.evaluate(() => scrollTo(0, 0));
+  }
+  if (safeArea) {
+    await page.setViewportSize({ width: 393, height: 852 });
+    await safeArea.send("Emulation.setSafeAreaInsetsOverride", { insets: portraitInsets });
+  }
   const host = player("test-player-1", "bot_1", Date.now());
   const lobby = makeGame("WWWWWWWW", host, false);
   lobby.players.push(player("test-player-2", "bot_2", Date.now()));
@@ -84,9 +118,24 @@ test("mobile lobby settings and live header use the same compact layout", async 
     });
   });
   await page.goto("/");
+  if (safeArea) {
+    await checkShellInsets(portraitInsets);
+    await attachScreenshot(page, testInfo, "home-safe-area");
+  }
   await page.getByLabel("Display name").fill("bot_1");
   await page.getByRole("button", { name: "Create private lobby" }).click();
   await expect(page.getByRole("heading", { name: "Players", exact: true })).toBeVisible();
+  if (safeArea) {
+    const landscapeInsets = { top: 0, right: 44, bottom: 21, left: 44 };
+    await page.setViewportSize({ width: 844, height: 390 });
+    await safeArea.send("Emulation.setSafeAreaInsetsOverride", { insets: landscapeInsets });
+    await checkShellInsets(landscapeInsets);
+    await attachScreenshot(page, testInfo, "lobby-safe-area");
+    await safeArea.send("Emulation.setSafeAreaInsetsOverride", {
+      insets: { top: 0, right: 0, bottom: 0, left: 0 },
+    });
+    await page.setViewportSize({ width: 320, height: 568 });
+  }
   await page.getByRole("slider", { name: "Starting lives" }).press("End");
   await expect.poll(() => lobby.startingLives).toBe(5);
   await page.getByRole("button", { name: "Start game", exact: true }).click();
