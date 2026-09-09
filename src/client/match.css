@@ -18,7 +18,7 @@
     max(12rem, 55cqw),
     calc(100cqh - 2 * var(--seat-row-height) - var(--hand-height) - var(--events-height) - 1.75rem)
   );
-  grid-template-rows: auto auto auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   align-content: center;
   gap: 0.5rem;
   max-width: 62rem;
@@ -37,11 +37,22 @@
 .match-events {
   position: relative;
   align-self: stretch;
-  height: var(--events-height);
+  container: events / size;
+  min-height: var(--events-height);
   min-width: 0;
   overflow: hidden;
   pointer-events: none;
-  mask-image: linear-gradient(to bottom, transparent, #000 0.5rem);
+}
+/* Keep older notifications whole when the remaining space cannot fit all three. */
+@container events (height < 8.25rem) {
+  .match-event-slot:nth-last-child(3) {
+    visibility: hidden;
+  }
+}
+@container events (height < 5.5rem) {
+  .match-event-slot:not(:last-child) {
+    visibility: hidden;
+  }
 }
 .match-event-slot {
   position: absolute;
