@@ -834,6 +834,9 @@ h1 {
   .table-seat[data-seat-edge="top"] .seat-hand {
     translate: 0 clamp(-1.5rem, calc(15vw - 4.5rem), -0.75rem);
   }
+  .seated-table[data-player-count="5"] .table-seat[data-upper-side] .seat-hand {
+    --fan-center-offset: -2rem;
+  }
   .match-screen .site-header:has(.header-right) .header-right {
     grid-column: 1 / -1;
     grid-row: 2;
