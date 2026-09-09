@@ -134,7 +134,19 @@ export function MatchBoard({
   }
 
   return (
-    <div ref={board} className="match-board grid h-full min-h-0" data-phase={game.phase}>
+    <div
+      ref={board}
+      className="match-board grid h-full min-h-0"
+      data-phase={game.phase}
+      data-blind={game.count === 1 || undefined}
+      style={
+        {
+          "--trick-players": game.order.length,
+          "--trick-columns": Math.min(3, game.order.length),
+          "--trick-rows": Math.ceil(game.order.length / 3),
+        } as CSSProperties
+      }
+    >
       <MatchEventFeed key={`${game.code}-${game.matchId}-${game.you}`} game={game} />
       <section className="table-arena relative isolate grid min-h-0 w-full" aria-label="Game table">
         <TableSurface />
@@ -162,7 +174,7 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards flex flex-wrap items-center justify-center gap-2"
+              className="trick-cards flex flex-wrap items-center justify-center"
               key={`${game.round}-${trickNumber}`}
             >
               {game.trick.map((play) => (

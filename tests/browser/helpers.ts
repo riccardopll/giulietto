@@ -43,7 +43,7 @@ export async function checkLayout(page: Page) {
     )
       errors.push("The round title is not centered in the header");
     const board = document.querySelector(".match-board")!.getBoundingClientRect();
-    const desktop = board.width >= 768 && board.height >= 480;
+    const desktop = board.width >= 896 && board.height >= 480;
     const seats = [...document.querySelectorAll<HTMLElement>("[data-seat]")];
     const arena = document.querySelector(".table-arena")!.getBoundingClientRect();
     const center = { x: arena.x + arena.width / 2, y: arena.y + arena.height / 2 };
@@ -158,9 +158,27 @@ export async function checkLayout(page: Page) {
       if (element.matches("button") && (rect.width < 43.5 || rect.height < 43.5))
         errors.push(`Small touch target: ${label}`);
       if (element.matches(".seat-hand .playing-card")) {
-        const minimum = element.closest("[data-revealed]") ? 32 : 24;
+        const minimum = element.closest("[data-revealed]") ? 40 : 24;
         if (parseFloat(getComputedStyle(element).width) < minimum - 0.5)
           errors.push(`Unreadable opponent card: ${label}`);
+      }
+      if (
+        element.matches(".trick-cards .playing-card") &&
+        parseFloat(getComputedStyle(element).width) < 39.5
+      )
+        errors.push(`Unreadable played card: ${label}`);
+      if (element.matches(".playing-card")) {
+        for (let ancestor = element.parentElement; ancestor; ancestor = ancestor.parentElement) {
+          const style = getComputedStyle(ancestor);
+          const clip = ancestor.getBoundingClientRect();
+          const clipsX = /hidden|clip|scroll|auto/.test(style.overflowX);
+          const clipsY = /hidden|clip|scroll|auto/.test(style.overflowY);
+          if (
+            (clipsX && (rect.left < clip.left - 1 || rect.right > clip.right + 1)) ||
+            (clipsY && (rect.top < clip.top - 1 || rect.bottom > clip.bottom + 1))
+          )
+            errors.push(`Clipped card: ${label}`);
+        }
       }
       if (element.matches(".hand .playing-card") && !element.hasAttribute("disabled")) {
         const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
@@ -185,6 +203,21 @@ export async function checkLayout(page: Page) {
     const contour = document.querySelector<SVGGeometryElement>(".table-rail-edge");
     const tableCoordinates = contour?.getScreenCTM()?.inverse();
     if (contour && tableCoordinates) {
+      for (const card of document.querySelectorAll(".trick-cards .playing-card")) {
+        const rect = card.getBoundingClientRect();
+        const outsideFelt = [0, 1].some((x) =>
+          [0, 1].some(
+            (y) =>
+              !contour.isPointInFill(
+                new DOMPoint(
+                  rect.left + rect.width * x,
+                  rect.top + rect.height * y,
+                ).matrixTransform(tableCoordinates),
+              ),
+          ),
+        );
+        if (outsideFelt) errors.push(`Played card extends outside the felt: ${card.ariaLabel}`);
+      }
       for (const stats of document.querySelectorAll("[data-seat-stats]")) {
         const rect = stats.getBoundingClientRect();
         const overlapsFelt = [0, 0.5, 1].some((x) =>
