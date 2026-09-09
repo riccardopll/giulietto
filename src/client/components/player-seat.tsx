@@ -102,7 +102,10 @@ export function PlayerSeat({
               className="player-score"
               aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
             >
-              {player.taken} / {player.bid ?? "–"}
+              <span data-overbid={player.bid != null && player.taken > player.bid ? "" : undefined}>
+                {player.taken}
+              </span>{" "}
+              / {player.bid ?? "–"}
             </span>
           </div>
           {(player.left || player.lives <= 0) && (

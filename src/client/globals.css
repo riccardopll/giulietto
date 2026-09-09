@@ -672,8 +672,12 @@ h1 {
 }
 .player-score {
   font-size: 0.8125rem;
+  font-weight: 700;
   color: #75606d;
   font-variant-numeric: tabular-nums;
+}
+.player-score [data-overbid] {
+  color: var(--destructive);
 }
 .seat-timer {
   position: absolute;
