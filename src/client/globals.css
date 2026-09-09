@@ -831,6 +831,9 @@ h1 {
   .table-seat[data-lower-side] .seat-identity {
     translate: calc(var(--seat-x) * 1.5rem) 1rem;
   }
+  .table-seat[data-upper-side] .seat-identity {
+    translate: calc(var(--seat-x) * 1rem) -0.5rem;
+  }
   .seated-table {
     --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 1rem);
   }
