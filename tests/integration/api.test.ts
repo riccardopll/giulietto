@@ -1,49 +1,63 @@
 import { expect } from "vitest";
 import { guest, test, type State } from "./worker";
 
-test("public matchmaking fills a six-player table and starts another for the next player", async ({
-  api,
-}) => {
+test("public matchmaking fills a lobby that waits for its host to start", async ({ api }) => {
   const players = Array.from({ length: 6 }, (_, index) => guest(index + 1));
-  const joined = await Promise.all(players.map((player) => api.state(player, { action: "match" })));
+  const created = await api.state(players[0], { action: "match" });
+  const joined = await Promise.all(
+    players.slice(1).map((player) => api.state(player, { action: "match" })),
+  );
   const codes = new Set(joined.map((state) => state.code));
-  expect(codes.size).toBe(1);
-  const response = await api.get(players[0], joined[0].code);
+  expect(codes).toEqual(new Set([created.code]));
+  expect(joined.every((state) => state.phase === "lobby")).toBe(true);
+  const response = await api.get(players[0], created.code);
   const state = (await response.json()) as State;
-  expect(state.phase).toBe("bidding");
+  expect(state.phase).toBe("lobby");
   expect(state.players).toHaveLength(6);
   expect(new Set(state.players.map((player) => player.id)).size).toBe(6);
   const next = await api.state(guest(1), { action: "match" });
   expect(codes.has(next.code)).toBe(false);
   expect(next.phase).toBe("lobby");
-});
-
-test("a private lobby lets only its host configure lives and start the game", async ({ api }) => {
-  const host = guest(1);
-  const other = guest(2);
-  const created = await api.state(host, { action: "create" });
-  const { code } = created;
-  expect(created).toMatchObject({ phase: "lobby", startingLives: 3, host: created.you });
-  await api.state(other, { action: "join", code });
-
-  for (const action of ["settings", "start"]) {
-    expect((await api.post(other, { action, code, startingLives: 5 })).status).toBe(400);
-  }
-  for (const startingLives of [0, 6, 1.5, "5"]) {
-    expect((await api.post(host, { action: "settings", code, startingLives })).status).toBe(400);
-  }
-  const configured = await api.state(host, { action: "settings", code, startingLives: 5 });
-  expect(configured.startingLives).toBe(5);
-  const joined = await api.state(guest(3), { action: "join", code });
-  expect(joined.players.map((player) => player.lives)).toEqual([5, 5, 5]);
-
-  const started = await api.state(host, { action: "start", code });
+  expect((await api.post(players[1], { action: "start", code: created.code })).status).toBe(400);
+  const started = await api.state(players[0], { action: "start", code: created.code });
   expect(started.phase).toBe("bidding");
-  expect(started.players.every((player) => player.lives === 5 && player.hand.length === 6)).toBe(
-    true,
-  );
-  expect((await api.post(host, { action: "settings", code, startingLives: 1 })).status).toBe(400);
+  expect(started.players.every((player) => player.hand.length === 6)).toBe(true);
 });
+
+for (const { visibility, action } of [
+  { visibility: "private", action: "create" },
+  { visibility: "public", action: "match" },
+]) {
+  test(`a ${visibility} lobby lets only its host configure lives and start the game`, async ({
+    api,
+  }) => {
+    const host = guest(1);
+    const other = guest(2);
+    const created = await api.state(host, { action });
+    const { code } = created;
+    expect(created).toMatchObject({ phase: "lobby", startingLives: 3, host: created.you });
+    expect((await api.post(host, { action: "start", code })).status).toBe(400);
+    await api.state(other, { action: "join", code });
+
+    for (const action of ["settings", "start"]) {
+      expect((await api.post(other, { action, code, startingLives: 5 })).status).toBe(400);
+    }
+    for (const startingLives of [0, 6, 1.5, "5"]) {
+      expect((await api.post(host, { action: "settings", code, startingLives })).status).toBe(400);
+    }
+    const configured = await api.state(host, { action: "settings", code, startingLives: 5 });
+    expect(configured.startingLives).toBe(5);
+    const joined = await api.state(guest(3), { action: "join", code });
+    expect(joined.players.map((player) => player.lives)).toEqual([5, 5, 5]);
+
+    const started = await api.state(host, { action: "start", code });
+    expect(started.phase).toBe("bidding");
+    expect(started.players.every((player) => player.lives === 5 && player.hand.length === 6)).toBe(
+      true,
+    );
+    expect((await api.post(host, { action: "settings", code, startingLives: 1 })).status).toBe(400);
+  });
+}
 
 test("WebSockets send each player their own hand and broadcast accepted moves", async ({ api }) => {
   const host = guest(1);

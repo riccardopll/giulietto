@@ -61,7 +61,6 @@ export class GameTable extends DurableObject<Env> {
       this.ctx.getWebSockets().map((ws) => (ws.deserializeAttachment() as Attachment).id),
     );
     return Math.min(
-      g.startAt || Infinity,
       ...g.players.filter((p) => !connected.has(p.id)).map((p) => p.seen + 120000),
       r.updated + DAY,
     );
