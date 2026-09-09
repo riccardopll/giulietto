@@ -1,5 +1,41 @@
 @custom-variant short-trick (@container play (max-height: 9rem));
 
+@property --turn-glow-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@utility turn-glow {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: inherit;
+    padding: 2px;
+    pointer-events: none;
+    background: conic-gradient(
+      from var(--turn-glow-angle),
+      #b7437520,
+      #b7437530 90deg,
+      #b7437590 160deg,
+      #edabc8b0 200deg,
+      #b7437520 280deg
+    );
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    animation: turn-glow-orbit 4s linear infinite;
+  }
+}
+
+@keyframes turn-glow-orbit {
+  to {
+    --turn-glow-angle: 360deg;
+  }
+}
+
 @utility trick-grid {
   --trick-columns: var(--default-trick-columns);
   --trick-rows: var(--default-trick-rows);

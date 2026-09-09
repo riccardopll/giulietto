@@ -19,6 +19,7 @@ export function PlayerSeat({
   number,
   you,
   current,
+  activeTurn,
   deadline,
   serverTime,
   round,
@@ -30,6 +31,7 @@ export function PlayerSeat({
   number: number;
   you: boolean;
   current: boolean;
+  activeTurn: boolean;
   deadline: number;
   serverTime: number;
   round: number;
@@ -105,11 +107,6 @@ export function PlayerSeat({
             >
               {toRoman(number)}
             </span>
-            {(player.left || player.lives <= 0) && (
-              <span className="seat-status absolute top-full left-1/2 -translate-x-1/2 text-[9px] leading-3 whitespace-nowrap text-muted-foreground">
-                {player.left ? "Left" : "Out"}
-              </span>
-            )}
           </div>
           <div className="seat-details flex min-w-0 flex-col items-start justify-center gap-0.5">
             <strong
@@ -156,7 +153,7 @@ export function PlayerSeat({
           <div
             className={cn(
               "seat-fan-orientation absolute inset-0",
-              side === "top" && !revealed && "rotate-180",
+              !revealed && "rotate-(--seat-fan-rotation)",
             )}
           >
             {player.hand.map((card, i) => {
@@ -165,7 +162,7 @@ export function PlayerSeat({
                 <div
                   className={cn(
                     "seat-fan-card absolute top-[calc(50%+var(--fan-curve))] left-[calc(50%+var(--fan-offset)*2px)] origin-bottom -translate-x-1/2 -translate-y-1/2 rotate-(--fan-angle)",
-                    card === null ? "w-7 @min-2xl/board:w-8" : "w-(--opponent-card-width)",
+                    card === null ? "w-7 @min-xl/board:w-11" : "w-(--opponent-card-width)",
                   )}
                   key={card ?? i}
                   style={
@@ -176,7 +173,14 @@ export function PlayerSeat({
                     } as CSSProperties
                   }
                 >
-                  <PlayingCard card={card} className="rounded-[.2rem] border border-[#fffaf6]" />
+                  <PlayingCard
+                    card={card}
+                    className={cn(
+                      "border border-[#fffaf6]",
+                      card === null && "rounded-[.2rem]",
+                      activeTurn && "turn-glow",
+                    )}
+                  />
                 </div>
               );
             })}
