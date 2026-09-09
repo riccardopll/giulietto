@@ -1,7 +1,10 @@
 # Testing
 
-After visual changes, open `/preview` locally for the user to review. Check mobile
-first, then larger screens, varying player counts, cards, and game phases.
+Run full layout sweeps (`npm run test:layout`) only when explicitly requested,
+never in CI.
+
+After layout changes, inspect screenshots and open `/preview` locally for the user
+to review.
 
 In live test matches, name automated players `bot_1` through `bot_6`, consecutively
 from 1.

@@ -86,7 +86,7 @@ export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAc
             className="h-13 rounded-lg px-5"
             type="submit"
             variant="secondary"
-            disabled={busy || !name.trim() || code.length !== 8}
+            disabled={!ready || busy || !name.trim() || code.length !== 8}
           >
             Join
           </Button>

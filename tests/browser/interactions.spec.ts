@@ -5,7 +5,7 @@ import type { Command } from "../../src/server/protocol";
 import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 test("playable hand cards stay accessible when hovered and focused", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 1366, height: 768 });
+  await page.setViewportSize({ width: 1220, height: 1340 });
   await openPreview(page, "people=6&cards=6&phase=playing&played=0");
   const card = page
     .getByRole("region", { name: "Your hand", exact: true })
@@ -53,6 +53,67 @@ test("players can predict and play cards with the keyboard on mobile", async ({ 
     await page.getByRole("button", { name: "High · 41" }).click();
   await expect(hand.getByRole("button")).toHaveCount(5);
   await checkLayout(page);
+});
+
+test("card labels remain readable when card images fail", async ({ page }, testInfo) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(crypto, "getRandomValues", {
+      value: (values: Uint32Array) => values.fill(19),
+    });
+  });
+  await page.route("**/cards/neapolitan/*.webp", (route) => route.abort());
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 800, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    for (const [round, query] of [
+      ["normal", "cards=6&completedTricks=5&played=4&viewer=0"],
+      ["blind", "cards=1&played=3&viewer=1"],
+    ]) {
+      await page.goto(`/preview?people=6&phase=playing&${query}`);
+      await expect(page.locator("[data-seat]").first()).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
+      await expect
+        .poll(() =>
+          page
+            .locator(".card-fallback")
+            .evaluateAll((labels) =>
+              labels.every((label) => getComputedStyle(label).visibility === "visible"),
+            ),
+        )
+        .toBe(true);
+      const failures = await page.evaluate(() => {
+        const errors: string[] = [];
+        for (const fallback of document.querySelectorAll(".card-fallback")) {
+          const frame = fallback.getBoundingClientRect();
+          const badge = fallback.closest(".playing-card")!.querySelector(".played-mode");
+          const mode = badge?.getBoundingClientRect();
+          const text = document.createRange();
+          text.selectNodeContents(fallback);
+          for (const line of text.getClientRects()) {
+            if (
+              line.left < frame.left - 0.5 ||
+              line.right > frame.right + 0.5 ||
+              line.top < frame.top - 0.5 ||
+              line.bottom > frame.bottom + 0.5
+            )
+              errors.push(`Fallback outside its card: ${fallback.textContent}`);
+            if (
+              mode &&
+              Math.min(line.right, mode.right) - Math.max(line.left, mode.left) > 0.5 &&
+              Math.min(line.bottom, mode.bottom) - Math.max(line.top, mode.top) > 0.5
+            )
+              errors.push(`Mode badge covers fallback: ${fallback.textContent}`);
+          }
+        }
+        return errors;
+      });
+      expect(failures).toEqual([]);
+      await checkLayout(page);
+      await attachScreenshot(page, testInfo, `fallback-${round}-${viewport.width}`);
+    }
+  }
 });
 
 test("mobile lobby settings and live header use the same compact layout", async ({
@@ -127,10 +188,7 @@ test("mobile lobby settings and live header use the same compact layout", async 
   await page.getByRole("button", { name: "Create private lobby" }).click();
   await expect(page.getByRole("heading", { name: "Players", exact: true })).toBeVisible();
   if (safeArea) {
-    const landscapeInsets = { top: 0, right: 44, bottom: 21, left: 44 };
-    await page.setViewportSize({ width: 844, height: 390 });
-    await safeArea.send("Emulation.setSafeAreaInsetsOverride", { insets: landscapeInsets });
-    await checkShellInsets(landscapeInsets);
+    await checkShellInsets(portraitInsets);
     await attachScreenshot(page, testInfo, "lobby-safe-area");
     await safeArea.send("Emulation.setSafeAreaInsetsOverride", {
       insets: { top: 0, right: 0, bottom: 0, left: 0 },

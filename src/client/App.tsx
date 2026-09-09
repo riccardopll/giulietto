@@ -97,9 +97,9 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     else toast.dismiss("game-error");
   }
   const accept = (s: State) => {
-    clockOffset.current = s.serverTime - Date.now();
     const previous = gameRef.current;
     if (previous && previous.code === s.code && s.revision < previous.revision) return;
+    clockOffset.current = s.serverTime - Date.now();
     gameRef.current = s;
     if (!previous && history.state?.giuliettoTable !== s.code) {
       // Keep a dashboard entry below the table, including direct invite links.
@@ -355,7 +355,15 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             onAction={act}
           />
         ) : (
-          <main className={waiting ? "pb-6" : result ? "min-h-0 overflow-y-auto px-1" : "min-h-0"}>
+          <main
+            className={
+              waiting
+                ? "pb-6"
+                : result
+                  ? "min-h-0 overflow-y-auto px-1"
+                  : "flex min-h-0 items-start"
+            }
+          >
             {waiting ? (
               <Lobby
                 game={game}
@@ -366,24 +374,20 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onStart={() => void act("start")}
                 onSettings={(startingLives) => act("settings", { startingLives })}
               />
+            ) : result ? (
+              <ResultsPanel game={game} seconds={seconds} onReset={reset} />
             ) : (
-              <>
-                {result ? (
-                  <ResultsPanel game={game} seconds={seconds} onReset={reset} />
-                ) : (
-                  <MatchBoard
-                    game={game}
-                    busy={busy}
-                    pendingCard={pendingCard}
-                    preview={isPreview}
-                    onBid={(bid) => void act("bid", { bid })}
-                    onPlay={(card) => {
-                      if (game.canChooseAce && (card === null || card === 31)) setAce(card ?? -1);
-                      else void act("play", { card: card ?? -1 });
-                    }}
-                  />
-                )}
-              </>
+              <MatchBoard
+                game={game}
+                busy={busy}
+                pendingCard={pendingCard}
+                preview={isPreview}
+                onBid={(bid) => void act("bid", { bid })}
+                onPlay={(card) => {
+                  if (game.canChooseAce && (card === null || card === 31)) setAce(card ?? -1);
+                  else void act("play", { card: card ?? -1 });
+                }}
+              />
             )}
           </main>
         )}

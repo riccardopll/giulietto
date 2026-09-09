@@ -48,23 +48,36 @@ export function MatchEventFeed({ game }: { game: State }) {
   }, [events]);
 
   return (
-    <div className="match-events" role="log" aria-label="Game events" aria-relevant="additions">
+    <div
+      className="match-events pointer-events-none relative min-h-0 min-w-0 overflow-hidden"
+      role="log"
+      aria-label="Game events"
+      aria-relevant="additions"
+    >
       {events.map((event, index) => (
         <div
-          className="match-event-slot"
+          className="match-event-slot absolute inset-x-0 bottom-0 flex h-11 justify-center -translate-y-[calc(var(--event-position)*2.75rem)] transition-transform duration-200"
           key={event.id}
           style={{ "--event-position": events.length - index - 1 } as CSSProperties}
         >
           <div
-            className="match-event"
+            className="match-event grid max-w-full animate-[match-event-rise_var(--event-duration)_ease-out_both] items-center px-2 py-0.5 text-xs leading-tight text-muted-foreground"
             data-event-type={event.type}
             style={{ "--event-duration": `${EVENT_DURATION}ms` } as CSSProperties}
           >
             <span className="sr-only">{description(event, game.you)}</span>
-            <div className="match-event-content" aria-hidden="true">
-              {event.type === "trick-won" && <Trophy className="event-trophy size-3.5 shrink-0" />}
-              <span className="match-event-copy">
-                <strong className="match-event-name" title={event.name}>
+            <div
+              className="match-event-content flex min-w-0 items-center justify-center gap-1.5"
+              aria-hidden="true"
+            >
+              {event.type === "trick-won" && (
+                <Trophy className="event-trophy size-3.5 shrink-0 text-primary" />
+              )}
+              <span className="match-event-copy min-w-0">
+                <strong
+                  className="match-event-name inline-block max-w-32 truncate align-bottom text-foreground"
+                  title={event.name}
+                >
                   {event.player === game.you ? "You" : event.name}
                 </strong>{" "}
                 {event.type === "prediction"
@@ -77,10 +90,12 @@ export function MatchEventFeed({ game }: { game: State }) {
                 <strong>{event.bid}</strong>
               ) : (
                 <>
-                  <span className="match-event-card">
+                  <span className="match-event-card w-6 shrink-0">
                     <PlayingCard card={event.card} className="rounded-[.2rem]" />
                   </span>
-                  {event.mode && <span className="match-event-mode">{event.mode}</span>}
+                  {event.mode && (
+                    <span className="match-event-mode text-[10px] capitalize">{event.mode}</span>
+                  )}
                 </>
               )}
             </div>

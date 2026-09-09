@@ -3,6 +3,8 @@ import {
   deal,
   legalBids,
   makeGame,
+  MAX_STARTING_LIVES,
+  MIN_STARTING_LIVES,
   play,
   player,
   tick,
@@ -10,15 +12,49 @@ import {
 } from "../../shared/game.ts";
 
 export type PreviewPhase = "playing" | "bidding" | "trick" | "results" | "blind";
-export type PreviewInactive = "none" | "eliminated" | "left";
+export type PreviewSeatState = "active" | "eliminated" | "left" | "leaving";
 export type PreviewOptions = {
   people: number;
   cards: number;
   phase: PreviewPhase;
   longNames: boolean;
   played?: number;
-  inactive?: PreviewInactive;
+  seatStates?: PreviewSeatState[];
+  startingLives?: number;
+  completedTricks?: number;
+  bids?: number;
+  cycle?: number;
 };
+
+export function normalizePreview(options: PreviewOptions): Required<PreviewOptions> {
+  const clamp = (value: number, min: number, max: number) =>
+    Number.isInteger(value) ? Math.max(min, Math.min(max, value)) : min;
+  const people = clamp(options.people, 2, 6);
+  const cards = options.phase === "blind" ? 1 : clamp(options.cards, 1, 6);
+  const seatStates = Array.from(
+    { length: people },
+    (_, index) => options.seatStates?.[index] ?? "active",
+  );
+  // A round needs at least two dealt hands, including players who left during it.
+  let active = seatStates.filter((state) => state === "active" || state === "leaving").length;
+  for (let index = 0; active < 2; index++) {
+    if (seatStates[index] !== "active" && seatStates[index] !== "leaving") {
+      seatStates[index] = "active";
+      active++;
+    }
+  }
+  return {
+    ...options,
+    people,
+    cards,
+    seatStates,
+    startingLives: clamp(options.startingLives ?? 5, MIN_STARTING_LIVES, MAX_STARTING_LIVES),
+    played: clamp(options.played ?? 0, 0, active),
+    completedTricks: clamp(options.completedTricks ?? 0, 0, cards - 1),
+    bids: clamp(options.bids ?? 0, 0, active - 1),
+    cycle: clamp(options.cycle ?? 0, 0, 4),
+  };
+}
 
 export function advancePreview(source: Game): Game {
   const game = structuredClone(source);
@@ -37,53 +73,53 @@ export function advancePreview(source: Game): Game {
   return game;
 }
 
-export function makePreview(options: PreviewOptions): Game {
-  const { people, phase, longNames } = options;
-  const cards = phase === "blind" ? 1 : options.cards;
+export function makePreview(input: PreviewOptions): Game {
+  const options = normalizePreview(input);
+  const { people, phase, longNames, cards, seatStates, startingLives } = options;
   const players = Array.from({ length: people }, (_, i) =>
     player(
       `preview-${people}-${(i + 1) * 7919}`,
-      longNames ? `Player_${i + 1}_Long_Name` : `bot_${i + 1}`,
+      longNames
+        ? i % 2 === 0
+          ? `${"W".repeat(19)}${i + 1}`
+          : "就挨餓的那".repeat(4)
+        : `bot_${i + 1}`,
       Date.now(),
     ),
   );
   const seatOrder = players.map((p) => p.id);
   let game = makeGame(`PREVIEW${people}`, players[0], false);
   game.players = players;
-  game.startingLives = 5;
-  game.round = 6 - cards;
+  game.startingLives = startingLives;
+  game.round = 6 * options.cycle + 6 - cards;
   deal(game, Date.now());
   // Use a stable seat order so repeated resets are easy to compare.
   game.players.sort((a, b) => seatOrder.indexOf(a.id) - seatOrder.indexOf(b.id));
-  game.order = game.players.map((p) => p.id);
   game.players.forEach((p, i) => {
-    p.lives = 5 - (i % 3);
+    const state = seatStates[i];
+    p.lives = state === "eliminated" || state === "left" ? 0 : startingLives;
+    p.left = state === "left" || state === "leaving";
+    if (p.lives === 0) p.hand = [];
   });
-  // Keep at least two active players, and retain the inactive seat for spectator previews.
-  if (people > 2 && options.inactive && options.inactive !== "none") {
-    const inactive = game.players.at(-1)!;
-    inactive.lives = 0;
-    inactive.left = options.inactive === "left";
-    inactive.hand = [];
-    game.order = game.order.filter((id) => id !== inactive.id);
+  game.order = game.players.filter((p) => p.hand.length > 0).map((p) => p.id);
+  if (phase === "bidding") {
+    for (let i = 0; i < options.bids; i++) game = advancePreview(game);
+    return game;
   }
-  if (phase === "bidding") return game;
   while (game.phase === "bidding") game = advancePreview(game);
   if (phase === "results") {
     while (game.phase !== "trick" || game.players.some((p) => p.hand.length))
       game = advancePreview(game);
-    // Keep this fixture on round results even when a random deal gives one player every trick.
-    // Include both an exact prediction and a lost life without ending the match.
-    for (const p of game.players) p.bid = p.taken;
-    const missed = game.players[0];
-    missed.bid = missed.taken === game.count ? missed.taken - 1 : missed.taken + 1;
     game = advancePreview(game);
   } else {
+    for (let trick = 0; trick < options.completedTricks; trick++) {
+      while (game.phase === "playing") game = advancePreview(game);
+      game = advancePreview(game);
+    }
     const active = game.order.length;
-    const played =
-      phase === "trick" ? active : Math.max(0, Math.min(active, options.played ?? active - 1));
+    const played = phase === "trick" ? active : options.played;
     // Rotate the trick's starting player so seat one can act after any partial trick.
-    game.turn = (active - played) % active;
+    if (options.completedTricks === 0) game.turn = (active - played) % active;
     for (let i = 0; i < played; i++) game = advancePreview(game);
   }
   return game;

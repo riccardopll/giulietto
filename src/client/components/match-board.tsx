@@ -107,13 +107,12 @@ export function MatchBoard({
     return (
       <div
         key={id}
-        className="seat-slot min-w-0"
+        className="seat-slot grid min-w-0 grid-rows-subgrid"
         data-center={position.column === 3 || undefined}
         style={
           {
             gridColumn: `${position.column} / span 2`,
-            gridRow: position.side === "top" ? 1 : 3,
-            "--seat-progress": `${(seating.seats.indexOf(id) / seating.seats.length) * 100}%`,
+            gridRow: `${position.side === "top" ? 1 : 4} / span 2`,
           } as CSSProperties
         }
       >
@@ -134,19 +133,27 @@ export function MatchBoard({
   }
 
   return (
-    <div ref={board} className="match-board grid h-full min-h-0" data-phase={game.phase}>
+    <div
+      ref={board}
+      className="match-board @container/board mx-auto grid size-full max-h-[58rem] max-w-5xl grid-rows-[clamp(2.75rem,calc(50dvh-19rem),8.25rem)_minmax(0,1fr)_auto] gap-1.5
+        [--opponent-card-width:clamp(2.5rem,7dvh,4rem)] [--opponent-hand-height:calc(var(--opponent-card-width)*1.6)]"
+      data-phase={game.phase}
+      data-blind={game.count === 1 || undefined}
+    >
       <MatchEventFeed key={`${game.code}-${game.matchId}-${game.you}`} game={game} />
-      <section className="table-arena relative isolate grid min-h-0 w-full" aria-label="Game table">
+      <section
+        className="table-arena relative isolate grid min-h-0 w-full grid-cols-6 gap-x-2 grid-rows-[4.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_4.5rem]
+          @min-2xl/board:grid-rows-[5.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_5.5rem]"
+        aria-label="Game table"
+      >
         <TableSurface />
-        <div className="seats pointer-events-none absolute inset-0 grid grid-cols-6">
-          {seating.seats.map(seat)}
-        </div>
+        <div className="seats contents">{seating.seats.map(seat)}</div>
         <section
-          className="play-table grid min-h-0 min-w-0 place-items-center"
+          className="play-table @container/play col-span-full row-start-3 grid min-h-0 min-w-0 place-items-center [container-type:size]"
           aria-label={game.phase === "bidding" ? "Predictions" : "Current trick"}
         >
           {game.phase === "bidding" ? (
-            <div className="bid-options flex flex-wrap justify-center gap-2">
+            <div className="bid-options flex max-w-[90%] flex-wrap justify-center gap-1.5">
               {Array.from({ length: game.count + 1 }, (_, n) => (
                 <Button
                   key={n}
@@ -162,11 +169,22 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards flex flex-wrap items-center justify-center gap-2"
+              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1]"
+              style={
+                {
+                  "--trick-players": game.order.length,
+                  "--default-trick-columns": Math.min(3, game.order.length),
+                  "--default-trick-rows": Math.ceil(game.order.length / 3),
+                } as CSSProperties
+              }
               key={`${game.round}-${trickNumber}`}
             >
               {game.trick.map((play) => (
-                <div className="played-card" key={play.card} data-owner={play.player}>
+                <div
+                  className="played-card min-w-0 animate-[card-land_.24s_ease-out_both]"
+                  key={play.card}
+                  data-owner={play.player}
+                >
                   <PlayingCard card={play.card} mode={play.mode} />
                 </div>
               ))}
@@ -174,43 +192,31 @@ export function MatchBoard({
           )}
         </section>
       </section>
-      <section className="hand-area flex min-w-0 flex-col items-center" aria-label="Your hand">
+      <section
+        className="hand-area flex min-w-0 items-center justify-center pt-2 [--hand-card-width:min(5rem,10dvh,calc((100cqw-2rem)/6))]"
+        aria-label="Your hand"
+      >
         <div
-          className="hand flex items-start justify-center gap-1.5"
+          className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center gap-1.5"
           key={`hand-${game.round}`}
           data-active-turn={(canPlay && !!me?.hand.length) || undefined}
-          data-empty-spectator={(!active && !me?.hand.length) || undefined}
-          style={
-            {
-              "--hand-columns": Math.max(1, Math.min(3, me?.hand.length ?? 0)),
-              "--hand-rows": Math.ceil(game.count / 3),
-            } as CSSProperties
-          }
         >
           {me?.hand.map((card, i) => {
-            const half = (me.hand.length - 1) / 2;
-            const offset = i - half;
-            const columns = Math.min(3, me.hand.length);
-            const rowCards = Math.min(columns, me.hand.length - Math.floor(i / 3) * 3);
-            const rowHalf = (rowCards - 1) / 2;
-            const rowOffset = (i % 3) - rowHalf;
+            const middle = (me.hand.length - 1) / 2;
+            const position = middle ? (i - middle) / middle : 0;
             return (
               <div
-                className="hand-card relative min-w-0"
+                className="hand-card relative w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
                 key={card ?? i}
                 style={
                   {
-                    "--hand-offset": offset,
-                    "--hand-lift": offset ** 2 - half ** 2,
-                    "--hand-row-offset": rowOffset,
-                    "--hand-row-lift": rowOffset ** 2 - rowHalf ** 2,
-                    "--hand-row-shift": (columns - rowCards) / 2,
+                    "--hand-angle": `${position * 3}deg`,
+                    "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
                   } as CSSProperties
                 }
               >
                 <PlayingCard
                   card={card}
-                  delay={i * 40}
                   disabled={!canPlay}
                   pending={pendingCard === (card ?? -1)}
                   onClick={() => onPlay(card)}

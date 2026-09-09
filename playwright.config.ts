@@ -7,6 +7,7 @@ export default defineConfig({
   timeout: 60_000,
   use: {
     baseURL: "http://127.0.0.1:5174",
+    viewport: { width: 393, height: 852 },
     reducedMotion: "reduce",
     screenshot: "only-on-failure",
     trace: "retain-on-failure",

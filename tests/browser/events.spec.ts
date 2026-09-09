@@ -34,10 +34,11 @@ async function checkEventLayout(page: Page) {
       errors.push("Event feed outside viewport");
     const controls = [
       ...document.querySelectorAll<HTMLElement>(
-        ".hand .playing-card, .trick-cards .playing-card, .bid-options button",
+        "header, .seat-identity, .seat-hand .playing-card, .hand .playing-card, .trick-cards .playing-card, .bid-options button",
       ),
     ];
     for (const event of document.querySelectorAll<HTMLElement>(".match-event")) {
+      if (!event.checkVisibility({ visibilityProperty: true })) continue;
       const bounds = event.getBoundingClientRect();
       const rect = {
         left: Math.max(bounds.left, rail.left),
@@ -47,6 +48,7 @@ async function checkEventLayout(page: Page) {
       };
       if (rect.right <= rect.left || rect.bottom <= rect.top) continue;
       const label = event.textContent;
+      // Notifications may clip inside their reserved rail; visible portions must not cover play.
       if (
         rect.left < -1 ||
         rect.top < -1 ||
@@ -65,6 +67,23 @@ async function checkEventLayout(page: Page) {
     return errors;
   });
   expect(failures).toEqual([]);
+}
+
+async function checkEventCapacity(page: Page) {
+  const capacity = await page.evaluate(() => {
+    const rail = document.querySelector(".match-events")!.getBoundingClientRect();
+    const slots = [...document.querySelectorAll<HTMLElement>(".match-event-slot")];
+    const rowHeight = slots[0].getBoundingClientRect().height;
+    const expected = Math.min(slots.length, Math.floor((rail.height + 1) / rowHeight));
+    const visible = slots.filter((slot) => {
+      const event = slot.querySelector<HTMLElement>(".match-event")!;
+      if (!event.checkVisibility({ visibilityProperty: true })) return false;
+      const bounds = event.getBoundingClientRect();
+      return bounds.top >= rail.top - 1 && bounds.bottom <= rail.bottom + 1;
+    }).length;
+    return { visible, expected };
+  });
+  expect(capacity.visible).toBe(capacity.expected);
 }
 
 test("events follow predictions, played cards and the trick winner", async ({ page }) => {
@@ -164,7 +183,10 @@ test("opening an existing trick or watching does not replay history", async ({ p
   await openPreview(page, "people=6&cards=6&phase=trick");
   await expect(events(page)).toHaveCount(0);
   for (const inactive of ["eliminated", "left"]) {
-    await openPreview(page, `people=6&cards=6&played=3&viewer=5&inactive=${inactive}`);
+    await openPreview(
+      page,
+      `people=6&cards=6&played=3&viewer=5&seats=active,active,active,active,active,${inactive}`,
+    );
     await pausePreview(page);
     await expect(events(page)).toHaveCount(0);
     await nextMove(page);
@@ -174,28 +196,37 @@ test("opening an existing trick or watching does not replay history", async ({ p
 
 for (const viewport of [
   { width: 320, height: 568 },
-  { width: 568, height: 320 },
-  { width: 1366, height: 768 },
+  { width: 393, height: 740 },
+  { width: 800, height: 900 },
+  { width: 1220, height: 1340 },
 ]) {
-  test(`events leave cards and predictions clear at ${viewport.width}×${viewport.height}`, async ({
+  test(`events stay within their reserved space at ${viewport.width}×${viewport.height}`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
     await openPreview(page, "people=6&cards=6&phase=bidding&longNames=1");
     await pausePreview(page);
     await checkEventLayout(page);
+    const geometry = await checkLayout(page);
     for (let move = 0; move < 6; move++) {
       await nextMove(page);
       await checkEventLayout(page);
+      await checkLayout(page, geometry);
     }
     await expect(events(page)).toHaveCount(3);
+    await checkEventCapacity(page);
     await checkLayout(page);
     for (let move = 0; move < 6; move++) {
       await nextMove(page);
       await checkEventLayout(page);
+      await checkLayout(page, geometry);
     }
     await expect(events(page, "trick-won")).toHaveCount(1);
+    await checkEventCapacity(page);
     await checkLayout(page);
     await attachScreenshot(page, testInfo, "events-full-trick");
+    await page.clock.runFor(5000);
+    await expect(events(page)).toHaveCount(0);
+    await checkLayout(page, geometry);
   });
 }

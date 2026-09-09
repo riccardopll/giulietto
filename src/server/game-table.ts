@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
-import { DEFAULT_STARTING_LIVES, makeGame, player, tick, view, type Game } from "../shared/game";
+import { makeGame, player, tick, view, type Game } from "../shared/game";
 import { historyStatements } from "./match-history";
 import { eventStatements, gameEvents, type EventSource, type GameEvent } from "./game-events";
 import { apply, command, displayName, failure, type Command } from "./protocol";
@@ -33,9 +33,7 @@ export class GameTable extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   private read() {
-    const r = this.ctx.storage.kv.get("room") as Record | undefined;
-    if (r) r.game.startingLives ??= DEFAULT_STARTING_LIVES;
-    return r;
+    return this.ctx.storage.kv.get("room") as Record | undefined;
   }
   private send(ws: WebSocket, message: unknown) {
     try {
