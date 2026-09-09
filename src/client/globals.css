@@ -561,11 +561,14 @@ h1 {
 }
 .table-seat .seat-identity {
   position: absolute;
-  left: calc(50% + var(--seat-x) * (50% - var(--seat-inset-x)));
+  left: calc(50% + var(--seat-x) * (50% - var(--seat-inset-x) + var(--seat-outward-offset, 0rem)));
   top: calc(50% + var(--seat-y) * (50% - var(--seat-inset-y)));
   transform: translate(-50%, -50%);
   width: clamp(3.5rem, 8vw, 5rem);
   pointer-events: auto;
+}
+.seated-table[data-player-count="5"] .table-seat[data-upper-side] .seat-identity {
+  --seat-outward-offset: 1rem;
 }
 .table-seat[data-seat-edge="top"] .seat-identity {
   --seat-inset-y: 8rem;
