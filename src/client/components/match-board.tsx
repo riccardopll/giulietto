@@ -29,8 +29,21 @@ export function MatchBoard({
   const active = !!me && me.lives > 0 && !me.left;
   const myTurn = seating.current === game.you && active;
   const opponents = seating.seats.slice(1);
-  const hasSides = opponents.length > 2;
-  const topSeats = hasSides ? opponents.slice(1, -1) : opponents;
+  const hasBottomNeighbors = opponents.length > 3;
+  const topSeats = hasBottomNeighbors ? opponents.slice(1, -1) : opponents;
+  const positions = new Map<string, { side: "top" | "bottom"; column: number }>([
+    ...topSeats.map(
+      (id, index) =>
+        [id, { side: "top" as const, column: 4 - topSeats.length + index * 2 }] as const,
+    ),
+    ...(hasBottomNeighbors
+      ? [
+          [opponents[0], { side: "bottom" as const, column: 1 }] as const,
+          [opponents.at(-1)!, { side: "bottom" as const, column: 5 }] as const,
+        ]
+      : []),
+    [game.you, { side: "bottom" as const, column: 3 }] as const,
+  ]);
   const trickNumber =
     game.count -
     (game.players.find((p) => p.id === game.order[0])?.hand.length ?? 0) +
@@ -42,31 +55,32 @@ export function MatchBoard({
     const anchor = board.current?.querySelector(`[data-seat="${game.lastWinner}"] .seat-avatar`);
     if (!anchor) return;
     const target = anchor.getBoundingClientRect();
-    const animations = Array.from(
-      board.current!.querySelectorAll<HTMLElement>(".trick-cards .playing-card"),
-    ).map((card, i) => {
-      const rect = card.getBoundingClientRect();
-      return card.animate(
-        [
-          { transform: "translate(0,0) scale(1)", opacity: 1 },
+    const animations = Array.from(board.current!.querySelectorAll<HTMLElement>(".played-card")).map(
+      (card, i) => {
+        const rect = card.getBoundingClientRect();
+        return card.animate(
+          [
+            { transform: "translate(0,0) scale(1)", opacity: 1 },
+            {
+              transform: `translate(${target.x + target.width / 2 - rect.x - rect.width / 2}px,${target.y + target.height / 2 - rect.y - rect.height / 2}px) scale(.22)`,
+              opacity: 0,
+            },
+          ],
           {
-            transform: `translate(${target.x + target.width / 2 - rect.x - rect.width / 2}px,${target.y + target.height / 2 - rect.y - rect.height / 2}px) scale(.22)`,
-            opacity: 0,
+            duration: 380,
+            delay: Math.max(0, game.deadline - game.serverTime - 520) + i * 18,
+            easing: "cubic-bezier(.4,0,.2,1)",
+            fill: "forwards",
           },
-        ],
-        {
-          duration: 380,
-          delay: Math.max(0, game.deadline - game.serverTime - 520) + i * 18,
-          easing: "cubic-bezier(.4,0,.2,1)",
-          fill: "forwards",
-        },
-      );
-    });
+        );
+      },
+    );
     return () => animations.forEach((animation) => animation.cancel());
   });
   useEffect(() => animateTrick(), [game.phase, game.round, game.lastWinner, trickNumber]);
 
   function seat(id: string) {
+    const position = positions.get(id)!;
     const number = game.players.findIndex((p) => p.id === id) + 1;
     const player = game.players[number - 1];
     const status = player.left
@@ -89,30 +103,34 @@ export function MatchBoard({
                   ? "Predicted"
                   : "Waiting";
     return (
-      <PlayerSeat
+      <div
         key={id}
-        player={player}
-        number={number}
-        you={id === game.you}
-        current={seating.current === id}
-        deadline={game.deadline}
-        serverTime={game.serverTime}
-        round={game.round}
-        startingLives={game.startingLives}
-        status={status}
-      />
+        className="seat-slot min-w-0"
+        data-center={position.column === 3 || undefined}
+        style={{ gridColumn: `${position.column} / span 2` }}
+      >
+        <PlayerSeat
+          player={player}
+          number={number}
+          you={id === game.you}
+          current={seating.current === id}
+          deadline={game.deadline}
+          serverTime={game.serverTime}
+          round={game.round}
+          startingLives={game.startingLives}
+          status={status}
+          side={position.side}
+        />
+      </div>
     );
   }
 
   return (
-    <div ref={board} className="match-board grid h-full min-h-0 gap-2" data-phase={game.phase}>
-      <section className="table-arena relative isolate grid min-h-0" aria-label="Game table">
+    <div ref={board} className="match-board grid h-full min-h-0" data-phase={game.phase}>
+      <section className="table-arena relative isolate grid min-h-0 w-full" aria-label="Game table">
         <TableSurface />
-        <div className="opponents-top flex items-start justify-evenly gap-2">
+        <div className="seats-row grid grid-cols-6" data-side="top">
           {topSeats.map(seat)}
-        </div>
-        <div className="opponent-left flex items-center justify-center">
-          {hasSides && seat(opponents[0])}
         </div>
         <section
           className="play-table grid min-h-0 min-w-0 place-items-center"
@@ -135,20 +153,14 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards grid place-content-center gap-2"
+              className="trick-cards flex flex-wrap items-center justify-center gap-2"
               key={`${game.round}-${trickNumber}`}
-              style={
-                {
-                  "--trick-count": Math.max(1, game.trick.length),
-                  "--compact-columns": Math.max(1, Math.min(3, game.trick.length)),
-                  "--compact-rows": Math.max(1, Math.ceil(game.trick.length / 3)),
-                } as CSSProperties
-              }
             >
               {game.trick.map((play) => (
                 <div
                   className={`played-card ${game.phase === "trick" && play.player === game.lastWinner ? "winner-card" : ""}`}
                   key={play.card}
+                  data-owner={play.player}
                 >
                   <PlayingCard card={play.card} mode={play.mode} />
                 </div>
@@ -156,17 +168,15 @@ export function MatchBoard({
             </div>
           )}
         </section>
-        <div className="opponent-right flex items-center justify-center">
-          {hasSides && seat(opponents.at(-1)!)}
+        <div className="seats-row grid grid-cols-6" data-side="bottom">
+          {hasBottomNeighbors && seat(opponents[0])}
+          {me && seat(me.id)}
+          {hasBottomNeighbors && seat(opponents.at(-1)!)}
         </div>
       </section>
-      <section
-        className="hand-area flex min-w-0 flex-col items-center gap-2"
-        aria-label="Your hand"
-      >
-        {me && seat(me.id)}
+      <section className="hand-area flex min-w-0 flex-col items-center" aria-label="Your hand">
         <div
-          className="hand flex items-start justify-center gap-1.5"
+          className="hand flex items-start justify-center gap-1"
           key={`hand-${game.round}`}
           data-empty-spectator={(!active && !me?.hand.length) || undefined}
           style={

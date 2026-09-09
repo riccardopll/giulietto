@@ -2,7 +2,35 @@ import { expect } from "@playwright/test";
 import { makePreview } from "../../src/client/preview/games";
 import { makeGame, player, view } from "../../src/shared/game";
 import type { Command } from "../../src/server/protocol";
-import { checkLayout, openPreview, test } from "./helpers";
+import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
+
+test("playable hand cards stay accessible when hovered and focused", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await openPreview(page, "people=6&cards=6&phase=playing&played=0");
+  const card = page
+    .getByRole("region", { name: "Your hand", exact: true })
+    .getByRole("button")
+    .nth(2);
+  const resting = await card.boundingBox();
+  expect(resting).not.toBeNull();
+
+  await card.hover();
+  await expect.poll(async () => (await card.boundingBox())!.y).toBeLessThan(resting!.y);
+  await page.mouse.move(resting!.x + resting!.width / 2, resting!.y + resting!.height - 1);
+  await page.clock.runFor(32);
+  await expect.poll(async () => (await card.boundingBox())!.y).toBeLessThan(resting!.y);
+  await checkLayout(page);
+  await attachScreenshot(page, testInfo, "hovered-hand");
+
+  await page.mouse.move(0, 0);
+  await expect.poll(async () => (await card.boundingBox())!.y).toBe(resting!.y);
+  await page.keyboard.press("Tab");
+  await card.focus();
+  await expect(card).toBeFocused();
+  await expect.poll(async () => (await card.boundingBox())!.y).toBeLessThan(resting!.y);
+  await expect(card).not.toHaveCSS("outline-color", "rgba(0, 0, 0, 0)");
+  await checkLayout(page);
+});
 
 test("players can predict and play cards with the keyboard on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });

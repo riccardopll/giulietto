@@ -24,6 +24,7 @@ export function PlayerSeat({
   round,
   startingLives,
   status,
+  side,
 }: {
   player: SeatPlayer;
   number: number;
@@ -34,23 +35,25 @@ export function PlayerSeat({
   round: number;
   startingLives: number;
   status: string;
+  side: "top" | "bottom";
 }) {
   const remaining = Math.max(0, Math.min(TURN_MS, deadline - serverTime));
   return (
     <section
       data-seat={player.id}
+      data-side={side}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className={cn("table-seat flex min-w-0 flex-col items-center text-center text-xs", {
-        "current-player": current,
-        eliminated: player.lives <= 0 || player.left,
-      })}
+      className="table-seat min-w-0 text-[11px] sm:text-xs"
     >
-      <div className="seat-identity relative flex w-full min-w-0 flex-col items-center gap-0.5">
-        <div className="seat-bubble-slot absolute bottom-[calc(100%+.5rem)] left-0 flex w-full justify-center">
+      <div
+        className="seat-identity relative flex min-w-0 max-w-full items-center justify-center gap-1.5"
+        data-seat-identity
+      >
+        <div className="seat-bubble-slot absolute bottom-[calc(100%+.5rem)] left-0 z-30 flex w-full justify-center">
           <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
         </div>
-        <div className="seat-avatar-wrap relative mx-1.5 mb-1">
+        <div className="seat-avatar-wrap relative shrink-0">
           {current && (
             <svg
               key={`${deadline}-${serverTime}`}
@@ -74,7 +77,7 @@ export function PlayerSeat({
           )}
           <div
             className={cn(
-              "seat-avatar grid size-(--seat-avatar-size) place-items-center rounded-full border-3 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
+              "seat-avatar grid size-(--seat-avatar-size) place-items-center rounded-full border-2 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
               "text-[length:calc(var(--seat-avatar-size)/2)]",
               player.lives <= 0 || player.left
                 ? "bg-[#e6e0e3] text-[#80727b]"
@@ -87,7 +90,7 @@ export function PlayerSeat({
           </div>
           <span
             className={cn(
-              "seat-number absolute -top-0.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full border bg-[#fff8fb] text-[10px] font-semibold",
+              "seat-number absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-5 sm:min-w-5 sm:text-[10px]",
               current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
             )}
             aria-label={`Seat ${toRoman(number)}`}
@@ -95,18 +98,25 @@ export function PlayerSeat({
             {toRoman(number)}
           </span>
         </div>
-        <div className="seat-details flex min-w-0 max-w-full flex-col items-center">
-          <strong
-            className="seat-name block max-w-full truncate leading-[1.4] font-semibold"
-            title={player.name}
-            aria-label={you ? "You" : player.name}
-          >
-            {you ? "You" : player.name}
-          </strong>
-          <div className="seat-stats flex items-center justify-center gap-1.5">
+        <div className="seat-details flex min-w-0 flex-col items-start gap-0.5">
+          <div className="flex w-full min-w-0 items-baseline gap-1">
+            <strong
+              className="seat-name block truncate leading-tight font-semibold"
+              title={player.name}
+              aria-label={you ? "You" : player.name}
+            >
+              {you ? "You" : player.name}
+            </strong>
+            {(player.left || player.lives <= 0) && (
+              <span className="seat-status shrink-0 text-[10px] leading-none text-muted-foreground">
+                {player.left ? "Left" : "Out"}
+              </span>
+            )}
+          </div>
+          <div className="seat-stats flex shrink-0 items-center gap-1" data-seat-stats>
             <Lives n={player.lives} total={startingLives} compact />
             <span
-              className="player-score font-bold whitespace-nowrap text-[#63414f] tabular-nums"
+              className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
               aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
             >
               <span
@@ -119,37 +129,34 @@ export function PlayerSeat({
               / {player.bid ?? "–"}
             </span>
           </div>
-          {(player.left || player.lives <= 0) && (
-            <span className="seat-status text-xs text-muted-foreground">
-              {player.left ? "Left" : "Out"}
-            </span>
-          )}
         </div>
       </div>
       {!you && (
         <div
-          className="seat-hand relative mt-1.5 w-full"
+          className="seat-hand relative w-full"
           data-revealed={player.hand.some((card) => card !== null) || undefined}
           role="group"
           aria-label={`${player.name}: ${player.hand.length} ${player.hand.length === 1 ? "card" : "cards"}`}
         >
-          {player.hand.map((card, i) => {
-            const offset = i - (player.hand.length - 1) / 2;
-            return (
-              <div
-                className="seat-fan-card absolute top-1/2"
-                key={card ?? i}
-                style={
-                  {
-                    "--fan-offset": offset,
-                    "--fan-angle": `${offset * 7}deg`,
-                  } as CSSProperties
-                }
-              >
-                <PlayingCard card={card} className="rounded-[.2rem] border border-[#fffaf6]" />
-              </div>
-            );
-          })}
+          <div className="seat-fan-orientation absolute inset-0">
+            {player.hand.map((card, i) => {
+              const offset = i - (player.hand.length - 1) / 2;
+              return (
+                <div
+                  className="seat-fan-card absolute top-1/2"
+                  key={card ?? i}
+                  style={
+                    {
+                      "--fan-offset": offset,
+                      "--fan-angle": `${offset * 7}deg`,
+                    } as CSSProperties
+                  }
+                >
+                  <PlayingCard card={card} className="rounded-[.2rem] border border-[#fffaf6]" />
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
     </section>

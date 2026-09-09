@@ -3,7 +3,8 @@ import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 const viewports = [
   { width: 320, height: 568 },
-  { width: 390, height: 844 },
+  { width: 393, height: 852 },
+  { width: 568, height: 320 },
   { width: 844, height: 390 },
   { width: 768, height: 1024 },
   { width: 1366, height: 768 },
@@ -34,6 +35,10 @@ const scenarios = [
     query: "people=6&cards=6&played=0",
   },
   {
+    name: "six players, six cards, partial trick",
+    query: "people=6&cards=6&played=3",
+  },
+  {
     name: "six players, six cards, full trick",
     query: "people=6&cards=6&played=6",
   },
@@ -52,8 +57,8 @@ for (const viewport of viewports) {
       await test.step(scenario.name, async () => {
         await openPreview(page, `${scenario.query}&longNames=1`);
         await checkLayout(page);
-        if (scenario.query === "people=6&cards=6&played=6")
-          await attachScreenshot(page, testInfo, "full-trick");
+        if (/people=6&cards=6&played=/.test(scenario.query))
+          await attachScreenshot(page, testInfo, `six-players-${scenario.query.at(-1)}-played`);
       });
     }
   });
