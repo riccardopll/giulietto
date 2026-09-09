@@ -37,6 +37,7 @@ test("players can predict and play cards with the keyboard on mobile", async ({ 
   await openPreview(page, "people=6&cards=6&phase=bidding");
   await page.getByRole("button", { name: "Predict 1 trick", exact: true }).click();
   await expect(page.getByRole("status", { name: "bot_1 predicts 1 trick" })).toBeVisible();
+  await expect(page.getByRole("log", { name: "Game events" })).toContainText("You predicted 1");
   await checkLayout(page);
   await page.getByRole("button", { name: "Preview settings" }).click();
   await expect(page.getByRole("dialog", { name: "Local preview" })).toBeVisible();

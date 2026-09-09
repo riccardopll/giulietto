@@ -152,3 +152,58 @@ test("preview autoplays by default and can pause and resume", async ({ page }) =
   await page.clock.runFor(1800);
   await expect(cards).toHaveCount(2);
 });
+
+test.describe("preview motion settings", () => {
+  test.use({ previewMotion: null });
+
+  test("defaults to full motion, saves the selection and follows system changes", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await openPreview(page, "people=6&cards=6&phase=playing&played=0");
+    await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+    await page.getByRole("button", { name: "Pause", exact: true }).click();
+    const motion = page.getByRole("combobox", { name: "Motion", exact: true });
+    const animation = () =>
+      page
+        .locator(".hand .playing-card")
+        .first()
+        .evaluate((card) => getComputedStyle(card, "::after").animationName);
+    const cards = await page
+      .locator(".hand .card-art")
+      .evaluateAll((images) => images.map((image) => image.getAttribute("src")));
+
+    await expect(motion).toHaveValue("full");
+    await expect.poll(animation).toBe("card-orbit");
+    await motion.selectOption("reduced");
+    await expect.poll(animation).toBe("none");
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await expect.poll(animation).toBe("none");
+    await expect(page.locator(".seat-timer circle")).toHaveCSS("animation-name", "seat-countdown");
+    expect(
+      await page
+        .locator(".hand .card-art")
+        .evaluateAll((images) => images.map((image) => image.getAttribute("src"))),
+    ).toEqual(cards);
+
+    await motion.selectOption("system");
+    await expect.poll(animation).toBe("card-orbit");
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await expect.poll(animation).toBe("none");
+    await page.reload();
+    await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+    await expect(motion).toHaveValue("system");
+    await expect.poll(animation).toBe("none");
+    await motion.selectOption("full");
+    await expect.poll(animation).toBe("card-orbit");
+    await page.reload();
+    await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+    await expect(motion).toHaveValue("full");
+    await expect.poll(animation).toBe("card-orbit");
+
+    await page.goto("/");
+    await expect(page.locator("html")).not.toHaveAttribute("data-preview-motion");
+    await expect(page.locator("body")).toHaveCSS("animation-name", "none");
+  });
+});

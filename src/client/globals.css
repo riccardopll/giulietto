@@ -91,11 +91,18 @@
   font-display: swap;
 }
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-preview-motion="full"]) *,
+  :root:not([data-preview-motion="full"]) *::before,
+  :root:not([data-preview-motion="full"]) *::after {
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
   }
+}
+:root[data-preview-motion="reduced"] *,
+:root[data-preview-motion="reduced"] *::before,
+:root[data-preview-motion="reduced"] *::after {
+  animation: none !important;
+  transition: none !important;
+  scroll-behavior: auto !important;
 }
