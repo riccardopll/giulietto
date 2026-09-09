@@ -368,7 +368,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               <Lobby
                 game={game}
                 busy={busy}
-                now={now}
                 copied={copied}
                 onCopy={copy}
                 onStart={() => void act("start")}

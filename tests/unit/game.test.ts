@@ -54,19 +54,14 @@ describe("rounds", () => {
     expect(game.players[2].hand).toEqual([]);
   });
 
-  it("starts public tables after the countdown or immediately when full", () => {
-    const waiting = lobbyFixture(2);
-    waiting.public = true;
-    tick(waiting, 100);
-    expect(waiting.phase).toBe("lobby");
-    expect(waiting.startAt).toBe(20_100);
-    tick(waiting, 20_100);
-    expect(waiting.phase).toBe("bidding");
-
-    const full = lobbyFixture(6);
-    full.public = true;
-    tick(full, 100);
-    expect(full.phase).toBe("bidding");
+  it.each([1, 2, 6])("keeps a public table with %i players in the lobby over time", (count) => {
+    const game = lobbyFixture(count);
+    game.public = true;
+    for (const now of [100, 20_100, 119_100]) {
+      tick(game, now);
+      expect(game.phase).toBe("lobby");
+      expect(game.players).toHaveLength(count);
+    }
   });
 });
 

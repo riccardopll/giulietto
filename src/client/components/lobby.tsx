@@ -91,7 +91,6 @@ function LobbyOptions({
 export function Lobby({
   game,
   busy,
-  now,
   copied,
   onCopy,
   onStart,
@@ -99,7 +98,6 @@ export function Lobby({
 }: {
   game: State;
   busy: boolean;
-  now: number;
   copied: boolean;
   onCopy: () => void;
   onStart: () => void;
@@ -114,11 +112,9 @@ export function Lobby({
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          {game.public
-            ? game.startAt
-              ? `Starting in ${Math.max(0, Math.ceil((game.startAt - now) / 1000))}s`
-              : "Waiting for another player…"
-            : "Start when everyone is here."}
+          {game.host === game.you
+            ? "Start when everyone is here."
+            : "Waiting for the host to start the game."}
         </p>
       </div>
       <ul className="grid gap-2" aria-label="Players">

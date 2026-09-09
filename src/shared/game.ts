@@ -45,7 +45,6 @@ export type Game = {
   lastWinner: string | null;
   results: Result[];
   deadline: number;
-  startAt: number | null;
   winner: string | null;
   tie: boolean;
 };
@@ -71,7 +70,6 @@ export function makeGame(code: string, p: Player, isPublic: boolean): Game {
     lastWinner: null,
     results: [],
     deadline: 0,
-    startAt: null,
     winner: null,
     tie: false,
   };
@@ -206,11 +204,6 @@ export function tick(g: Game, now: number) {
   if (g.phase === "lobby") {
     g.players = g.players.filter((p) => now - p.seen < 120000 && !p.left);
     if (!g.players.some((p) => p.id === g.host)) g.host = g.players[0]?.id ?? "";
-    if (g.public) {
-      if (g.players.length < 2) g.startAt = null;
-      else if (!g.startAt) g.startAt = now + 20000;
-      if (g.players.length === 6 || (g.startAt && now >= g.startAt)) deal(g, now);
-    }
     return;
   }
   if (!g.deadline || now < g.deadline) return;
