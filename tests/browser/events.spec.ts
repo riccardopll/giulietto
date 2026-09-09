@@ -204,6 +204,8 @@ for (const viewport of [
   { width: 568, height: 320 },
   { width: 800, height: 900 },
   { width: 1366, height: 768 },
+  { width: 1366, height: 960 },
+  { width: 1220, height: 1340 },
   { width: 1920, height: 1080 },
 ]) {
   test(`events use available space without clipping or overlap at ${viewport.width}×${viewport.height}`, async ({

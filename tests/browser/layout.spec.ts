@@ -165,6 +165,50 @@ for (const viewport of viewports) {
   });
 }
 
+for (const viewport of [
+  { width: 1366, height: 960 },
+  { width: 1220, height: 1340 },
+  { width: 1920, height: 1080 },
+]) {
+  test(`desktop game uses balanced vertical space at ${viewport.width}×${viewport.height}`, async ({
+    page,
+  }) => {
+    await page.setViewportSize(viewport);
+    for (const people of [2, 4, 6]) {
+      await test.step(`${people} players in normal and blind rounds`, async () => {
+        let geometry: Awaited<ReturnType<typeof tableGeometry>> | undefined;
+        for (const query of [
+          `people=${people}&cards=6&played=${people}`,
+          `people=${people}&phase=blind&played=0`,
+        ]) {
+          await openPreview(page, `${query}&longNames=1`);
+          await checkLayout(page);
+          if (geometry) await expectTableGeometry(page, geometry);
+          else geometry = await tableGeometry(page);
+          const spacing = await page.evaluate(() => {
+            const board = document.querySelector(".match-board")!.getBoundingClientRect();
+            const events = document.querySelector(".match-events")!.getBoundingClientRect();
+            const hand = document.querySelector(".hand-area")!.getBoundingClientRect();
+            return {
+              events: events.height,
+              above: events.top - board.top,
+              below: board.bottom - hand.bottom,
+            };
+          });
+          expect(
+            spacing.events,
+            "Notifications reserve at most three complete rows",
+          ).toBeLessThanOrEqual(132.5);
+          expect(
+            Math.abs(spacing.above - spacing.below),
+            "Spare space is balanced around the game",
+          ).toBeLessThanOrEqual(1);
+        }
+      });
+    }
+  });
+}
+
 test("the table stays fixed through the blind round and the next six-card round", async ({
   page,
 }) => {

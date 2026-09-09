@@ -406,6 +406,12 @@
   inset: calc(var(--identity-height) + var(--seat-inset)) 0;
   filter: drop-shadow(0 2px 2px #75404b50) drop-shadow(0 7px 10px #75404b30);
 }
+/* Center tall desktop layouts once the notification feed can hold all three rows. */
+@media (min-width: 57rem) and (min-height: 60rem) {
+  .match-board {
+    grid-template-rows: 8.25rem auto auto;
+  }
+}
 /* Equal distances along the perimeter keep desktop seats evenly spaced. */
 @container match (min-width: 56rem) and (min-height: 30rem) {
   .table-arena {
