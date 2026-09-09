@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useEffectEvent, useLayoutEffect, useState } from "react";
 import { Settings2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import App from "../App";
@@ -113,8 +113,39 @@ export function Preview() {
   }
 
   function step() {
+    setRunning(false);
     setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people]) }));
   }
+
+  const nextMove = useEffectEvent(step);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (
+        event.key.toLowerCase() !== "n" ||
+        event.defaultPrevented ||
+        event.repeat ||
+        event.isComposing ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey
+      )
+        return;
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest(
+            "input, textarea, select, [data-slot='dialog-content'], [data-slot='alert-dialog-content']",
+          ))
+      )
+        return;
+      event.preventDefault();
+      nextMove();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (!running) return;
@@ -307,8 +338,17 @@ export function Preview() {
             >
               {running ? "Pause" : "Autoplay"}
             </Button>
-            <Button variant="outline" className="h-11 px-2 text-xs" onClick={step}>
+            <Button
+              variant="outline"
+              className="h-11 gap-1 px-2 text-xs"
+              onClick={step}
+              aria-keyshortcuts="n"
+              title="Next move (N)"
+            >
               Next move
+              <kbd aria-hidden="true" className="font-mono text-[10px] text-muted-foreground">
+                N
+              </kbd>
             </Button>
             <Button variant="outline" className="h-11 px-2 text-xs" onClick={() => configure()}>
               Reset table

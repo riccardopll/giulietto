@@ -153,6 +153,59 @@ test("preview autoplays by default and can pause and resume", async ({ page }) =
   await expect(cards).toHaveCount(2);
 });
 
+test("preview shortcut advances one move and pauses autoplay with settings closed", async ({
+  page,
+}) => {
+  await openPreview(page, "people=3&cards=6&phase=playing&played=0");
+  const cards = page.locator(".trick-cards .playing-card");
+  const sidebar = page.getByRole("dialog", { name: "Local preview" });
+  await page.keyboard.press("n");
+  await expect(cards).toHaveCount(1);
+  await expect(sidebar).toBeHidden();
+  await page.clock.runFor(3600);
+  await expect(cards).toHaveCount(1);
+
+  await page.keyboard.press("Shift+N");
+  await expect(cards).toHaveCount(2);
+  await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+  await expect(sidebar.getByRole("button", { name: "Autoplay", exact: true })).toBeVisible();
+  await expect(sidebar.getByRole("button", { name: "Next move", exact: true })).toHaveAttribute(
+    "aria-keyshortcuts",
+    "n",
+  );
+});
+
+test("preview shortcut follows the selected table and ignores select input and key chords", async ({
+  page,
+}) => {
+  await openPreview(page, "people=3&cards=6&phase=playing&played=0");
+  const cards = page.locator(".trick-cards .playing-card");
+  const settings = page.getByRole("button", { name: "Preview settings", exact: true });
+  const sidebar = page.getByRole("dialog", { name: "Local preview" });
+  const players = sidebar.getByRole("combobox", { name: "Players", exact: true });
+  await page.keyboard.press("n");
+  await expect(cards).toHaveCount(1);
+  await settings.click();
+  await players.selectOption("4");
+  await players.focus();
+  await page.keyboard.press("n");
+  await expect(cards).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(sidebar).toBeHidden();
+
+  for (const chord of ["Control+n", "Meta+n", "Alt+n"]) await page.keyboard.press(chord);
+  await page.dispatchEvent("body", "keydown", { key: "n", repeat: true });
+  await page.dispatchEvent("body", "keydown", { key: "n", isComposing: true });
+  await expect(cards).toHaveCount(0);
+  await page.keyboard.press("n");
+  await expect(cards).toHaveCount(1);
+  await expect(page.locator("[data-seat]")).toHaveCount(4);
+
+  await settings.click();
+  await players.selectOption("3");
+  await expect(cards).toHaveCount(1);
+});
+
 test.describe("preview motion settings", () => {
   test.use({ previewMotion: null });
 
