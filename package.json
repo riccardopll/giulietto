@@ -18,7 +18,8 @@
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
     "deploy": "npm run build && npm run db:migrate:remote && wrangler deploy",
-    "logs": "node scripts/logs.mjs"
+    "logs": "node scripts/logs.mjs",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",
@@ -33,6 +34,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.4",
     "@cloudflare/workers-types": "5.20260907.1",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.5.0",
     "@types/react": "19.2.18",

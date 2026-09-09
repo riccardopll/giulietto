@@ -26,9 +26,10 @@ function renderSeats(state) {
       createElement(PlayerSeat, {
         player: p,
         number: i + 1,
-        position: i / state.players.length,
         you: p.id === state.you,
         current: p.id === state.order[state.turn],
+        deadline: state.deadline,
+        serverTime: state.serverTime,
         round: state.round,
         startingLives: state.startingLives,
         status: "Waiting",

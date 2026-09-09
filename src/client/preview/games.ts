@@ -10,11 +10,14 @@ import {
 } from "../../shared/game.ts";
 
 export type PreviewPhase = "playing" | "bidding" | "trick" | "results" | "blind";
+export type PreviewInactive = "none" | "eliminated" | "left";
 export type PreviewOptions = {
   people: number;
   cards: number;
   phase: PreviewPhase;
   longNames: boolean;
+  played?: number;
+  inactive?: PreviewInactive;
 };
 
 export function advancePreview(source: Game): Game {
@@ -56,6 +59,14 @@ export function makePreview(options: PreviewOptions): Game {
   game.players.forEach((p, i) => {
     p.lives = 5 - (i % 3);
   });
+  // Keep at least two active players, and retain the inactive seat for spectator previews.
+  if (people > 2 && options.inactive && options.inactive !== "none") {
+    const inactive = game.players.at(-1)!;
+    inactive.lives = 0;
+    inactive.left = options.inactive === "left";
+    inactive.hand = [];
+    game.order = game.order.filter((id) => id !== inactive.id);
+  }
   if (phase === "bidding") return game;
   while (game.phase === "bidding") game = advancePreview(game);
   if (phase === "results") {
@@ -68,10 +79,12 @@ export function makePreview(options: PreviewOptions): Game {
     missed.bid = missed.taken === game.count ? missed.taken - 1 : missed.taken + 1;
     game = advancePreview(game);
   } else {
-    // Others have played; the viewer can make the final play in this trick.
-    game.turn = 1;
-    for (let i = 1; i < people; i++) game = advancePreview(game);
-    if (phase === "trick") game = advancePreview(game);
+    const active = game.order.length;
+    const played =
+      phase === "trick" ? active : Math.max(0, Math.min(active, options.played ?? active - 1));
+    // Rotate the trick's starting player so seat one can act after any partial trick.
+    game.turn = (active - played) % active;
+    for (let i = 0; i < played; i++) game = advancePreview(game);
   }
   return game;
 }

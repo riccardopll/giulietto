@@ -8,9 +8,16 @@ export function TableSurface() {
   const id = useId();
   const clip = `${id}-felt`;
   return (
-    <div className="table-surface" aria-hidden="true">
-      <div className="table-felt" style={{ clipPath: `url(#${clip})` }} />
-      <svg className="table-contour" viewBox="0 0 1 1" preserveAspectRatio="none">
+    <div className="table-surface pointer-events-none absolute -z-1" aria-hidden="true">
+      <div
+        className="table-felt absolute inset-0 size-full"
+        style={{ clipPath: `url(#${clip})` }}
+      />
+      <svg
+        className="table-contour absolute inset-0 size-full overflow-visible fill-none"
+        viewBox="0 0 1 1"
+        preserveAspectRatio="none"
+      >
         <defs>
           <clipPath id={clip} clipPathUnits="objectBoundingBox">
             <path d={contour} />

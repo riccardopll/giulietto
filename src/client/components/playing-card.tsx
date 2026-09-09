@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { cn } from "../utils";
 
 export function cardLabel(card: number) {
   const suits = ["Clubs", "Swords", "Cups", "Coins"];
@@ -18,7 +19,7 @@ export function cardLabel(card: number) {
 
 export function PlayingCard({
   card,
-  small = false,
+  className,
   onClick,
   disabled = false,
   mode,
@@ -26,7 +27,7 @@ export function PlayingCard({
   delay = 0,
 }: {
   card: number | null;
-  small?: boolean;
+  className?: string;
   onClick?: () => void;
   disabled?: boolean;
   mode?: string;
@@ -43,7 +44,7 @@ export function PlayingCard({
   const content = (
     <>
       <span
-        className="card-fallback"
+        className="card-fallback absolute inset-0 flex size-full items-center justify-center overflow-hidden p-1.5 text-center text-xs leading-tight text-foreground"
         aria-hidden="true"
         style={{ visibility: failedCard === card ? "visible" : "hidden" }}
       >
@@ -51,7 +52,7 @@ export function PlayingCard({
       </span>
       <img
         key={card ?? "back"}
-        className="card-art"
+        className="card-art pointer-events-none absolute inset-0 block size-full rounded-[inherit] object-contain"
         src={`/cards/neapolitan/${card ?? "back"}.webp`}
         alt=""
         draggable={false}
@@ -62,15 +63,30 @@ export function PlayingCard({
           event.currentTarget.style.visibility = "hidden";
         }}
       />
-      {mode && <span className="played-mode">{mode}</span>}
-      {pending && <span className="card-pending" aria-hidden="true" />}
+      {mode && (
+        <span className="played-mode absolute bottom-[.35rem] left-1/2 -translate-x-1/2 rounded-full bg-[#202b45eb] px-2 py-0.5 text-xs text-white capitalize">
+          {mode}
+        </span>
+      )}
+      {pending && (
+        <span
+          className="card-pending absolute inset-0 rounded-[inherit] bg-primary/10"
+          aria-hidden="true"
+        />
+      )}
     </>
   );
-  const className = `playing-card ${card === null ? "card-back" : ""} ${small ? "small" : ""} ${onClick ? "playable" : ""} ${pending ? "pending-card" : ""}`;
+  const cardClassName = cn(
+    "playing-card relative isolate block aspect-[300/480] w-full shrink-0 rounded-md border-0 bg-white p-0 select-none",
+    onClick &&
+      "outline-2 outline-offset-3 outline-transparent focus-visible:outline-ring disabled:cursor-default",
+    { playable: !!onClick, "pending-card": pending },
+    className,
+  );
   return onClick ? (
     <button
       type="button"
-      className={className}
+      className={cardClassName}
       style={style}
       aria-label={`Play ${label}`}
       title={label}
@@ -80,7 +96,7 @@ export function PlayingCard({
       {content}
     </button>
   ) : (
-    <div className={className} style={style} role="img" aria-label={label}>
+    <div className={cardClassName} style={style} role="img" aria-label={label}>
       {content}
     </div>
   );

@@ -86,27 +86,21 @@ test("seat order is identical for each viewer without exposing hidden hands", ()
   assert.ok(view(game, seats[0]).players.every((p) => p.hand.every((card) => card === null)));
 });
 
-test("seats are equally spaced from each viewer at the bottom, with stable clockwise order", () => {
+test("seats keep clockwise order from each viewer, including inactive players", () => {
   for (let count = 2; count <= 6; count++) {
     const game = makeGame("ABCDEFGH", player("p0", "bot_1", 0), false);
     for (let i = 1; i < count; i++) game.players.push(player(`p${i}`, `bot_${i + 1}`, 0));
     deal(game, 100);
     const seats = game.players.map((p) => p.id);
     for (const id of seats) {
-      const before = tableOrder(view(game, id)).positions;
-      assert.equal(before[id], 0);
-      assert.equal(new Set(Object.values(before)).size, count);
+      const before = tableOrder(view(game, id)).seats;
+      assert.equal(before[0], id);
+      assert.equal(new Set(before).size, count);
       const start = seats.indexOf(id);
-      const clockwise = [...seats.slice(start), ...seats.slice(0, start)].map(
-        (seat) => before[seat],
-      );
-      assert.deepEqual(
-        clockwise,
-        Array.from({ length: count }, (_, i) => i / count),
-      );
+      assert.deepEqual(before, [...seats.slice(start), ...seats.slice(0, start)]);
       game.players[0].lives = 0;
       game.players[1].left = true;
-      assert.deepEqual(tableOrder(view(game, id)).positions, before);
+      assert.deepEqual(tableOrder(view(game, id)).seats, before);
       assert.deepEqual(
         game.players.map((p) => p.id),
         seats,

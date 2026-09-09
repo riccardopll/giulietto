@@ -1,6 +1,6 @@
 import type { CSSProperties } from "react";
 import { TURN_MS, type view } from "../../shared/game.ts";
-import { toRoman } from "../utils";
+import { cn, toRoman } from "../utils";
 import { Lives } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
@@ -17,7 +17,6 @@ function avatarHue(id: string) {
 export function PlayerSeat({
   player,
   number,
-  position,
   you,
   current,
   deadline,
@@ -28,7 +27,6 @@ export function PlayerSeat({
 }: {
   player: SeatPlayer;
   number: number;
-  position: number;
   you: boolean;
   current: boolean;
   deadline: number;
@@ -37,38 +35,26 @@ export function PlayerSeat({
   startingLives: number;
   status: string;
 }) {
-  const name = Array.from(player.name);
-  const visibleName = name.length > 12 ? `${name.slice(0, 12).join("")}…` : player.name;
   const remaining = Math.max(0, Math.min(TURN_MS, deadline - serverTime));
-  const seatY = Math.cos(position * Math.PI * 2);
   return (
     <section
       data-seat={player.id}
-      data-seat-edge={position === 0 ? "bottom" : position === 0.5 ? "top" : undefined}
-      data-lower-side={position !== 0 && seatY > 0.001 ? true : undefined}
-      data-upper-side={position !== 0.5 && seatY < -0.001 ? true : undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      style={
-        {
-          "--seat-x": -Math.sin(position * Math.PI * 2),
-          "--seat-y": seatY,
-          "--seat-angle": `${position * 360}deg`,
-          "--mobile-seat-side": seatY > 0.001 ? 1 : -1,
-          "--mobile-seat-arc": 1 - Math.abs(seatY),
-        } as CSSProperties
-      }
-      className={`table-seat ${current ? "current-player" : ""} ${you ? "your-seat" : ""} ${player.lives <= 0 || player.left ? "eliminated" : ""}`}
+      className={cn("table-seat flex min-w-0 flex-col items-center text-center text-xs", {
+        "current-player": current,
+        eliminated: player.lives <= 0 || player.left,
+      })}
     >
-      <div className="seat-identity">
-        <div className="seat-bubble-slot">
+      <div className="seat-identity relative flex w-full min-w-0 flex-col items-center gap-0.5">
+        <div className="seat-bubble-slot absolute bottom-[calc(100%+.5rem)] left-0 flex w-full justify-center">
           <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
         </div>
-        <div className="seat-avatar-wrap">
+        <div className="seat-avatar-wrap relative mx-1.5 mb-1">
           {current && (
             <svg
               key={`${deadline}-${serverTime}`}
-              className="seat-timer"
+              className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 overflow-visible"
               aria-hidden="true"
               style={
                 {
@@ -77,44 +63,73 @@ export function PlayerSeat({
                 } as CSSProperties
               }
             >
-              <circle cx="50%" cy="50%" r="calc(50% - 2.5px)" pathLength="100" />
+              <circle
+                className="fill-none stroke-primary stroke-[5]"
+                cx="50%"
+                cy="50%"
+                r="calc(50% - 2.5px)"
+                pathLength="100"
+              />
             </svg>
           )}
           <div
-            className="seat-avatar"
+            className={cn(
+              "seat-avatar grid size-(--seat-avatar-size) place-items-center rounded-full border-3 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
+              "text-[length:calc(var(--seat-avatar-size)/2)]",
+              player.lives <= 0 || player.left
+                ? "bg-[#e6e0e3] text-[#80727b]"
+                : "bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642]",
+            )}
             style={{ "--avatar-hue": avatarHue(player.id) } as CSSProperties}
             aria-hidden="true"
           >
             {Array.from(player.name)[0]?.toLocaleUpperCase()}
           </div>
-          <span className="seat-number" aria-label={`Seat ${toRoman(number)}`}>
+          <span
+            className={cn(
+              "seat-number absolute -top-0.5 -right-1.5 grid h-5 min-w-5 place-items-center rounded-full border bg-[#fff8fb] text-[10px] font-semibold",
+              current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
+            )}
+            aria-label={`Seat ${toRoman(number)}`}
+          >
             {toRoman(number)}
           </span>
         </div>
-        <div className="seat-details">
-          <strong className="seat-name" title={player.name} aria-label={you ? "You" : player.name}>
-            {you ? "You" : visibleName}
+        <div className="seat-details flex min-w-0 max-w-full flex-col items-center">
+          <strong
+            className="seat-name block max-w-full truncate leading-[1.4] font-semibold"
+            title={player.name}
+            aria-label={you ? "You" : player.name}
+          >
+            {you ? "You" : player.name}
           </strong>
-          <div className="seat-stats">
-            <Lives n={player.lives} total={startingLives} />
+          <div className="seat-stats flex items-center justify-center gap-1.5">
+            <Lives n={player.lives} total={startingLives} compact />
             <span
-              className="player-score"
+              className="player-score font-bold whitespace-nowrap text-[#63414f] tabular-nums"
               aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
             >
-              <span data-overbid={player.bid != null && player.taken > player.bid ? "" : undefined}>
+              <span
+                className={
+                  player.bid != null && player.taken > player.bid ? "text-destructive" : undefined
+                }
+              >
                 {player.taken}
               </span>{" "}
               / {player.bid ?? "–"}
             </span>
           </div>
           {(player.left || player.lives <= 0) && (
-            <span className="seat-status">{player.left ? "Left" : "Out"}</span>
+            <span className="seat-status text-xs text-muted-foreground">
+              {player.left ? "Left" : "Out"}
+            </span>
           )}
         </div>
       </div>
       {!you && (
         <div
-          className="seat-hand"
+          className="seat-hand relative mt-1.5 w-full"
+          data-revealed={player.hand.some((card) => card !== null) || undefined}
           role="group"
           aria-label={`${player.name}: ${player.hand.length} ${player.hand.length === 1 ? "card" : "cards"}`}
         >
@@ -122,7 +137,7 @@ export function PlayerSeat({
             const offset = i - (player.hand.length - 1) / 2;
             return (
               <div
-                className="seat-fan-card"
+                className="seat-fan-card absolute top-1/2"
                 key={card ?? i}
                 style={
                   {
@@ -131,7 +146,7 @@ export function PlayerSeat({
                   } as CSSProperties
                 }
               >
-                <PlayingCard card={card} small />
+                <PlayingCard card={card} className="rounded-[.2rem] border border-[#fffaf6]" />
               </div>
             );
           })}
