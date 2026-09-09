@@ -1,4 +1,7 @@
-name: CI and deploy
+name: Checks and production deployment
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('PR #{0} checks', github.event.pull_request.number)
+      || github.ref == 'refs/heads/main' && 'Production deployment' || 'Branch checks' }}
 
 on:
   push:
@@ -14,22 +17,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check-and-deploy:
+  checks:
+    name: >-
+      ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+          && 'Check and deploy production' || 'Checks' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version-file: .node-version
           cache: npm
-      - run: npm ci
-      - run: npm run check
-      - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:ui
-      - name: Apply migrations and deploy
+      - name: Install dependencies
+        run: npm ci
+      - name: Run code checks and build
+        run: npm run check
+      - name: Install test browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Run browser tests
+        run: npm run test:ui
+      - name: Apply migrations and deploy production
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -37,6 +49,6 @@ jobs:
         run: |
           npm run db:migrate:remote
           npx wrangler deploy
-      - name: Verify deployed site
+      - name: Verify production site
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: node scripts/smoke.mjs https://giulietto.riccardo-palleschi-5e6.workers.dev
