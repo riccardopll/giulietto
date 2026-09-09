@@ -250,7 +250,7 @@ test("table adapts to browser chrome and portrait viewport resizing", async ({ p
 
 // Full finite sweeps are opt-in because they inspect thousands of rendered states.
 // Run LAYOUT_SWEEP=1 for all, or LAYOUT_SWEEP=rounds / seats / identities independently.
-const sweep = process.env.LAYOUT_SWEEP;
+const sweep = process.env.CI ? undefined : process.env.LAYOUT_SWEEP;
 if (sweep) test.use({ trace: "off" });
 const sweepViewports = [
   { width: 320, height: 568 },

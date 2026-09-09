@@ -49,7 +49,7 @@ export function PlayerSeat({
     >
       <div
         className={cn(
-          "seat-identity relative flex size-full min-w-0 items-center justify-center gap-1 px-1",
+          "seat-identity relative flex size-full min-w-0 items-center justify-center gap-1.5 px-1",
           side === "bottom" ? "row-start-2" : "row-start-1",
         )}
         data-seat-identity

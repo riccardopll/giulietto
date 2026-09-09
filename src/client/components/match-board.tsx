@@ -201,16 +201,29 @@ export function MatchBoard({
           key={`hand-${game.round}`}
           data-active-turn={(canPlay && !!me?.hand.length) || undefined}
         >
-          {me?.hand.map((card, i) => (
-            <div className="hand-card relative w-(--hand-card-width) min-w-0" key={card ?? i}>
-              <PlayingCard
-                card={card}
-                disabled={!canPlay}
-                pending={pendingCard === (card ?? -1)}
-                onClick={() => onPlay(card)}
-              />
-            </div>
-          ))}
+          {me?.hand.map((card, i) => {
+            const middle = (me.hand.length - 1) / 2;
+            const position = middle ? (i - middle) / middle : 0;
+            return (
+              <div
+                className="hand-card relative w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                key={card ?? i}
+                style={
+                  {
+                    "--hand-angle": `${position * 3}deg`,
+                    "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
+                  } as CSSProperties
+                }
+              >
+                <PlayingCard
+                  card={card}
+                  disabled={!canPlay}
+                  pending={pendingCard === (card ?? -1)}
+                  onClick={() => onPlay(card)}
+                />
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>
