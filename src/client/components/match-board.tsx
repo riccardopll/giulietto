@@ -195,11 +195,6 @@ export function MatchBoard({
             </div>
           ))}
         </div>
-        {!active && (
-          <p className="text-center text-xs text-muted-foreground">
-            Watching · you return if everyone is out
-          </p>
-        )}
       </section>
     </div>
   );

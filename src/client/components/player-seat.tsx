@@ -45,7 +45,7 @@ export function PlayerSeat({
       data-you={you || undefined}
       aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
-      className={cn("table-seat min-w-0", you ? "text-xs sm:text-sm" : "text-[11px] sm:text-xs")}
+      className={cn("table-seat min-w-0", you ? "text-sm sm:text-base" : "text-xs sm:text-sm")}
     >
       <div
         className="seat-identity pointer-events-auto relative flex min-w-0 max-w-full items-center justify-center gap-1.5"
@@ -58,11 +58,11 @@ export function PlayerSeat({
           {current && (
             <svg
               key={`${deadline}-${serverTime}`}
-              className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 overflow-visible"
+              className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 -scale-y-100 overflow-visible"
               aria-hidden="true"
               style={
                 {
-                  "--timer-offset": -100 * (1 - remaining / TURN_MS),
+                  "--timer-remaining": 100 * (remaining / TURN_MS),
                   "--timer-duration": `${remaining}ms`,
                 } as CSSProperties
               }
@@ -104,7 +104,7 @@ export function PlayerSeat({
             <strong
               className={cn(
                 "seat-name block truncate leading-tight font-semibold",
-                you && "text-sm text-primary",
+                you ? "text-base text-primary sm:text-lg" : "text-sm",
               )}
               title={player.name}
               aria-label={you ? "You" : player.name}
@@ -117,11 +117,8 @@ export function PlayerSeat({
               </span>
             )}
           </div>
-          <div
-            className={cn("seat-stats flex shrink-0 items-center", you ? "flex-col" : "gap-1")}
-            data-seat-stats
-          >
-            <Lives n={player.lives} total={startingLives} compact />
+          <div className="seat-stats flex shrink-0 flex-col items-center" data-seat-stats>
+            <Lives n={player.lives} total={startingLives} compact={!you} />
             <span
               className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
               aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}

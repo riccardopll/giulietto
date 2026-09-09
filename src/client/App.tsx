@@ -281,7 +281,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             Giulietto
           </a>
           {game && !waiting && (
-            <h2 className="col-start-2 row-start-1 text-center text-sm leading-tight font-semibold whitespace-nowrap sm:text-xl">
+            <h2 className="col-start-2 row-start-1 max-w-18 text-center text-sm leading-tight font-semibold min-[360px]:max-w-none sm:text-xl">
               Round {toRoman(game.round)}
             </h2>
           )}
@@ -290,7 +290,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-11 w-14 flex-col-reverse gap-0.5 rounded-lg p-0 text-muted-foreground sm:w-auto sm:flex-row sm:gap-2 sm:px-3"
+                className="h-11 w-auto flex-nowrap gap-1 rounded-lg p-0 text-muted-foreground sm:gap-2 sm:px-3"
                 onClick={copy}
                 aria-label="Copy lobby invite"
               >

@@ -2,9 +2,9 @@
 .match-board {
   container-name: match;
   container-type: size;
-  --seat-avatar-size: clamp(1.875rem, 4cqw, 2.625rem);
-  --local-avatar-size: clamp(2.5rem, 5.5cqw, 3.25rem);
-  --identity-height: clamp(3.5rem, 6cqw, 3.75rem);
+  --seat-avatar-size: clamp(2.5rem, 5.5cqw, 3.25rem);
+  --local-avatar-size: clamp(3rem, 6.5cqw, 4rem);
+  --identity-height: 4.5rem;
   --seat-inset: clamp(0.375rem, 1cqw, 0.625rem);
   --fan-width: clamp(1.75rem, 4cqw, 2.5rem);
   --fan-height: calc(max(var(--fan-width), 2rem) * 1.6 + 0.75rem);
@@ -118,9 +118,9 @@
 /* Short landscape screens keep both seat rows and put the hand beside the table. */
 @media (max-height: 30rem) and (min-width: 30rem) {
   .match-board {
-    --seat-avatar-size: 1.75rem;
-    --local-avatar-size: 2rem;
-    --identity-height: 2.25rem;
+    --seat-avatar-size: 2rem;
+    --local-avatar-size: 2.5rem;
+    --identity-height: 2.75rem;
     --seat-inset: 0.25rem;
     --fan-width: clamp(1.5rem, 9cqh, 1.875rem);
     --fan-height: calc(2rem * 1.6 + 0.25rem);
@@ -130,22 +130,22 @@
     grid-template-rows: minmax(0, 1fr);
     align-items: center;
   }
-  .table-arena {
-    --seat-avatar-size: 1.5rem;
-  }
   .seat-identity {
     gap: 0.25rem;
   }
   .table-seat {
-    font-size: 10px;
-  }
-  .table-seat[data-you] {
     font-size: 11px;
   }
-  .table-seat[data-you] .seat-name {
+  .table-seat[data-you] {
     font-size: 12px;
   }
-  .table-seat[data-you] .seat-stats {
+  .seat-name {
+    font-size: 12px;
+  }
+  .table-seat[data-you] .seat-name {
+    font-size: 14px;
+  }
+  .seat-stats {
     flex-direction: row;
     gap: 0.25rem;
   }
@@ -178,8 +178,9 @@
 /* Equal distances along the perimeter keep desktop seats evenly spaced. */
 @container match (min-width: 48rem) and (min-height: 30rem) {
   .table-arena {
-    --identity-width: 8rem;
-    --table-gutter: 9.5rem;
+    --identity-width: 10rem;
+    --table-gutter: 11.5rem;
+    --fan-width: 2rem;
   }
   .seats {
     container-type: size;
@@ -208,13 +209,14 @@
     );
   }
   .table-seat[data-you] .seat-identity {
-    width: 10rem;
+    width: 12rem;
   }
-  .table-seat[data-you] .seat-stats {
+  .seat-stats {
     flex-direction: row;
     gap: 0.25rem;
   }
   .seat-hand {
+    --fan-step: 4px;
     width: var(--fan-height);
     offset-path: ellipse(
       calc(50cqw - var(--table-gutter) - var(--fan-height) / 2 - 0.75rem)
@@ -238,6 +240,11 @@
     --played-width: min(clamp(3rem, 6cqw, 3.5rem), calc((var(--play-height) - 1rem) / 3.2));
   }
 }
+@container match (min-width: 48rem) and (max-width: 56rem) and (min-height: 30rem) {
+  .bid-options {
+    max-width: 9.5rem;
+  }
+}
 .table-felt {
   background:
     radial-gradient(ellipse at 45% 30%, #f8dce30a 15%, #71354a45 100%) center / 100% 100% no-repeat,
@@ -257,13 +264,13 @@
   stroke-width: calc(var(--table-rim-width) * 0.4);
 }
 .seat-timer circle {
-  stroke-dasharray: 100;
-  stroke-dashoffset: var(--timer-offset);
+  /* The mirrored circle starts at twelve o'clock and loses length clockwise. */
+  stroke-dasharray: var(--timer-remaining) 100;
   animation: seat-countdown var(--timer-duration) linear forwards;
 }
 @keyframes seat-countdown {
   to {
-    stroke-dashoffset: -100;
+    stroke-dasharray: 0 100;
   }
 }
 @media (prefers-reduced-motion: reduce) {
