@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Settings2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import App from "../App";
@@ -13,6 +13,19 @@ import {
 } from "./games";
 
 type Entry = { options: PreviewOptions; game: Game; reset: number };
+type Motion = "full" | "reduced" | "system";
+const motionKey = "giulietto-preview-motion";
+
+function savedMotion(): Motion {
+  try {
+    const saved = localStorage.getItem(motionKey);
+    if (saved === "reduced" || saved === "system") return saved;
+  } catch {
+    // Storage may be unavailable; the control still works for this visit.
+  }
+  return "full";
+}
+
 const counts = [2, 3, 4, 5, 6];
 const phases: PreviewPhase[] = ["playing", "bidding", "trick", "results", "blind"];
 const inactiveStates: PreviewInactive[] = ["none", "eliminated", "left"];
@@ -55,6 +68,7 @@ export function Preview() {
   const [viewer, setViewer] = useState(initial.viewer);
   const [running, setRunning] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [motion, setMotion] = useState(savedMotion);
   const [tables, setTables] = useState<Record<number, Entry>>(() =>
     Object.fromEntries(
       counts.map((people) => {
@@ -74,6 +88,18 @@ export function Preview() {
   const entry = tables[people];
   const active = people - Number(people > 2 && entry.options.inactive !== "none");
   const hasTrick = ["playing", "blind"].includes(entry.options.phase);
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.previewMotion = motion;
+    try {
+      localStorage.setItem(motionKey, motion);
+    } catch {
+      // Keep the selected mode even when it cannot be saved.
+    }
+    return () => {
+      delete document.documentElement.dataset.previewMotion;
+    };
+  }, [motion]);
 
   function configure(patch: Partial<PreviewOptions> = {}) {
     setRunning(false);
@@ -252,6 +278,18 @@ export function Preview() {
               </select>
             </label>
           </div>
+          <label className={labelClass}>
+            Motion
+            <select
+              className={selectClass}
+              value={motion}
+              onChange={(e) => setMotion(e.target.value as Motion)}
+            >
+              <option value="full">Full motion</option>
+              <option value="reduced">Reduced motion</option>
+              <option value="system">Follow system</option>
+            </select>
+          </label>
           <label className="flex min-h-11 items-center gap-2 text-sm">
             <input
               className="size-4 accent-primary"

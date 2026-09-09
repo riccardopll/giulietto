@@ -5,6 +5,7 @@ import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
 import { TableSurface } from "./table-surface";
 import { Button } from "./ui/button";
+import { MatchEventFeed } from "./match-event-feed";
 
 type State = ReturnType<typeof view>;
 
@@ -28,6 +29,7 @@ export function MatchBoard({
   const me = game.players.find((p) => p.id === game.you);
   const active = !!me && me.lives > 0 && !me.left;
   const myTurn = seating.current === game.you && active;
+  const canPlay = myTurn && game.phase === "playing" && !busy;
   const opponents = seating.seats.slice(1);
   const hasBottomNeighbors = opponents.length > 3;
   const topSeats = hasBottomNeighbors ? opponents.slice(1, -1) : opponents;
@@ -133,6 +135,7 @@ export function MatchBoard({
 
   return (
     <div ref={board} className="match-board grid h-full min-h-0" data-phase={game.phase}>
+      <MatchEventFeed key={`${game.code}-${game.matchId}-${game.you}`} game={game} />
       <section className="table-arena relative isolate grid min-h-0 w-full" aria-label="Game table">
         <TableSurface />
         <div className="seats pointer-events-none absolute inset-0 grid grid-cols-6">
@@ -173,8 +176,9 @@ export function MatchBoard({
       </section>
       <section className="hand-area flex min-w-0 flex-col items-center" aria-label="Your hand">
         <div
-          className="hand flex items-start justify-center gap-1"
+          className="hand flex items-start justify-center gap-1.5"
           key={`hand-${game.round}`}
+          data-active-turn={(canPlay && !!me?.hand.length) || undefined}
           data-empty-spectator={(!active && !me?.hand.length) || undefined}
           style={
             {
@@ -183,17 +187,37 @@ export function MatchBoard({
             } as CSSProperties
           }
         >
-          {me?.hand.map((card, i) => (
-            <div className="hand-card relative min-w-0" key={card ?? i}>
-              <PlayingCard
-                card={card}
-                delay={i * 40}
-                disabled={!myTurn || game.phase !== "playing" || busy}
-                pending={pendingCard === (card ?? -1)}
-                onClick={() => onPlay(card)}
-              />
-            </div>
-          ))}
+          {me?.hand.map((card, i) => {
+            const half = (me.hand.length - 1) / 2;
+            const offset = i - half;
+            const columns = Math.min(3, me.hand.length);
+            const rowCards = Math.min(columns, me.hand.length - Math.floor(i / 3) * 3);
+            const rowHalf = (rowCards - 1) / 2;
+            const rowOffset = (i % 3) - rowHalf;
+            return (
+              <div
+                className="hand-card relative min-w-0"
+                key={card ?? i}
+                style={
+                  {
+                    "--hand-offset": offset,
+                    "--hand-lift": offset ** 2 - half ** 2,
+                    "--hand-row-offset": rowOffset,
+                    "--hand-row-lift": rowOffset ** 2 - rowHalf ** 2,
+                    "--hand-row-shift": (columns - rowCards) / 2,
+                  } as CSSProperties
+                }
+              >
+                <PlayingCard
+                  card={card}
+                  delay={i * 40}
+                  disabled={!canPlay}
+                  pending={pendingCard === (card ?? -1)}
+                  onClick={() => onPlay(card)}
+                />
+              </div>
+            );
+          })}
         </div>
       </section>
     </div>
