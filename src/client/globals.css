@@ -810,7 +810,12 @@ h1 {
   }
   .seated-table {
     --surface-inset-x: 0rem;
-    --played-card-width: min(9.6vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.15));
+    --played-card-width: min(10.3vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.16));
+  }
+  .seat-hand {
+    --fan-width: clamp(1.25rem, 5vw, 3.25rem);
+    --fan-step: clamp(1.5px, 0.94vw, 9.75px);
+    height: calc(var(--fan-width) * 1.6 + 1rem);
   }
   .match-board {
     margin-top: -1.5rem;
