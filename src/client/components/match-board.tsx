@@ -113,6 +113,7 @@ export function MatchBoard({
           {
             gridColumn: `${position.column} / span 2`,
             gridRow: `${position.side === "top" ? 1 : 4} / span 2`,
+            "--seat-fan-rotation": `${position.side === "top" ? 180 + (position.column - 3) * 15 : (3 - position.column) * 15}deg`,
           } as CSSProperties
         }
       >
@@ -121,6 +122,9 @@ export function MatchBoard({
           number={number}
           you={id === game.you}
           current={seating.current === id}
+          activeTurn={
+            game.phase === "playing" && seating.current === id && !player.left && player.lives > 0
+          }
           deadline={game.deadline}
           serverTime={game.serverTime}
           round={game.round}
@@ -153,19 +157,31 @@ export function MatchBoard({
           aria-label={game.phase === "bidding" ? "Predictions" : "Current trick"}
         >
           {game.phase === "bidding" ? (
-            <div className="bid-options flex max-w-[90%] flex-wrap justify-center gap-1.5">
-              {Array.from({ length: game.count + 1 }, (_, n) => (
-                <Button
-                  key={n}
-                  variant="outline"
-                  className="size-11 rounded-lg bg-white p-0 text-lg font-semibold"
-                  disabled={!myTurn || busy || !game.legalBids.includes(n)}
-                  aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
-                  onClick={() => onBid(n)}
-                >
-                  {n}
-                </Button>
-              ))}
+            <div className="bid-options flex max-w-[90%] flex-col items-center justify-center gap-3 @min-2xl/board:flex-row">
+              {[0, 3]
+                .filter((start) => start <= game.count)
+                .map((start) => (
+                  <div key={start} className="flex justify-center gap-3">
+                    {Array.from(
+                      { length: Math.min(start === 0 ? 3 : 4, game.count - start + 1) },
+                      (_, i) => {
+                        const n = start + i;
+                        return (
+                          <Button
+                            key={n}
+                            variant="outline"
+                            className="size-14 rounded-lg bg-white p-0 text-xl font-semibold"
+                            disabled={!myTurn || busy || !game.legalBids.includes(n)}
+                            aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
+                            onClick={() => onBid(n)}
+                          >
+                            {n}
+                          </Button>
+                        );
+                      },
+                    )}
+                  </div>
+                ))}
             </div>
           ) : (
             <div
@@ -217,6 +233,7 @@ export function MatchBoard({
               >
                 <PlayingCard
                   card={card}
+                  className={canPlay ? "turn-glow" : undefined}
                   disabled={!canPlay}
                   pending={pendingCard === (card ?? -1)}
                   onClick={() => onPlay(card)}

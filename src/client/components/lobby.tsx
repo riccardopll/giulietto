@@ -105,17 +105,13 @@ export function Lobby({
 }) {
   return (
     <section className="mx-auto w-full max-w-xl py-3 sm:py-5">
-      <div className="mb-5 flex items-center justify-between gap-4 text-xs text-muted-foreground">
-        <span className="font-medium">{game.public ? "Public lobby" : "Private lobby"}</span>
-        <span>{game.players.length} / 6 players</span>
-      </div>
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {game.host === game.you
-            ? "Start when everyone is here."
-            : "Waiting for the host to start the game."}
-        </p>
+        {game.host !== game.you && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Waiting for the host to start the game.
+          </p>
+        )}
       </div>
       <ul className="grid gap-2" aria-label="Players">
         {Array.from({ length: 6 }, (_, i) => {
@@ -189,9 +185,6 @@ export function Lobby({
           </Button>
         )}
       </div>
-      {game.players.length < 2 && (
-        <p className="mt-4 text-center text-xs text-muted-foreground">At least 2 players needed.</p>
-      )}
     </section>
   );
 }
