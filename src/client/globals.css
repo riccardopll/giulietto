@@ -464,9 +464,9 @@ h1 {
   height: var(--heart-size);
 }
 .site-shell.match-screen {
-  max-width: 84rem;
+  max-width: 88rem;
   min-height: 0;
-  padding-inline: max(0.75rem, env(safe-area-inset-left)) max(0.75rem, env(safe-area-inset-right));
+  padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
 }
 .game-main.in-game {
   padding-bottom: 0;
@@ -497,7 +497,7 @@ h1 {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  max-width: 80rem;
+  max-width: 84rem;
   margin: -2.75rem auto 0;
 }
 /* One orbit per table: seat angles depend on player count, with you at the bottom. */
@@ -506,7 +506,7 @@ h1 {
   --played-card-width: min(5.625rem, calc((100cqw - 2 * var(--surface-inset-x) - 11.5rem) / 6));
   --seat-inset-x: clamp(2rem, 5vw, 3.5rem);
   --seat-inset-y: 5.5rem;
-  --surface-inset-x: clamp(3.5rem, 11vw, 8rem);
+  --surface-inset-x: clamp(3rem, 9vw, 6.5rem);
   --surface-inset-y: 11.5rem;
   --fan-inset: calc(clamp(1rem, 5vw, 4rem) + 0.5rem);
   --fan-inset-y: calc(clamp(1.5rem, 4vw, 3rem) + 0.5rem);
@@ -777,14 +777,14 @@ h1 {
 }
 @media (max-width: 39.999rem) {
   .site-shell.match-screen {
-    padding-inline: max(0.5rem, env(safe-area-inset-left)) max(0.5rem, env(safe-area-inset-right));
+    padding-inline: max(0.25rem, env(safe-area-inset-left)) max(0.25rem, env(safe-area-inset-right));
     padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
   }
   .match-board .hand {
     padding-bottom: 0.25rem;
   }
   .seated-table {
-    --surface-inset-x: 0.5rem;
+    --surface-inset-x: 0rem;
     --played-card-width: min(9.6vw, calc((100cqw - 2 * var(--surface-inset-x)) * 0.15));
   }
   .match-board {
