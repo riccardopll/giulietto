@@ -10,6 +10,9 @@ import {
   type TableGeometry,
 } from "./helpers";
 
+// Full layout sweeps inspect thousands of states; avoid collecting oversized traces.
+test.use({ trace: "off" });
+
 const viewports = [
   { width: 320, height: 568 },
   { width: 357, height: 774 },
@@ -248,10 +251,6 @@ test("table adapts to browser chrome and portrait viewport resizing", async ({ p
   }
 });
 
-// Full finite sweeps are opt-in because they inspect thousands of rendered states.
-// Run LAYOUT_SWEEP=1 for all, or LAYOUT_SWEEP=rounds / seats / identities independently.
-const sweep = process.env.CI ? undefined : process.env.LAYOUT_SWEEP;
-if (sweep) test.use({ trace: "off" });
 const sweepViewports = [
   { width: 320, height: 568 },
   { width: 393, height: 852 },
@@ -550,34 +549,32 @@ for (const viewport of [
   });
 }
 
-if (sweep)
-  test.describe("finite layout permutations", () => {
-    for (const [kind, fixtures, viewports] of [
-      ["rounds", roundFixtures, sweepViewports],
-      ["identities", identityFixtures, sweepViewports],
-      ["seats", seatFixtures, [sweepViewports[0], sweepViewports[3]]],
-    ] as const) {
-      if (sweep !== "1" && sweep !== kind) continue;
-      for (const viewport of viewports) {
-        for (let people = 2; people <= 6; people++) {
-          // Bound each browser context's lifetime so the large seat sweep stays fast.
-          const configurations = Array.from(fixtures(people));
-          const batchSize = 1000;
-          for (let start = 0; start < configurations.length; start += batchSize) {
-            const end = Math.min(start + batchSize, configurations.length);
-            test(`sweep ${kind}: ${people} seats at ${viewport.width}×${viewport.height}, fixtures ${start + 1}–${end} of ${configurations.length}`, async ({
-              page,
-            }, testInfo) => {
-              test.setTimeout(5 * 60_000);
-              await page.setViewportSize(viewport);
-              const checked = await sweepFixtures(page, configurations.slice(start, end));
-              testInfo.annotations.push({
-                type: "rendered-configurations",
-                description: String(checked),
-              });
+test.describe("finite layout permutations", () => {
+  for (const [kind, fixtures, viewports] of [
+    ["rounds", roundFixtures, sweepViewports],
+    ["identities", identityFixtures, sweepViewports],
+    ["seats", seatFixtures, [sweepViewports[0], sweepViewports[3]]],
+  ] as const) {
+    for (const viewport of viewports) {
+      for (let people = 2; people <= 6; people++) {
+        // Bound each browser context's lifetime so the large seat sweep stays fast.
+        const configurations = Array.from(fixtures(people));
+        const batchSize = 1000;
+        for (let start = 0; start < configurations.length; start += batchSize) {
+          const end = Math.min(start + batchSize, configurations.length);
+          test(`sweep ${kind}: ${people} seats at ${viewport.width}×${viewport.height}, fixtures ${start + 1}–${end} of ${configurations.length}`, async ({
+            page,
+          }, testInfo) => {
+            test.setTimeout(5 * 60_000);
+            await page.setViewportSize(viewport);
+            const checked = await sweepFixtures(page, configurations.slice(start, end));
+            testInfo.annotations.push({
+              type: "rendered-configurations",
+              description: String(checked),
             });
-          }
+          });
         }
       }
     }
-  });
+  }
+});

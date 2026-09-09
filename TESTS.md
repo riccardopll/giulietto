@@ -1,7 +1,7 @@
 # Testing
 
-Run full layout sweeps (`npm run test:layout`) only when explicitly requested,
-never in CI.
+Run UI tests, including full layout sweeps, only when explicitly requested, never
+in CI.
 
 After layout changes, inspect screenshots and open `/preview` locally for the user
 to review.

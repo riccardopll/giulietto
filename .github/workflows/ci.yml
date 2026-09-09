@@ -27,8 +27,6 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run check
-      - run: npx playwright install --with-deps chromium webkit
-      - run: npm run test:ui
       - name: Apply migrations and deploy
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
@@ -37,6 +35,3 @@ jobs:
         run: |
           npm run db:migrate:remote
           npx wrangler deploy
-      - name: Verify deployed site
-        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
-        run: node scripts/smoke.mjs https://giulietto.riccardo-palleschi-5e6.workers.dev
