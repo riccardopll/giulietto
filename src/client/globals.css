@@ -609,20 +609,6 @@ h1 {
   height: 2.25rem;
   width: 100%;
 }
-.table-seat[data-bubble-side="left"] .seat-bubble-slot {
-  right: calc(50% + var(--seat-avatar-size) / 2 + 0.875rem);
-  top: calc(var(--seat-avatar-size) / 2);
-  bottom: auto;
-  width: auto;
-  height: auto;
-  transform: translateY(-50%);
-}
-.table-seat[data-bubble-side="left"] .seat-bubble::after {
-  left: auto;
-  right: -0.25rem;
-  top: calc(50% - 0.25rem);
-  bottom: auto;
-}
 .seat-avatar-wrap {
   position: relative;
   margin: 0 0.375rem 0.25rem;
