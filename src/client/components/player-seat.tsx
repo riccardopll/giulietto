@@ -49,6 +49,7 @@ export function PlayerSeat({
         {
           "--seat-x": -Math.sin(position * Math.PI * 2),
           "--seat-y": seatY,
+          "--seat-angle": `${position * 360}deg`,
           "--mobile-seat-side": seatY > 0.001 ? 1 : -1,
           "--mobile-seat-arc": 1 - Math.abs(seatY),
         } as CSSProperties
