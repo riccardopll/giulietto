@@ -191,11 +191,9 @@ export function MatchBoard({
           className="hand flex items-start justify-center gap-1.5"
           key={`hand-${game.round}`}
           data-active-turn={(canPlay && !!me?.hand.length) || undefined}
-          data-empty-spectator={(!active && !me?.hand.length) || undefined}
           style={
             {
               "--hand-columns": Math.max(1, Math.min(3, me?.hand.length ?? 0)),
-              "--hand-rows": Math.ceil(game.count / 3),
             } as CSSProperties
           }
         >

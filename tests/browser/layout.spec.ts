@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 const viewports = [
@@ -30,6 +30,10 @@ const scenarios = [
     },
   ]),
   {
+    name: "two players, five cards, bidding",
+    query: "people=2&cards=5&phase=bidding",
+  },
+  {
     name: "three players, two cards, empty trick",
     query: "people=3&cards=2&played=0",
   },
@@ -44,6 +48,10 @@ const scenarios = [
   {
     name: "six players predicting with six cards",
     query: "people=6&cards=6&phase=bidding",
+  },
+  {
+    name: "six players predicting with one card",
+    query: "people=6&cards=1&phase=bidding",
   },
   {
     name: "six players, revealed last cards, partial trick",
@@ -65,23 +73,129 @@ const scenarios = [
     name: "six players, six cards, partial trick",
     query: "people=6&cards=6&played=3",
   },
+  {
+    name: "six players viewed from the last seat",
+    query: "people=6&cards=6&played=3&viewer=5",
+  },
+  {
+    name: "eliminated spectator, six cards",
+    query: "people=6&cards=6&played=3&viewer=5&inactive=eliminated",
+  },
+  {
+    name: "eliminated spectator, blind round",
+    query: "people=6&phase=blind&played=0&viewer=5&inactive=eliminated",
+  },
+  {
+    name: "departed spectator, blind round",
+    query: "people=6&phase=blind&played=0&viewer=5&inactive=left",
+  },
 ];
+
+async function tableGeometry(page: Page) {
+  return page.evaluate(() => {
+    const bounds = (element: Element) => {
+      const { x, y, width, height } = element.getBoundingClientRect();
+      return { x, y, width, height };
+    };
+    return {
+      table: Object.fromEntries(
+        [".table-arena", ".table-surface", ".play-table"].map((selector) => [
+          selector,
+          bounds(document.querySelector(selector)!),
+        ]),
+      ),
+      seats: Object.fromEntries(
+        [...document.querySelectorAll<HTMLElement>("[data-seat]")].map((seat) => {
+          const { x, y, width, height } = bounds(seat.querySelector(".seat-identity")!);
+          return [
+            seat.dataset.seat!,
+            { centerX: x + width / 2, centerY: y + height / 2, width, height },
+          ];
+        }),
+      ),
+    };
+  });
+}
+
+async function expectTableGeometry(
+  page: Page,
+  expected: Awaited<ReturnType<typeof tableGeometry>>,
+  inactive = false,
+) {
+  const actual = await tableGeometry(page);
+  for (const [selector, bounds] of Object.entries(expected.table)) {
+    for (const key of ["x", "y", "width", "height"] as const)
+      expect(
+        Math.abs(actual.table[selector][key] - bounds[key]),
+        `${selector} ${key}`,
+      ).toBeLessThanOrEqual(0.5);
+  }
+  expect(Object.keys(actual.seats).sort()).toEqual(Object.keys(expected.seats).sort());
+  for (const [id, bounds] of Object.entries(expected.seats)) {
+    // Out/Left labels can widen a name; its seat must still stay in the same place.
+    const keys = inactive
+      ? (["centerX", "centerY", "height"] as const)
+      : (["centerX", "centerY", "width", "height"] as const);
+    for (const key of keys)
+      expect(Math.abs(actual.seats[id][key] - bounds[key]), `${id} ${key}`).toBeLessThanOrEqual(
+        0.5,
+      );
+  }
+}
 
 for (const viewport of viewports) {
   test(`table and controls fit ${viewport.width}×${viewport.height}`, async ({
     page,
   }, testInfo) => {
     await page.setViewportSize(viewport);
+    const geometry = new Map<string, Awaited<ReturnType<typeof tableGeometry>>>();
     for (const scenario of scenarios) {
       await test.step(scenario.name, async () => {
         await openPreview(page, `${scenario.query}&longNames=1`);
         await checkLayout(page);
+        const query = new URLSearchParams(scenario.query);
+        const seating = `${query.get("people")}-${query.get("viewer") ?? "0"}`;
+        const baseline = geometry.get(seating);
+        if (baseline) await expectTableGeometry(page, baseline, query.has("inactive"));
+        else geometry.set(seating, await tableGeometry(page));
         if (/people=6&cards=6&played=/.test(scenario.query))
           await attachScreenshot(page, testInfo, `six-players-${scenario.query.at(-1)}-played`);
       });
     }
   });
 }
+
+test("the table stays fixed through the blind round and the next six-card round", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 393, height: 852 });
+  await openPreview(page, "people=6&cards=1&phase=bidding&played=0&longNames=1");
+  const geometry = await tableGeometry(page);
+  const board = page.locator(".match-board");
+  await expect(page.locator("header h2")).toHaveText("Round VI");
+
+  for (let bid = 1; bid <= 6; bid++) {
+    await page.keyboard.press("n");
+    await expect(board).toHaveAttribute("data-phase", bid < 6 ? "bidding" : "playing");
+    await expectTableGeometry(page, geometry);
+    await checkLayout(page);
+  }
+  for (let played = 1; played <= 6; played++) {
+    await page.keyboard.press("n");
+    await expect(page.locator(".trick-cards .playing-card")).toHaveCount(played);
+    await expectTableGeometry(page, geometry);
+    await checkLayout(page);
+  }
+  await page.keyboard.press("n");
+  await expect(page.getByRole("heading", { name: "Round results" })).toBeVisible();
+  await page.keyboard.press("n");
+  await expect(page.locator("header h2")).toHaveText("Round VII");
+  await expect(board).toHaveAttribute("data-phase", "bidding");
+  await expect(page.locator(".hand .playing-card")).toHaveCount(6);
+  await expectTableGeometry(page, geometry);
+  await checkLayout(page);
+  await expect(page.getByRole("dialog", { name: "Local preview" })).toBeHidden();
+});
 
 test("played and revealed cards are readable on phones and desktops", async ({ page }) => {
   for (const viewport of [
