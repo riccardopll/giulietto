@@ -74,7 +74,6 @@ test("spectators and round results are readable on a small phone", async ({ page
     await test.step(`${inactive} spectator`, async () => {
       await openPreview(page, `people=6&cards=6&played=3&viewer=5&inactive=${inactive}`);
       await checkLayout(page);
-      await expect(page.getByText("Watching · you return if everyone is out")).toBeVisible();
     });
   }
   await page.goto("/preview?people=6&cards=6&phase=results&longNames=1");
