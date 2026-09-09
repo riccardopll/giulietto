@@ -1,5 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { attachScreenshot, checkLayout, openPreview } from "./helpers";
+import { expect, type Page } from "@playwright/test";
+import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 test("preview header copies the room invite and opens settings", async ({ page }) => {
   await page.addInitScript(() => {
@@ -81,6 +81,7 @@ for (const viewport of [
     expect(await sidebar.boundingBox()).toEqual(sidebarBounds);
     await page.keyboard.press("Escape");
     await expect(sidebar).toBeHidden();
+    await page.clock.runFor(1);
     await expect(trigger).toBeFocused();
     expect(await gameGeometry(page)).toEqual(before);
     await checkLayout(page);
@@ -119,10 +120,11 @@ test("preview sidebar retains focus and settings when reconfiguring the game", a
   await expect(sidebar.getByRole("checkbox", { name: "Long names" })).toBeChecked();
 });
 
-test("preview sidebar stays open while playing the game outside it", async ({ page }) => {
+test("playing outside the preview sidebar dismisses it", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await openPreview(page, "people=6&cards=6&phase=playing&played=0");
   await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+  await page.clock.runFor(1);
   const sidebar = page.getByRole("dialog", { name: "Local preview" });
   const hand = page.getByRole("region", { name: "Your hand", exact: true });
   await expect(hand.getByRole("button")).toHaveCount(6);
@@ -130,8 +132,23 @@ test("preview sidebar stays open while playing the game outside it", async ({ pa
   if (await page.getByRole("dialog", { name: "Ace of Coins", exact: true }).isVisible())
     await page.getByRole("button", { name: "High · 41" }).click();
   await expect(hand.getByRole("button")).toHaveCount(5);
-  await expect(sidebar).toBeVisible();
-  await expect(sidebar.getByText("playing · 1 of 6 cards on table", { exact: true })).toBeVisible();
-  await sidebar.getByRole("button", { name: "Close preview settings" }).click();
   await expect(sidebar).toBeHidden();
+});
+
+test("preview autoplays by default and can pause and resume", async ({ page }) => {
+  await openPreview(page, "people=3&cards=6&phase=playing&played=0");
+  const cards = page.locator(".trick-cards .playing-card");
+  await expect(cards).toHaveCount(0);
+  await page.clock.runFor(1800);
+  await expect(cards).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+  const sidebar = page.getByRole("dialog", { name: "Local preview" });
+  await sidebar.getByRole("button", { name: "Pause", exact: true }).click();
+  await page.clock.runFor(3600);
+  await expect(cards).toHaveCount(1);
+
+  await sidebar.getByRole("button", { name: "Autoplay", exact: true }).click();
+  await page.clock.runFor(1800);
+  await expect(cards).toHaveCount(2);
 });

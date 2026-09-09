@@ -53,7 +53,7 @@ export function Preview() {
   const [initial] = useState(initialSettings);
   const [people, setPeople] = useState(initial.people);
   const [viewer, setViewer] = useState(initial.viewer);
-  const [running, setRunning] = useState(false);
+  const [running, setRunning] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [tables, setTables] = useState<Record<number, Entry>>(() =>
     Object.fromEntries(
@@ -150,7 +150,6 @@ export function Preview() {
       <Dialog.Portal>
         <Dialog.Content
           aria-describedby={undefined}
-          onInteractOutside={(event) => event.preventDefault()}
           className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[calc(100vw-1rem)] space-y-4 overflow-y-auto overscroll-contain border-l bg-background pl-4 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)] text-foreground shadow-xl outline-none"
         >
           <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-background py-2">
@@ -277,10 +276,6 @@ export function Preview() {
               Reset table
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground" aria-live="polite">
-            {entry.game.phase} · {entry.game.trick.length} of {entry.game.order.length} cards on
-            table
-          </p>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

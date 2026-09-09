@@ -1,8 +1,8 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
 import { makePreview } from "../../src/client/preview/games";
 import { makeGame, player, view } from "../../src/shared/game";
 import type { Command } from "../../src/server/protocol";
-import { checkLayout, openPreview } from "./helpers";
+import { checkLayout, openPreview, test } from "./helpers";
 
 test("players can predict and play cards with the keyboard on mobile", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });

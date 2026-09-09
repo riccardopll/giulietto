@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { attachScreenshot, checkLayout, openPreview } from "./helpers";
+import { expect } from "@playwright/test";
+import { attachScreenshot, checkLayout, openPreview, test } from "./helpers";
 
 const viewports = [
   { width: 320, height: 568 },

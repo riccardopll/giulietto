@@ -1,4 +1,12 @@
-import { expect, type Page, type TestInfo } from "@playwright/test";
+import { expect, test as base, type Page, type TestInfo } from "@playwright/test";
+
+export const test = base.extend({
+  page: async ({ page }, use) => {
+    await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
+    await page.clock.pauseAt(new Date("2026-01-01T00:00:01Z"));
+    await use(page);
+  },
+});
 
 export async function openPreview(page: Page, query: string) {
   await page.goto(`/preview?${query}`);
