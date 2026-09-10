@@ -49,6 +49,7 @@ export type Game = {
   tie: boolean;
 };
 export const TURN_MS = 40000;
+export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
 export const MIN_STARTING_LIVES = 1;
 export const MAX_STARTING_LIVES = 5;
@@ -200,7 +201,11 @@ export function score(g: Game, now: number) {
     g.deadline = now + 12000;
   }
 }
-export function tick(g: Game, now: number) {
+export function tick(g: Game, now: number, connected?: ReadonlySet<string>) {
+  if (g.spectators)
+    g.spectators = g.spectators.filter(
+      (p) => connected?.has(p.id) || now - p.seen < SPECTATOR_RETENTION_MS,
+    );
   if (g.phase === "lobby") {
     g.players = g.players.filter((p) => now - p.seen < 120000);
     if (!g.players.some((p) => p.id === g.host)) g.host = g.players[0]?.id ?? "";

@@ -112,3 +112,24 @@ it("counts only connected spectators and eliminated players", () => {
   expect(view(game, "p0", new Set(["p0", "watcher"])).spectatorCount).toBe(1);
   expect(view(game, "p0", new Set(["p0", "p2"])).spectatorCount).toBe(0);
 });
+
+it("resumes an owned seat on a matchmaking retry but rejects new spectators", () => {
+  const game = gameFixture();
+  join(game, "p0", "bot_1", 200, true);
+  expect(game.players[0].seen).toBe(200);
+  expect(() => join(game, "watcher", "Observer", 200, true)).toThrow("no longer available");
+  expect(game.spectators).toBeUndefined();
+});
+
+it.each(["playing", "finished"] as const)("expires disconnected spectators during %s", (phase) => {
+  const game = gameFixture();
+  game.phase = phase;
+  game.deadline = 0;
+  join(game, "watcher", "Observer", 100);
+  join(game, "connected", "Observer", 100);
+  tick(game, 120_100, new Set(["connected"]));
+  expect(game.spectators?.map((p) => p.id)).toEqual(["connected"]);
+  expect(game.players).toHaveLength(3);
+  join(game, "watcher", "Observer", 120_200);
+  expect(view(game, "watcher").spectating).toBe(true);
+});

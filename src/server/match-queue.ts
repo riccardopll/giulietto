@@ -21,7 +21,7 @@ export class MatchQueue extends DurableObject<Env> {
             },
           );
         if (saved) {
-          const resumed = await send(saved.code, "join");
+          const resumed = await send(saved.code, "join", false, b.action === "match");
           if (resumed.status !== 400) return resumed;
           this.ctx.storage.kv.delete(key);
         }

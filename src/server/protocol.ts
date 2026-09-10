@@ -28,8 +28,10 @@ export function command(value: unknown): Command {
   return b as Command;
 }
 export function join(g: Game, id: string, name: string, now: number, matchmaking = false) {
-  if (matchmaking && g.phase !== "lobby") throw new GameError("This table is no longer available.");
-  const existing = g.players.find((p) => p.id === id) ?? g.spectators?.find((p) => p.id === id);
+  const seated = g.players.find((p) => p.id === id);
+  if (matchmaking && g.phase !== "lobby" && !seated)
+    throw new GameError("This table is no longer available.");
+  const existing = seated ?? g.spectators?.find((p) => p.id === id);
   if (existing) {
     existing.seen = now;
     return;

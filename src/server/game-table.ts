@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
-import { makeGame, player, tick, view, type Game } from "../shared/game";
+import { makeGame, player, tick, view, SPECTATOR_RETENTION_MS, type Game } from "../shared/game";
 import { historyStatements } from "./match-history";
 import { eventStatements, gameEvents, type EventSource, type GameEvent } from "./game-events";
 import { apply, command, displayName, failure, type Command } from "./protocol";
@@ -42,14 +42,16 @@ export class GameTable extends DurableObject<Env> {
       ws.close(1011, "Reconnect");
     }
   }
-  private view(g: Game, id: string) {
-    const connected = new Set(
+  private connected() {
+    return new Set(
       this.ctx
         .getWebSockets()
         .filter((ws) => ws.readyState === WebSocket.OPEN)
         .map((ws) => (ws.deserializeAttachment() as Attachment).id),
     );
-    return view(g, id, connected);
+  }
+  private view(g: Game, id: string) {
+    return view(g, id, this.connected());
   }
   private snapshot(ws: WebSocket, g: Game) {
     const { id } = ws.deserializeAttachment() as Attachment;
@@ -65,12 +67,15 @@ export class GameTable extends DurableObject<Env> {
   private due(r: Record) {
     const g = r.game;
     if (Date.now() - r.updated >= DAY && r.outbox) return Infinity;
-    if (g.phase !== "lobby") return g.deadline || r.updated + DAY;
-    const connected = new Set(
-      this.ctx.getWebSockets().map((ws) => (ws.deserializeAttachment() as Attachment).id),
-    );
+    const connected = this.connected();
     return Math.min(
-      ...g.players.filter((p) => !connected.has(p.id)).map((p) => p.seen + 120000),
+      ...(g.phase === "lobby" ? g.players : [])
+        .filter((p) => !connected.has(p.id))
+        .map((p) => p.seen + 120000),
+      ...(g.spectators ?? [])
+        .filter((p) => !connected.has(p.id))
+        .map((p) => p.seen + SPECTATOR_RETENTION_MS),
+      g.deadline || Infinity,
       r.updated + DAY,
     );
   }
@@ -136,7 +141,7 @@ export class GameTable extends DurableObject<Env> {
       );
       for (const p of g.players) if (ids.has(p.id) && now - p.seen >= 60000) p.seen = now;
     }
-    tick(g, now);
+    tick(g, now, this.connected());
     return JSON.stringify(g) === JSON.stringify(r.game)
       ? r
       : this.save(r, g, undefined, {
@@ -290,8 +295,11 @@ export class GameTable extends DurableObject<Env> {
       const r = this.read();
       if (!r) return;
       const { id } = ws.deserializeAttachment() as Attachment;
-      const p = r.game.players.find((p) => p.id === id);
-      if (p && r.game.phase === "lobby") {
+      const p =
+        r.game.phase === "lobby"
+          ? r.game.players.find((p) => p.id === id)
+          : r.game.spectators?.find((p) => p.id === id);
+      if (p && !this.connected().has(id)) {
         p.seen = Date.now();
         this.ctx.storage.kv.put("room", r);
       }
