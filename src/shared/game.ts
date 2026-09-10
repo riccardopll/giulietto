@@ -241,6 +241,7 @@ export function view(g: Game, id: string, connected?: ReadonlySet<string>) {
     canChooseAce: active && g.phase === "playing" && g.order[g.turn] === id && me.hand.includes(31),
     players: g.players.map((p) => ({
       ...p,
+      connected: connected?.has(p.id) ?? true,
       hand: p.hand.map((card) =>
         active && ((!blind && p.id === id) || (blind && p.id !== id)) ? card : null,
       ),

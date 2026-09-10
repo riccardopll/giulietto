@@ -4,6 +4,8 @@ type State = ReturnType<typeof view>;
 type Actor = { id: string; player: string; name: string };
 export type MatchEvent = Actor &
   (
+    | { type: "left" }
+    | { type: "rejoined" }
     | { type: "prediction"; bid: number }
     | { type: "play"; card: number; mode?: "high" | "low" }
     | { type: "trick-won"; card: number; mode?: "high" | "low" }
@@ -28,8 +30,19 @@ function actor(state: State, player: string, action: string): Actor {
 /** Announce observed actions only; reconnect snapshots do not replay old table activity. */
 export function matchEvents(before: State | null, after: State): MatchEvent[] {
   const sameContext = before !== null && context(before) === context(after);
-  if (sameContext && after.revision <= before.revision) return [];
+  if (sameContext && after.revision < before.revision) return [];
   const events: MatchEvent[] = [];
+  if (sameContext && after.revision <= before.revision + 1) {
+    for (const player of after.players) {
+      const previous = before.players.find((p) => p.id === player.id);
+      if (!previous || previous.connected === player.connected) continue;
+      const type = player.connected ? "rejoined" : "left";
+      events.push({
+        ...actor(after, player.id, `${type}:${after.revision}:${after.serverTime}`),
+        type,
+      });
+    }
+  }
   if (sameContext && before.round === after.round && after.revision === before.revision + 1) {
     if (before.phase === "bidding" && ["bidding", "playing"].includes(after.phase)) {
       const player = before.players.find((person) => person.id === before.order[before.turn]);
