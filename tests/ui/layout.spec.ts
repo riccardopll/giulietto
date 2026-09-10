@@ -87,4 +87,22 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.clock.runFor(1600);
   await expect(prediction).toHaveCount(0);
   await expect(bubble).toHaveCount(0);
+
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto("/preview?people=6&cards=6&phase=trick");
+  const playedCards = page
+    .getByRole("region", { name: "Current trick", exact: true })
+    .getByRole("img");
+  await expect(playedCards).toHaveCount(6);
+  const cards = await playedCards.evaluateAll((images) =>
+    images.map((image) => {
+      const { y, width } = image.getBoundingClientRect();
+      return { y, width };
+    }),
+  );
+  expect(
+    Math.max(...cards.map((card) => card.y)) - Math.min(...cards.map((card) => card.y)),
+  ).toBeLessThan(1);
+  expect(Math.min(...cards.map((card) => card.width))).toBeGreaterThan(90);
+  await page.screenshot({ path: testInfo.outputPath("desktop-trick.png"), animations: "disabled" });
 });
