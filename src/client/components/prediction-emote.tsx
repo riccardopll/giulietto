@@ -1,23 +1,33 @@
 import { useEffect, useRef, useState } from "react";
+import { EMOTE_DURATION_MS } from "@/shared/emotes";
+import { AnimatedWebp, preloadWebp } from "./animated-webp";
+import { Bubble } from "./bubble";
 
+// Number animations: https://www.animatedgif.net/numberscharacters/numbers.shtml
 export function PredictionEmote({ bid, name }: { bid: number | null; name: string }) {
   const previous = useRef(bid);
   const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    for (let number = 0; number <= 6; number++) {
+      void preloadWebp(`/emotes/prediction-${number}.webp`).catch(() => {});
+    }
+  }, []);
   useEffect(() => {
     const changed = previous.current === null && bid !== null;
     previous.current = bid;
     if (!changed) return;
     setVisible(true);
-    const timer = setTimeout(() => setVisible(false), 2800);
+    const timer = setTimeout(() => setVisible(false), EMOTE_DURATION_MS);
     return () => clearTimeout(timer);
   }, [bid]);
   return visible ? (
-    <span
-      className="seat-bubble prediction-emote pointer-events-none relative inline-flex h-7 min-w-10 items-center justify-center animate-[bubble-in_160ms_ease-out] rounded-full bg-primary px-3 text-xs leading-none font-semibold text-primary-foreground shadow-sm after:absolute after:-bottom-1 after:left-1/2 after:size-2 after:-translate-x-1/2 after:rotate-45 after:bg-primary"
-      role="status"
-      aria-label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}
-    >
-      <span aria-hidden="true">{bid}</span>
-    </span>
+    <Bubble label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}>
+      <span className="absolute bottom-[2.5px] left-1/2 h-[44px] w-8 -translate-x-1/2">
+        <AnimatedWebp
+          src={`/emotes/prediction-${bid}.webp`}
+          poster={`/emotes/prediction-${bid}-still.webp`}
+        />
+      </span>
+    </Bubble>
   ) : null;
 }

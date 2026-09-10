@@ -47,6 +47,14 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   expect(errors).toEqual([]);
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
+  const prediction = page.getByRole("status", { name: /predicts 0 tricks/ });
+  await expect(prediction.locator("img")).toHaveAttribute("src", /^blob:/);
+  await prediction.evaluate((element) => {
+    const animation = element.getAnimations()[0];
+    animation.pause();
+    animation.currentTime = 250;
+  });
+  const predictionSize = await prediction.locator(".emote-artwork").boundingBox();
   await page.getByRole("button", { name: "Emotes", exact: true }).click();
   await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
   await expect(page.getByRole("button", { name: "Empty emote slot 1" })).toBeDisabled();
@@ -58,9 +66,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const menuChickenSize = await menuArtwork.locator("img").boundingBox();
   await page.screenshot({ path: testInfo.outputPath("emote-menu.png") });
   await page.getByRole("button", { name: "Send chicken emote" }).click();
-  const bubble = page
-    .locator("[data-seat][data-you] .seat-bubble")
-    .filter({ has: page.locator(".emote-motion") });
+  const bubble = page.getByRole("status", { name: /sent the chicken emote/ });
   await expect(bubble.locator(".emote-motion")).toBeVisible();
   await bubble.evaluate((element) => {
     const animation = element.getAnimations()[0];
@@ -70,6 +76,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const playbackSize = await bubble.locator(".emote-artwork").boundingBox();
   const playbackChickenSize = await bubble.locator(".emote-motion").boundingBox();
   expect(playbackSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
+  expect(predictionSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
   expect(playbackChickenSize).toMatchObject({
     width: menuChickenSize!.width,
     height: menuChickenSize!.height,
@@ -77,4 +84,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const path = testInfo.outputPath("small-phone.png");
   await page.screenshot({ path });
   await testInfo.attach("small-phone", { path, contentType: "image/png" });
+  await page.clock.runFor(1600);
+  await expect(prediction).toHaveCount(0);
+  await expect(bubble).toHaveCount(0);
 });
