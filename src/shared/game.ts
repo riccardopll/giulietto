@@ -1,4 +1,5 @@
 import { GameError } from "./game-error.ts";
+import type { Emote } from "./emotes";
 export type PlayerStats = {
   roundsPlayed: number;
   tricksWon: number;
@@ -14,6 +15,7 @@ export type Player = {
   taken: number;
   seen: number;
   stats: PlayerStats;
+  emote?: Emote;
 };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
 export type Result = {

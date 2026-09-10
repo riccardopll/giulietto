@@ -77,7 +77,7 @@ export function PlayingCard({
   const cardClassName = cn(
     "playing-card relative isolate block aspect-[5/8] w-full shrink-0 rounded-md border-0 bg-white p-0 shadow-[0_2px_3px_#1b294126,0_7px_14px_#1b29410d] select-none",
     onClick &&
-      "outline-2 outline-offset-2 outline-transparent transition-transform focus-visible:-translate-y-1 focus-visible:outline-ring enabled:hover:-translate-y-1 enabled:hover:outline-ring disabled:cursor-default",
+      "outline-2 outline-offset-2 outline-transparent transition-transform enabled:hover:-translate-y-1 enabled:hover:outline-ring disabled:cursor-default",
     { playable: !!onClick, "pending-card outline-ring": pending },
     className,
   );

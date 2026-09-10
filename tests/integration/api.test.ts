@@ -79,6 +79,22 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
     expect(own.hand.every((card) => typeof card === "number")).toBe(true);
     expect(opponent.hand).toEqual(Array(6).fill(null));
   }
+  const beforeEmote = sockets[0].latest()!;
+  const commandId = crypto.randomUUID();
+  const emoteRequest = { action: "emote", emote: "chicken", code, commandId };
+  const sent = await api.state(host, emoteRequest);
+  await expect
+    .poll(() => sockets[1].latest()?.players.find((p) => p.id === sent.you)?.emote)
+    .toEqual({ id: "chicken", sentAt: expect.any(Number) });
+  expect(sent.turn).toBe(beforeEmote.turn);
+  expect(sent.deadline).toBe(beforeEmote.deadline);
+  expect((await api.state(host, emoteRequest)).revision).toBe(sent.revision);
+  expect((await sockets[0].command({ action: "emote", emote: "chicken" })).type).toBe("error");
+  expect((await sockets[1].command({ action: "emote", emote: "chicken" })).type).toBe("ack");
+  const spectator = guest(3);
+  await api.state(spectator, { action: "join", code });
+  expect((await api.post(spectator, { action: "emote", emote: "chicken", code })).status).toBe(400);
+
   const byId = new Map(sockets.map((socket) => [socket.latest()!.you, socket]));
   for (const id of sockets[0].latest()!.order) {
     expect((await byId.get(id)!.command({ action: "bid", bid: 0 })).type).toBe("ack");

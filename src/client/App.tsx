@@ -214,7 +214,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       if (
         gameRef.current &&
         transport.current &&
-        ["settings", "start", "bid", "play", "leave"].includes(action)
+        ["settings", "start", "bid", "play", "emote", "leave"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -412,6 +412,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 busy={busy}
                 pendingCard={pendingCard}
                 preview={isPreview}
+                onEmote={() => void act("emote", { emote: "chicken" })}
                 onBid={(bid) => void act("bid", { bid })}
                 onPlay={(card) => {
                   if (game.canChooseAce && (card === null || card === 31)) setAce(card ?? -1);

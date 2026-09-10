@@ -1,3 +1,4 @@
+import { sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
   bid,
@@ -16,7 +17,7 @@ export function command(value: unknown): Command {
     throw new GameError("Invalid request.");
   const b = value as Record<string, unknown>;
   if (
-    !["create", "match", "join", "settings", "start", "bid", "play", "leave"].includes(
+    !["create", "match", "join", "settings", "start", "bid", "play", "emote", "leave"].includes(
       String(b.action),
     )
   )
@@ -59,7 +60,9 @@ export function apply(g: Game, id: string, b: Command, now: number) {
   const p = g.players.find((p) => p.id === id);
   if (!p) throw new GameError("Join this table first.");
   p.seen = now;
-  if (b.action === "settings") {
+  if (b.action === "emote") {
+    sendEmote(g, id, b.emote, now);
+  } else if (b.action === "settings") {
     if (g.host !== id) throw new GameError("Only the host can change starting lives.");
     if (g.phase !== "lobby")
       throw new GameError("Starting lives cannot change after the game starts.");

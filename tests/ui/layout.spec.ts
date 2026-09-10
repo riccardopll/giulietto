@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 test("six players and full hands fit the smallest supported phone", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 320, height: 568 });
-  await page.addInitScript(() => localStorage.setItem("giulietto-preview-motion", "system"));
   await page.clock.install();
   await page.clock.pauseAt(new Date());
   await page.goto("/preview?people=6&cards=6&phase=bidding&longNames=1");
@@ -48,6 +47,33 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   expect(errors).toEqual([]);
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
+  await page.getByRole("button", { name: "Emotes", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
+  await expect(page.getByRole("button", { name: "Empty emote slot 1" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Empty emote slot 2" })).toBeDisabled();
+  const menuArtwork = page
+    .getByRole("button", { name: "Send chicken emote" })
+    .locator(".emote-artwork");
+  const menuSize = await menuArtwork.boundingBox();
+  const menuChickenSize = await menuArtwork.locator("img").boundingBox();
+  await page.screenshot({ path: testInfo.outputPath("emote-menu.png") });
+  await page.getByRole("button", { name: "Send chicken emote" }).click();
+  const bubble = page
+    .locator("[data-seat][data-you] .seat-bubble")
+    .filter({ has: page.locator(".emote-motion") });
+  await expect(bubble.locator(".emote-motion")).toBeVisible();
+  await bubble.evaluate((element) => {
+    const animation = element.getAnimations()[0];
+    animation.pause();
+    animation.currentTime = 250;
+  });
+  const playbackSize = await bubble.locator(".emote-artwork").boundingBox();
+  const playbackChickenSize = await bubble.locator(".emote-motion").boundingBox();
+  expect(playbackSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
+  expect(playbackChickenSize).toMatchObject({
+    width: menuChickenSize!.width,
+    height: menuChickenSize!.height,
+  });
   const path = testInfo.outputPath("small-phone.png");
   await page.screenshot({ path });
   await testInfo.attach("small-phone", { path, contentType: "image/png" });

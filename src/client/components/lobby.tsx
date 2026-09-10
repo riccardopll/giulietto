@@ -69,7 +69,7 @@ function LobbyOptions({
         max={MAX_STARTING_LIVES}
         step={1}
         value={selected}
-        className="m-0 h-8 w-full cursor-pointer rounded accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60"
+        className="m-0 h-8 w-full cursor-pointer rounded accent-primary disabled:cursor-default disabled:opacity-60"
         aria-valuetext={`${selected} ${selected === 1 ? "life" : "lives"}`}
         disabled={!host}
         onChange={(event) => setDraft(Number(event.target.value))}
