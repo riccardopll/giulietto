@@ -60,6 +60,10 @@
   html {
     color-scheme: light;
   }
+  html:has(.match-screen) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
   body {
     @apply m-0 bg-background font-sans text-base text-foreground antialiased;
   }

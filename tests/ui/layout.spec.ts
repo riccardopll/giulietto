@@ -96,6 +96,9 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     width: menuChickenSize!.width,
     height: menuChickenSize!.height,
   });
+  await page.mouse.wheel(0, 500);
+  await page.clock.runFor(100);
+  expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual({ x: 0, y: 0 });
   const path = testInfo.outputPath("small-phone.png");
   await page.screenshot({ path });
   await testInfo.attach("small-phone", { path, contentType: "image/png" });
