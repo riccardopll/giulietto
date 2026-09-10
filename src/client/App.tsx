@@ -214,7 +214,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       if (
         gameRef.current &&
         transport.current &&
-        ["settings", "start", "bid", "play", "leave"].includes(action)
+        ["settings", "start", "bid", "play", "emote", "leave"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -287,7 +287,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       >
         <header className="site-header grid min-h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1 sm:min-h-16">
           <div
-            className={`row-start-1 flex flex-col items-start sm:flex-row sm:items-center sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
+            className={`row-start-1 flex items-center gap-1 sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
           >
             <a
               href="/"
@@ -412,6 +412,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 busy={busy}
                 pendingCard={pendingCard}
                 preview={isPreview}
+                onEmote={() => void act("emote", { emote: "chicken" })}
                 onBid={(bid) => void act("bid", { bid })}
                 onPlay={(card) => {
                   if (game.canChooseAce && (card === null || card === 31)) setAce(card ?? -1);

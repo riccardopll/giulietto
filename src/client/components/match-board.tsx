@@ -1,6 +1,7 @@
 import { useEffect, useEffectEvent, useRef, type CSSProperties } from "react";
 import type { view } from "@/shared/game";
 import { tableOrder } from "../table-order";
+import { EmotePicker } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
 import { TableSurface } from "./table-surface";
@@ -14,6 +15,7 @@ export function MatchBoard({
   busy,
   pendingCard,
   preview,
+  onEmote,
   onBid,
   onPlay,
 }: {
@@ -21,6 +23,7 @@ export function MatchBoard({
   busy: boolean;
   pendingCard: number | null;
   preview: boolean;
+  onEmote: () => void;
   onBid: (bid: number) => void;
   onPlay: (card: number | null) => void;
 }) {
@@ -52,8 +55,7 @@ export function MatchBoard({
     (game.trick.some((p) => p.player === game.order[0]) ? 0 : 1);
 
   const animateTrick = useEffectEvent(() => {
-    if (preview || game.phase !== "trick" || matchMedia("(prefers-reduced-motion: reduce)").matches)
-      return;
+    if (preview || game.phase !== "trick") return;
     const anchor = board.current?.querySelector(`[data-seat="${game.lastWinner}"] .seat-avatar`);
     if (!anchor) return;
     const target = anchor.getBoundingClientRect();
@@ -180,7 +182,7 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1]"
+              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1] @min-2xl/board:[--trick-columns:var(--trick-players)] @min-2xl/board:[--trick-rows:1] @min-2xl/board:[--played-card-max-width:5.5rem]"
               style={
                 {
                   "--trick-players": game.order.length,
@@ -203,43 +205,54 @@ export function MatchBoard({
           )}
         </section>
       </section>
-      <section
-        className="hand-area flex min-w-0 items-center justify-center pt-2 [--hand-card-width:min(5rem,10dvh,calc((100cqw-2rem)/6))]"
-        aria-label={game.spectating ? "Spectator mode" : "Your hand"}
-      >
-        <div
-          className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center gap-1.5"
-          key={`hand-${game.round}`}
-          data-active-turn={(canPlay && !!me?.hand.length) || undefined}
+      <div className="@container/hand mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[2rem_minmax(0,1fr)_2rem] items-center pt-2">
+        <section
+          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] @min-2xl/board:[--hand-card-limit:6rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
+          style={{ "--hand-count": me?.hand.length ?? 0 } as CSSProperties}
+          aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
-          {game.spectating && <p className="text-sm text-muted-foreground">You are spectating.</p>}
-          {!game.spectating &&
-            me?.hand.map((card, i) => {
-              const middle = (me.hand.length - 1) / 2;
-              const position = middle ? (i - middle) / middle : 0;
-              return (
-                <div
-                  className="hand-card relative w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
-                  key={card ?? i}
-                  style={
-                    {
-                      "--hand-angle": `${position * 3}deg`,
-                      "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
-                    } as CSSProperties
-                  }
-                >
-                  <PlayingCard
-                    card={card}
-                    className={canPlay ? "turn-glow" : undefined}
-                    disabled={!canPlay}
-                    pending={pendingCard === (card ?? -1)}
-                    onClick={() => onPlay(card)}
-                  />
-                </div>
-              );
-            })}
-        </div>
-      </section>
+          <div
+            className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center"
+            key={`hand-${game.round}`}
+            data-active-turn={(canPlay && !!me?.hand.length) || undefined}
+          >
+            {game.spectating && (
+              <p className="text-sm text-muted-foreground">You are spectating.</p>
+            )}
+            {!game.spectating &&
+              me?.hand.map((card, i) => {
+                const middle = (me.hand.length - 1) / 2;
+                const position = middle ? (i - middle) / middle : 0;
+                return (
+                  <div
+                    className="hand-card relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                    key={card ?? i}
+                    style={
+                      {
+                        "--hand-angle": `${position * 3}deg`,
+                        "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
+                      } as CSSProperties
+                    }
+                  >
+                    <PlayingCard
+                      card={card}
+                      className={canPlay ? "turn-glow" : undefined}
+                      disabled={!canPlay}
+                      pending={pendingCard === (card ?? -1)}
+                      onClick={() => onPlay(card)}
+                    />
+                  </div>
+                );
+              })}
+          </div>
+        </section>
+        <EmotePicker
+          disabled={busy || !active}
+          emote={me?.emote}
+          serverTime={game.serverTime}
+          onSend={onEmote}
+        />
+      </div>
     </div>
   );
 }

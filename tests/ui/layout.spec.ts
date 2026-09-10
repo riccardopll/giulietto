@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 
 test("six players and full hands fit the smallest supported phone", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 320, height: 568 });
-  await page.addInitScript(() => localStorage.setItem("giulietto-preview-motion", "system"));
   await page.clock.install();
   await page.clock.pauseAt(new Date());
   await page.goto("/preview?people=6&cards=6&phase=bidding&longNames=1");
@@ -46,9 +45,103 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     return errors;
   });
   expect(errors).toEqual([]);
+  const logo = await page.getByRole("link", { name: "Giulietto home" }).boundingBox();
+  const spectators = await page
+    .getByRole("status", { name: "1 spectator", exact: true })
+    .boundingBox();
+  expect(spectators!.y).toBeGreaterThanOrEqual(logo!.y);
+  expect(spectators!.y + spectators!.height).toBeLessThanOrEqual(logo!.y + logo!.height);
+  const handCenter = await page.locator(".hand-card").evaluateAll((cards) => {
+    const bounds = cards.map((card) => card.getBoundingClientRect());
+    return (
+      (Math.min(...bounds.map((card) => card.left)) +
+        Math.max(...bounds.map((card) => card.right))) /
+      2
+    );
+  });
+  expect(handCenter).toBeCloseTo(160, 0);
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
+  const prediction = page.getByRole("status", { name: /predicts 0 tricks/ });
+  await expect(prediction.locator(".prediction-digit")).toBeVisible();
+  await prediction.evaluate((element) => {
+    const animation = element.getAnimations()[0];
+    animation.pause();
+    animation.currentTime = 250;
+  });
+  const predictionSize = await prediction.locator(".emote-artwork").boundingBox();
+  await page.getByRole("button", { name: "Emotes", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
+  await expect(page.getByRole("button", { name: "Empty emote slot 1" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Empty emote slot 2" })).toBeDisabled();
+  const menuArtwork = page
+    .getByRole("button", { name: "Send chicken emote" })
+    .locator(".emote-artwork");
+  const menuSize = await menuArtwork.boundingBox();
+  const menuChickenSize = await menuArtwork.locator("img").boundingBox();
+  await page.screenshot({ path: testInfo.outputPath("emote-menu.png") });
+  await page.getByRole("button", { name: "Send chicken emote" }).click();
+  const bubble = page.getByRole("status", { name: /sent the chicken emote/ });
+  await expect(bubble.locator(".emote-motion")).toBeVisible();
+  await bubble.evaluate((element) => {
+    const animation = element.getAnimations()[0];
+    animation.pause();
+    animation.currentTime = 250;
+  });
+  const playbackSize = await bubble.locator(".emote-artwork").boundingBox();
+  const playbackChickenSize = await bubble.locator(".emote-motion").boundingBox();
+  expect(playbackSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
+  expect(predictionSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
+  expect(playbackChickenSize).toMatchObject({
+    width: menuChickenSize!.width,
+    height: menuChickenSize!.height,
+  });
+  await page.mouse.wheel(0, 500);
+  await page.clock.runFor(100);
+  expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual({ x: 0, y: 0 });
   const path = testInfo.outputPath("small-phone.png");
   await page.screenshot({ path });
   await testInfo.attach("small-phone", { path, contentType: "image/png" });
+  await page.clock.runFor(1600);
+  await expect(prediction).toHaveCount(0);
+  await expect(bubble).toHaveCount(0);
+
+  await page.goto("/preview?people=6&cards=6&phase=playing&completedTricks=2");
+  await expect(page.locator(".hand-card")).toHaveCount(4);
+  const handGap = await page
+    .locator(".hand-card")
+    .nth(1)
+    .evaluate((card) => parseFloat(getComputedStyle(card).marginLeft));
+  expect(handGap).toBeGreaterThanOrEqual(0);
+  await page.screenshot({
+    path: testInfo.outputPath("four-card-hand.png"),
+    animations: "disabled",
+  });
+
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  await page.goto("/preview?people=6&cards=6&phase=trick");
+  const playedCards = page
+    .getByRole("region", { name: "Current trick", exact: true })
+    .getByRole("img");
+  await expect(playedCards).toHaveCount(6);
+  const cards = await playedCards.evaluateAll((images) =>
+    images.map((image) => {
+      const { y, width } = image.getBoundingClientRect();
+      return { y, width };
+    }),
+  );
+  expect(
+    Math.max(...cards.map((card) => card.y)) - Math.min(...cards.map((card) => card.y)),
+  ).toBeLessThan(1);
+  expect(Math.min(...cards.map((card) => card.width))).toBeGreaterThan(68);
+  const desktopHandCenter = await page.locator(".hand-card").evaluateAll((cards) => {
+    const bounds = cards.map((card) => card.getBoundingClientRect());
+    return (
+      (Math.min(...bounds.map((card) => card.left)) +
+        Math.max(...bounds.map((card) => card.right))) /
+      2
+    );
+  });
+  expect(desktopHandCenter).toBeCloseTo(640, 0);
+  await page.screenshot({ path: testInfo.outputPath("desktop-trick.png"), animations: "disabled" });
 });

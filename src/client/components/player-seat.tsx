@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
 import { cn, toRoman } from "../utils";
 import { Lives } from "./lives";
@@ -58,7 +59,8 @@ export function PlayerSeat({
         data-seat-identity
       >
         <div className="seat-profile relative flex min-w-0 max-w-full items-center gap-1.5">
-          <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.375rem)] left-0 z-30 flex w-full justify-center">
+          <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.375rem)] left-0 z-30 flex w-full items-end justify-center gap-1">
+            <EmoteBubble emote={player.emote} serverTime={serverTime} name={player.name} />
             <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
           </div>
           <div className="seat-avatar-wrap relative shrink-0">

@@ -26,6 +26,16 @@ test("three players complete a game, including round results and elimination", a
   await players[0].page.getByRole("slider", { name: "Starting lives" }).press("Home");
   await synced(players, (state) => state.startingLives === 1);
   await start(players);
+  await players[0].page.getByRole("button", { name: "Emotes", exact: true }).click();
+  await players[0].page.getByRole("button", { name: "Send chicken emote" }).click();
+  for (const { page } of players) {
+    await expect(page.getByRole("status", { name: "bot_1 sent the chicken emote" })).toBeVisible();
+  }
+  await expect(players[0].page.getByRole("button", { name: "Emotes", exact: true })).toBeDisabled();
+  await expect(
+    players[1].page.getByRole("status", { name: "bot_1 sent the chicken emote" }),
+  ).toBeHidden();
+  await expect(players[0].page.getByRole("button", { name: "Emotes", exact: true })).toBeEnabled();
   const winner = players[0].state!.you;
 
   for (let round = 1; round <= 2; round++) {
@@ -116,7 +126,10 @@ test("reloading during play restores the player and hand and allows the next mov
       .getByRole("button")
       .evaluateAll((cards) => cards.map((card) => card.getAttribute("aria-label"))),
   ).toEqual(labels);
+  const emoteMenu = returning.page.getByRole("button", { name: "Emotes", exact: true });
+  const menuBefore = await emoteMenu.boundingBox();
   await playCard(players, true);
+  expect(await emoteMenu.boundingBox()).toEqual(menuBefore);
   for (const { page } of players) {
     await expect(
       page.getByRole("region", { name: "Current trick", exact: true }).getByRole("img"),
