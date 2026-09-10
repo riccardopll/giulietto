@@ -48,7 +48,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
   const prediction = page.getByRole("status", { name: /predicts 0 tricks/ });
-  await expect(prediction.locator("img")).toHaveAttribute("src", /^blob:/);
+  await expect(prediction.locator(".prediction-digit")).toBeVisible();
   await prediction.evaluate((element) => {
     const animation = element.getAnimations()[0];
     animation.pause();
