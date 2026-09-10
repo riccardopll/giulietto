@@ -87,7 +87,7 @@ export function EmotePicker({
         <Popover.Content
           side="top"
           align="end"
-          alignOffset={-64}
+          alignOffset={-88}
           sideOffset={6}
           collisionPadding={12}
           aria-label="Emotes"
