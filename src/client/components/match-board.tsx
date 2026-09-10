@@ -152,7 +152,7 @@ export function MatchBoard({
           aria-label={game.phase === "bidding" ? "Predictions" : "Current trick"}
         >
           {game.phase === "bidding" ? (
-            <div className="bid-options flex max-w-[90%] flex-col items-center justify-center gap-3 @min-2xl/board:flex-row">
+            <div className="bid-options flex max-w-[90%] flex-col items-center justify-center gap-3 short-trick:gap-1.5 @min-2xl/board:flex-row">
               {[0, 3]
                 .filter((start) => start <= game.count)
                 .map((start) => (
@@ -165,7 +165,7 @@ export function MatchBoard({
                           <Button
                             key={n}
                             variant="outline"
-                            className="size-14 rounded-lg bg-white p-0 text-xl font-semibold"
+                            className="size-14 rounded-lg bg-white p-0 text-xl font-semibold short-trick:size-11"
                             disabled={!myTurn || busy || !game.legalBids.includes(n)}
                             aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
                             onClick={() => onBid(n)}

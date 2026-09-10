@@ -152,7 +152,7 @@ export function PlayerSeat({
         >
           <div
             className={cn(
-              "seat-fan-orientation absolute inset-0",
+              "seat-fan-orientation absolute top-1/2 left-1/2",
               !revealed && "rotate-(--seat-fan-rotation)",
             )}
           >
