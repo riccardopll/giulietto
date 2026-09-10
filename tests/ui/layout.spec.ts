@@ -103,6 +103,18 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await expect(prediction).toHaveCount(0);
   await expect(bubble).toHaveCount(0);
 
+  await page.goto("/preview?people=6&cards=6&phase=playing&completedTricks=2");
+  await expect(page.locator(".hand-card")).toHaveCount(4);
+  const handGap = await page
+    .locator(".hand-card")
+    .nth(1)
+    .evaluate((card) => parseFloat(getComputedStyle(card).marginLeft));
+  expect(handGap).toBeGreaterThanOrEqual(0);
+  await page.screenshot({
+    path: testInfo.outputPath("four-card-hand.png"),
+    animations: "disabled",
+  });
+
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto("/preview?people=6&cards=6&phase=trick");
   const playedCards = page

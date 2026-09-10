@@ -207,7 +207,8 @@ export function MatchBoard({
       </section>
       <div className="@container/hand mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[3rem_minmax(0,1fr)_3rem] items-center pt-2">
         <section
-          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-width:clamp(3.5rem,calc(100cqw/6),min(6rem,13dvh))] [--hand-card-gap:min(.375rem,calc((100cqw-6rem-6*var(--hand-card-width))/5))]"
+          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.25rem] @min-2xl/board:[--hand-card-limit:5.5rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw-2rem)/6),10dvh)] [--hand-card-gap:min(.375rem,calc((100cqw-6rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
+          style={{ "--hand-count": me?.hand.length ?? 0 } as CSSProperties}
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
           <div
