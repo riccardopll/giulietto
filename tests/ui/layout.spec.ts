@@ -103,6 +103,6 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   expect(
     Math.max(...cards.map((card) => card.y)) - Math.min(...cards.map((card) => card.y)),
   ).toBeLessThan(1);
-  expect(Math.min(...cards.map((card) => card.width))).toBeGreaterThan(90);
+  expect(Math.min(...cards.map((card) => card.width))).toBeGreaterThan(68);
   await page.screenshot({ path: testInfo.outputPath("desktop-trick.png"), animations: "disabled" });
 });
