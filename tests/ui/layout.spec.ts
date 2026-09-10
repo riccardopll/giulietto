@@ -45,12 +45,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     return errors;
   });
   expect(errors).toEqual([]);
-  const logo = await page.getByRole("link", { name: "Giulietto home" }).boundingBox();
-  const spectators = await page
-    .getByRole("status", { name: "1 spectator", exact: true })
-    .boundingBox();
-  expect(spectators!.y).toBeGreaterThanOrEqual(logo!.y);
-  expect(spectators!.y + spectators!.height).toBeLessThanOrEqual(logo!.y + logo!.height);
+  await expect(page.getByRole("status", { name: "1 spectator", exact: true })).toHaveCount(0);
   const handCenter = await page.locator(".hand-card").evaluateAll((cards) => {
     const bounds = cards.map((card) => card.getBoundingClientRect());
     return (

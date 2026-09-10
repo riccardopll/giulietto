@@ -198,7 +198,7 @@ export function Preview() {
         className="size-11 rounded-lg p-0 text-muted-foreground"
         aria-label="Preview settings"
       >
-        <Settings2 className="size-4" />
+        <Settings2 className="size-5" />
       </Button>
     </Dialog.Trigger>
   );

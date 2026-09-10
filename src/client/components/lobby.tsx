@@ -69,7 +69,7 @@ function LobbyOptions({
         max={MAX_STARTING_LIVES}
         step={1}
         value={selected}
-        className="m-0 h-8 w-full cursor-pointer rounded accent-primary disabled:cursor-default disabled:opacity-60"
+        className="m-0 h-12 w-full cursor-pointer appearance-none rounded bg-transparent accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60 [&::-webkit-slider-runnable-track]:h-3 [&::-webkit-slider-runnable-track]:rounded-full [&::-webkit-slider-runnable-track]:bg-border [&::-webkit-slider-thumb]:-mt-2.5 [&::-webkit-slider-thumb]:size-8 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-moz-range-track]:h-3 [&::-moz-range-track]:rounded-full [&::-moz-range-track]:bg-border [&::-moz-range-thumb]:size-8 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-primary"
         aria-valuetext={`${selected} ${selected === 1 ? "life" : "lives"}`}
         disabled={!host}
         onChange={(event) => setDraft(Number(event.target.value))}
