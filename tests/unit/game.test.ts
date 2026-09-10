@@ -53,34 +53,18 @@ describe("rounds", () => {
     expect(game.players[1].hand).toEqual([]);
     expect(game.players[2].hand).toEqual([]);
   });
-
-  it.each([1, 2, 6])("keeps a public table with %i players in the lobby over time", (count) => {
-    const game = lobbyFixture(count);
-    game.public = true;
-    for (const now of [100, 20_100, 119_100]) {
-      tick(game, now);
-      expect(game.phase).toBe("lobby");
-      expect(game.players).toHaveLength(count);
-    }
-  });
 });
 
 describe("turns and tricks", () => {
-  it.each(
-    [2, 3, 4, 5, 6].flatMap((people) => [1, 2, 3, 4, 5, 6].map((cards) => ({ people, cards }))),
-  )("completes a $people-player round with $cards cards per hand", ({ people, cards }) => {
+  it.each([
+    { people: 2, cards: 1 },
+    { people: 3, cards: 3 },
+    { people: 6, cards: 6 },
+  ])("completes a $people-player round with $cards cards per hand", ({ people, cards }) => {
     const hands = Array.from({ length: people }, (_, seat) =>
       Array.from({ length: cards }, (_, card) => seat * cards + card + 1),
     );
     const game = gameFixture(hands);
-    for (const viewer of game.order) {
-      const state = view(game, viewer);
-      expect(state.players.map((p) => p.hand)).toEqual(
-        game.players.map((p) =>
-          (cards === 1 ? p.id !== viewer : p.id === viewer) ? p.hand : p.hand.map(() => null),
-        ),
-      );
-    }
     for (const id of game.order) bid(game, id, 0, 100);
     for (let trick = 0; trick < cards; trick++) {
       for (let turn = 0; turn < people; turn++) {

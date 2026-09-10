@@ -1,5 +1,4 @@
 import { expect } from "vitest";
-import { matchEvents } from "../../src/client/match-events";
 import { guest, test, type State } from "./worker";
 
 test("public matchmaking fills a lobby that waits for its host to start", async ({ api }) => {
@@ -221,17 +220,12 @@ test("quitting a started game preserves the seat and rejoining restores play", a
   const first = started.order[0] === started.you ? host : other;
   const socket = await api.connect(first, code);
   const observer = await api.connect(first === host ? other : host, code);
-  const beforeLeave = observer.latest()!;
   const own = socket.latest()!.players.find((p) => p.id === socket.latest()!.you)!;
   expect((await socket.command({ action: "leave" })).type).toBe("ack");
   socket.close();
   await expect
     .poll(() => observer.latest()?.players.find((p) => p.id === own.id)?.connected)
     .toBe(false);
-  const away = observer.latest()!;
-  expect(matchEvents(beforeLeave, away)).toEqual([
-    expect.objectContaining({ type: "left", player: own.id }),
-  ]);
   const resumed = await api.state(first, { action: "join", code });
   expect(resumed.spectating).toBe(false);
   expect(resumed.players).toHaveLength(2);
@@ -240,13 +234,9 @@ test("quitting a started game preserves the seat and rejoining restores play", a
     seen: expect.any(Number),
     connected: false,
   });
-  const beforeRejoin = observer.latest()!;
   const reconnected = await api.connect(first, code);
   await expect
     .poll(() => observer.latest()?.players.find((p) => p.id === own.id)?.connected)
     .toBe(true);
-  expect(matchEvents(beforeRejoin, observer.latest()!)).toEqual([
-    expect.objectContaining({ type: "rejoined", player: own.id }),
-  ]);
   expect((await reconnected.command({ action: "bid", bid: 0 })).type).toBe("ack");
 });

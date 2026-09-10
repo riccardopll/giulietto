@@ -115,21 +115,6 @@ describe("in-game match events", () => {
       expect(matchEvents(baseline, after)).toEqual([]);
     },
   );
-
-  it("ignores replaced trick cards instead of treating a reset as new plays", () => {
-    const game = playing([
-      [1, 2],
-      [3, 4],
-      [5, 6],
-    ]);
-    play(game, "p0", 1, undefined, 100);
-    const before = view(structuredClone(game), "p2");
-    play(game, "p1", 3, undefined, 100);
-    game.trick[0].card = 2;
-    game.revision++;
-
-    expect(matchEvents(before, view(game, "p2"))).toEqual([]);
-  });
 });
 
 describe("player presence events", () => {

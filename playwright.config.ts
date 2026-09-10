@@ -3,7 +3,7 @@ import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/ui",
   fullyParallel: true,
-  workers: 4,
+  workers: 2,
   timeout: 60_000,
   use: {
     baseURL: "http://127.0.0.1:5174",
@@ -17,7 +17,7 @@ export default defineConfig({
     { name: "webkit", use: { browserName: "webkit" } },
   ],
   webServer: {
-    command: "npm run dev -- --host 127.0.0.1 --port 5174 --strictPort",
+    command: "npm run db:migrate:local && npm run dev -- --host 127.0.0.1 --port 5174 --strictPort",
     url: "http://127.0.0.1:5174/preview",
     reuseExistingServer: !process.env.CI,
   },
