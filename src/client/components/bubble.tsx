@@ -7,7 +7,7 @@ export function BubbleArtwork({ children, tail = false }: { children: ReactNode;
     : "M1.25 32.5Q1.25 43.75 12.5 43.75H47.5Q58.75 43.75 58.75 32.5";
   const outline = `${base}V16.5Q58.75 5.25 47.5 5.25H12.5Q1.25 5.25 1.25 16.5Z`;
   return (
-    <span className="emote-artwork relative block h-[45px] w-[60px] shrink-0">
+    <span className="emote-artwork relative block h-[45px] w-[60px] origin-bottom scale-90 shrink-0">
       <svg
         className="absolute inset-0 size-full overflow-visible"
         viewBox="0 0 60 45"
