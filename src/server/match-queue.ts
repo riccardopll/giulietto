@@ -11,17 +11,17 @@ export class MatchQueue extends DurableObject<Env> {
         const id = req.headers.get("x-player-id")!;
         const key = `request:${id}:${b.commandId}`;
         const saved = this.ctx.storage.kv.get(key) as { code: string; at: number } | undefined;
-        const send = (code: string, action: string, create = false) =>
+        const send = (code: string, action: string, create = false, matchmaking = false) =>
           this.env.ROOMS.getByName(code).fetch(
             `https://internal/${code}${create ? "/create" : ""}`,
             {
               method: "POST",
               headers: { "x-player-id": id },
-              body: JSON.stringify({ ...b, action }),
+              body: JSON.stringify({ ...b, action, matchmaking }),
             },
           );
         if (saved) {
-          const resumed = await send(saved.code, "join");
+          const resumed = await send(saved.code, "join", false, b.action === "match");
           if (resumed.status !== 400) return resumed;
           this.ctx.storage.kv.delete(key);
         }
@@ -33,7 +33,7 @@ export class MatchQueue extends DurableObject<Env> {
           for (const candidate of candidates) {
             // Persist the reservation target before cross-object I/O so retries cannot lose a seat.
             this.ctx.storage.kv.put(key, { code: candidate.code, at: Date.now() });
-            const res = await send(candidate.code, "join");
+            const res = await send(candidate.code, "join", false, true);
             if (res.ok) {
               this.ctx.storage.kv.put(key, { code: candidate.code, at: Date.now() });
               return res;

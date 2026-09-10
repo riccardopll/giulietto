@@ -10,6 +10,8 @@ const EVENT_DURATION = 5000;
 
 function description(event: MatchEvent, you: string) {
   const name = event.player === you ? "You" : event.name;
+  if (event.type === "left") return `${name} left the table`;
+  if (event.type === "rejoined") return `${name} rejoined the table`;
   if (event.type === "prediction") return `${name} predicted ${event.bid}`;
   const action = event.type === "play" ? "played" : "won the trick with";
   return `${name} ${action} ${cardLabel(event.card)}${event.mode ? `, ${event.mode}` : ""}`;
@@ -84,11 +86,15 @@ export function MatchEventFeed({ game }: { game: State }) {
                   ? "predicted"
                   : event.type === "play"
                     ? "played"
-                    : "won the trick with"}
+                    : event.type === "left"
+                      ? "left the table"
+                      : event.type === "rejoined"
+                        ? "rejoined the table"
+                        : "won the trick with"}
               </span>
               {event.type === "prediction" ? (
                 <strong>{event.bid}</strong>
-              ) : (
+              ) : event.type === "play" || event.type === "trick-won" ? (
                 <>
                   <span className="match-event-card w-6 shrink-0">
                     <PlayingCard card={event.card} className="rounded-[.2rem]" />
@@ -97,7 +103,7 @@ export function MatchEventFeed({ game }: { game: State }) {
                     <span className="match-event-mode text-[10px] capitalize">{event.mode}</span>
                   )}
                 </>
-              )}
+              ) : null}
             </div>
           </div>
         </div>

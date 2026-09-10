@@ -27,13 +27,19 @@ export function command(value: unknown): Command {
     throw new GameError("Enter a valid prediction.");
   return b as Command;
 }
-export function join(g: Game, id: string, name: string, now: number) {
-  const existing = g.players.find((p) => p.id === id && !p.left);
+export function join(g: Game, id: string, name: string, now: number, matchmaking = false) {
+  const seated = g.players.find((p) => p.id === id);
+  if (matchmaking && g.phase !== "lobby" && !seated)
+    throw new GameError("This table is no longer available.");
+  const existing = seated ?? g.spectators?.find((p) => p.id === id);
   if (existing) {
     existing.seen = now;
     return;
   }
-  if (g.phase !== "lobby") throw new GameError("This game has already started.");
+  if (g.phase !== "lobby") {
+    (g.spectators ??= []).push({ id, name, seen: now });
+    return;
+  }
   if (g.players.length >= 6) throw new GameError("This table is full.");
   g.players.push({ ...player(id, name, now), lives: g.startingLives });
   if (!g.host) g.host = id;
@@ -41,12 +47,17 @@ export function join(g: Game, id: string, name: string, now: number) {
 }
 export function apply(g: Game, id: string, b: Command, now: number) {
   if (b.action === "join") {
-    join(g, id, displayName(b.name), now);
+    join(g, id, displayName(b.name), now, b.matchmaking === true);
+    return;
+  }
+  const spectator = g.spectators?.find((p) => p.id === id);
+  if (spectator) {
+    if (b.action !== "leave") throw new GameError("Spectators cannot play or change the game.");
+    g.spectators = g.spectators!.filter((p) => p.id !== id);
     return;
   }
   const p = g.players.find((p) => p.id === id);
   if (!p) throw new GameError("Join this table first.");
-  if (p.left && b.action !== "leave") throw new GameError("You have left the game.");
   p.seen = now;
   if (b.action === "settings") {
     if (g.host !== id) throw new GameError("Only the host can change starting lives.");
@@ -78,9 +89,6 @@ export function apply(g: Game, id: string, b: Command, now: number) {
     if (g.phase === "lobby") {
       g.players = g.players.filter((p) => p.id !== id);
       if (g.host === id) g.host = g.players[0]?.id ?? "";
-    } else if (g.phase !== "finished") {
-      p.left = true;
-      p.lives = 0;
     }
   } else throw new GameError("Unknown action.");
 }

@@ -7,7 +7,7 @@ describe("table order", () => {
   it("rotates clockwise seats around each viewer and retains inactive seats", () => {
     const game = gameFixture([[1], [2], [3], [4], [5], [6]]);
     game.players[1].lives = 0;
-    game.players[2].left = true;
+    game.players[2].lives = 0;
     game.order = ["p0", "p3", "p4", "p5"];
     const seats = game.players.map((p) => p.id);
 

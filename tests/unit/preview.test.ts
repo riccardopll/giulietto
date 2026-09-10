@@ -39,43 +39,20 @@ describe("preview fixtures", () => {
     expect(game.players.every((player) => Array.from(player.name).length === 20)).toBe(true);
   });
 
-  it.each(["eliminated", "left"] as const)(
-    "keeps an %s seat available for spectator previews",
-    (state) => {
-      const game = makePreview({
-        people: 4,
-        cards: 6,
-        phase: "playing",
-        played: 4,
-        longNames: false,
-        seatStates: ["active", "active", "active", state],
-      });
-      const spectator = game.players.at(-1)!;
-      expect(spectator).toMatchObject({
-        lives: 0,
-        left: state === "left",
-        hand: [],
-      });
-      expect(game.order).not.toContain(spectator.id);
-      expect(game.trick).toHaveLength(3);
-      expect(game.phase).toBe("trick");
-    },
-  );
-
-  it("keeps players who leave during a round in the turn order until scoring", () => {
+  it("keeps an eliminated seat available for spectator previews", () => {
     const game = makePreview({
-      people: 5,
-      cards: 4,
+      people: 4,
+      cards: 6,
       phase: "playing",
+      played: 4,
       longNames: false,
-      startingLives: 2,
-      seatStates: ["eliminated", "active", "left", "leaving", "active"],
-      played: 3,
+      seatStates: ["active", "active", "active", "eliminated"],
     });
-    expect(game.order).toEqual([game.players[1].id, game.players[3].id, game.players[4].id]);
-    expect(game.players.map((player) => player.hand.length)).toEqual([0, 3, 0, 3, 3]);
-    expect(game.players[3]).toMatchObject({ left: true, lives: 2 });
-    expect(game.trick.map((play) => play.player)).toContain(game.players[3].id);
+    const spectator = game.players.at(-1)!;
+    expect(spectator).toMatchObject({ lives: 0, hand: [] });
+    expect(game.order).not.toContain(spectator.id);
+    expect(game.trick).toHaveLength(3);
+    expect(game.phase).toBe("trick");
   });
 
   it("builds later tricks by playing the preceding tricks through the game rules", () => {
@@ -117,14 +94,14 @@ describe("preview fixtures", () => {
       completedTricks: 9,
       played: 9,
       bids: 9,
-      seatStates: ["eliminated", "left", "left", "active"],
+      seatStates: ["eliminated", "eliminated", "eliminated", "active"],
     });
     expect(options).toMatchObject({
       startingLives: 5,
       completedTricks: 2,
       played: 2,
       bids: 1,
-      seatStates: ["active", "left", "left", "active"],
+      seatStates: ["active", "eliminated", "eliminated", "active"],
     });
   });
 

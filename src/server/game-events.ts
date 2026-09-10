@@ -44,7 +44,6 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
         seat,
         hand: p.hand,
         lives: p.lives,
-        left: !!p.left,
       })),
     });
   } else if (
@@ -69,10 +68,6 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
     });
     if (after.phase === "trick") add("trick_won", after.lastWinner, { trick, plays: after.trick });
   }
-  for (const p of after.players) {
-    if (p.left && !before.players.find((b) => b.id === p.id)?.left)
-      add("player_left", p.id, { lives: p.lives });
-  }
   if (before.phase === "trick" && ["results", "finished"].includes(after.phase)) {
     add("round_scored", null, {
       results: after.results,
@@ -80,7 +75,6 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
       players: after.players.map((p) => ({
         id: p.id,
         lives: p.lives,
-        left: !!p.left,
         stats: p.stats,
       })),
     });

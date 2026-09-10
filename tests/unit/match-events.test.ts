@@ -131,3 +131,26 @@ describe("in-game match events", () => {
     expect(matchEvents(before, view(game, "p2"))).toEqual([]);
   });
 });
+
+describe("player presence events", () => {
+  it("announces leaving and rejoining without a game revision change", () => {
+    const game = playing();
+    const before = view(game, "p0", new Set(["p0", "p1"]));
+    const away = view(game, "p0", new Set(["p0"]));
+    expect(matchEvents(before, away)).toEqual([
+      expect.objectContaining({ type: "left", player: "p1", name: "bot_2" }),
+    ]);
+    expect(matchEvents(away, before)).toEqual([
+      expect.objectContaining({ type: "rejoined", player: "p1", name: "bot_2" }),
+    ]);
+    expect(matchEvents(away, structuredClone(away))).toEqual([]);
+    expect(matchEvents(null, away)).toEqual([]);
+  });
+
+  it("does not replay presence changes missed during a reconnect", () => {
+    const game = playing();
+    const before = view(game, "p0", new Set(["p0", "p1"]));
+    game.revision += 3;
+    expect(matchEvents(before, view(game, "p0", new Set(["p0"])))).toEqual([]);
+  });
+});

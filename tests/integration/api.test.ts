@@ -1,4 +1,5 @@
 import { expect } from "vitest";
+import { matchEvents } from "../../src/client/match-events";
 import { guest, test, type State } from "./worker";
 
 test("public matchmaking fills a lobby that waits for its host to start", async ({ api }) => {
@@ -153,6 +154,99 @@ test("the API rejects malformed commands, foreign origins, and players outside t
   await api.state(other, { action: "join", code });
   await api.state(host, { action: "start", code });
   expect((await api.get(guest(3), code)).status).toBe(400);
-  expect((await api.post(host, { action: "leave", code })).status).toBe(200);
-  expect((await api.post(host, { action: "bid", bid: 0, code })).status).toBe(400);
+});
+
+test("reconnected players resume and late spectators receive live updates", async ({ api }) => {
+  const host = guest(1);
+  const other = guest(2);
+  const watcher = guest(3);
+  const { code } = await api.state(host, { action: "create" });
+  await api.state(other, { action: "join", code });
+  const connection = await api.connect(host, code);
+  await connection.command({ action: "start" });
+  const before = connection.latest()!;
+  connection.close();
+  const resumed = await api.state(host, { action: "join", code });
+  expect(resumed.you).toBe(before.you);
+  expect(resumed.players).toEqual(
+    before.players.map((p) => ({ ...p, seen: expect.any(Number), connected: expect.any(Boolean) })),
+  );
+  const reconnected = await api.connect(host, code);
+  expect(reconnected.latest()!.spectating).toBe(false);
+  const watching = await api.state(watcher, { action: "join", code });
+  expect(watching.spectating).toBe(true);
+  expect(watching.players).toHaveLength(2);
+  const spectator = await api.connect(watcher, code);
+  await expect.poll(() => reconnected.latest()?.spectatorCount).toBe(1);
+  const secondTab = await api.connect(watcher, code);
+  expect(secondTab.latest()!.spectatorCount).toBe(1);
+  secondTab.close();
+  spectator.close();
+  await expect.poll(() => reconnected.latest()?.spectatorCount).toBe(0);
+  const watchingAgain = await api.connect(watcher, code);
+  await expect.poll(() => reconnected.latest()?.spectatorCount).toBe(1);
+  expect((await watchingAgain.command({ action: "bid", bid: 0 })).type).toBe("error");
+  const first = resumed.order[0] === resumed.you ? host : other;
+  await api.state(first, { action: "bid", bid: 0, code });
+  await expect
+    .poll(() => watchingAgain.latest()?.players.find((p) => p.id === resumed.order[0])?.bid)
+    .toBe(0);
+  expect(watchingAgain.latest()!.players.every((p) => p.hand.every((card) => card === null))).toBe(
+    true,
+  );
+  expect((await api.get(watcher, code)).status).toBe(200);
+  await watchingAgain.command({ action: "leave" });
+  await expect.poll(() => reconnected.latest()?.spectatorCount).toBe(0);
+  expect((await api.get(watcher, code)).status).toBe(400);
+  expect((await api.state(watcher, { action: "join", code })).spectating).toBe(true);
+});
+
+test("matchmaking skips games that have started", async ({ api }) => {
+  const host = guest(1);
+  const { code } = await api.state(host, { action: "match" });
+  await api.state(guest(2), { action: "match" });
+  await api.state(host, { action: "start", code });
+  const next = await api.state(guest(3), { action: "match" });
+  expect(next.code).not.toBe(code);
+  expect(next.phase).toBe("lobby");
+  expect(next.spectating).toBe(false);
+});
+
+test("quitting a started game preserves the seat and rejoining restores play", async ({ api }) => {
+  const host = guest(1);
+  const other = guest(2);
+  const { code } = await api.state(host, { action: "create" });
+  await api.state(other, { action: "join", code });
+  const started = await api.state(host, { action: "start", code });
+  const first = started.order[0] === started.you ? host : other;
+  const socket = await api.connect(first, code);
+  const observer = await api.connect(first === host ? other : host, code);
+  const beforeLeave = observer.latest()!;
+  const own = socket.latest()!.players.find((p) => p.id === socket.latest()!.you)!;
+  expect((await socket.command({ action: "leave" })).type).toBe("ack");
+  socket.close();
+  await expect
+    .poll(() => observer.latest()?.players.find((p) => p.id === own.id)?.connected)
+    .toBe(false);
+  const away = observer.latest()!;
+  expect(matchEvents(beforeLeave, away)).toEqual([
+    expect.objectContaining({ type: "left", player: own.id }),
+  ]);
+  const resumed = await api.state(first, { action: "join", code });
+  expect(resumed.spectating).toBe(false);
+  expect(resumed.players).toHaveLength(2);
+  expect(resumed.players.find((p) => p.id === resumed.you)).toEqual({
+    ...own,
+    seen: expect.any(Number),
+    connected: false,
+  });
+  const beforeRejoin = observer.latest()!;
+  const reconnected = await api.connect(first, code);
+  await expect
+    .poll(() => observer.latest()?.players.find((p) => p.id === own.id)?.connected)
+    .toBe(true);
+  expect(matchEvents(beforeRejoin, observer.latest()!)).toEqual([
+    expect.objectContaining({ type: "rejoined", player: own.id }),
+  ]);
+  expect((await reconnected.command({ action: "bid", bid: 0 })).type).toBe("ack");
 });

@@ -214,7 +214,7 @@ test("preview follows configuration URLs and browser history", async ({ page }) 
       phase: "playing",
       played: "2",
       viewer: "1",
-      seats: "eliminated,active,left,leaving,active",
+      seats: "eliminated,active,eliminated,active,active",
       startingLives: "2",
       completedTricks: "4",
       pending: "1",
@@ -234,7 +234,7 @@ test("preview follows configuration URLs and browser history", async ({ page }) 
     sidebar.getByRole("combobox", { name: "Completed tricks", exact: true }),
   ).toHaveValue("4");
   await expect(sidebar.getByRole("combobox", { name: "Seat 4", exact: true })).toHaveValue(
-    "leaving",
+    "active",
   );
   await expect(sidebar.getByRole("button", { name: "Autoplay", exact: true })).toBeVisible();
   await page.keyboard.press("Escape");

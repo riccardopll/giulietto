@@ -29,7 +29,7 @@ function savedMotion(): Motion {
 
 const counts = [2, 3, 4, 5, 6];
 const phases: PreviewPhase[] = ["playing", "bidding", "trick", "results", "blind"];
-const seatStates: PreviewSeatState[] = ["active", "eliminated", "left", "leaving"];
+const seatStates: PreviewSeatState[] = ["active", "eliminated"];
 const selectClass =
   "h-11 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50";
 const labelClass = "grid min-w-0 gap-1 text-xs text-muted-foreground";
@@ -43,7 +43,7 @@ function readSettings() {
   const people = number("people", 6, 2, 6);
   const phase = query.get("phase") as PreviewPhase;
   return {
-    viewer: number("viewer", 0, 0, people - 1),
+    viewer: number("viewer", 0, -1, people - 1),
     options: normalizePreview({
       people,
       cards: number("cards", 6, 1, 6),
@@ -89,9 +89,7 @@ export function Preview() {
     ),
   );
   const entry = tables[people];
-  const active = entry.options.seatStates.filter(
-    (state) => state === "active" || state === "leaving",
-  ).length;
+  const active = entry.options.seatStates.filter((state) => state === "active").length;
   const hasTrick = ["playing", "blind"].includes(entry.options.phase);
 
   useLayoutEffect(() => {
@@ -195,13 +193,17 @@ export function Preview() {
     window.history.replaceState(null, "", `${window.location.pathname}?${query}`);
   }, [people, viewer, entry.options]);
 
-  const snapshot = view(entry.game, entry.game.players[viewer].id);
+  const snapshot = view(
+    { ...entry.game, spectators: [{ id: "preview-spectator", name: "Spectator", seen: 0 }] },
+    viewer === -1 ? "preview-spectator" : entry.game.players[viewer].id,
+  );
   // Keep the countdown frozen between moves, like the rest of the preview.
   snapshot.deadline =
     snapshot.serverTime +
     (snapshot.phase === "results" ? 12000 : snapshot.phase === "trick" ? 2600 : 40000);
 
   function command(action: string, extra: Record<string, unknown>) {
+    if (viewer === -1) return;
     const game = structuredClone(entry.game);
     const id = game.players[viewer].id;
     if (action === "bid") bid(game, id, Number(extra.bid), Date.now());
@@ -329,6 +331,7 @@ export function Preview() {
                   setRunning(false);
                 }}
               >
+                <option value={-1}>Spectator</option>
                 {entry.game.players.map((p, i) => (
                   <option value={i} key={p.id}>
                     {p.name}
@@ -393,8 +396,6 @@ export function Preview() {
                 >
                   <option value="active">Active</option>
                   <option value="eliminated">Eliminated</option>
-                  <option value="left">Left before round</option>
-                  <option value="leaving">Left during round</option>
                 </select>
               </label>
             ))}
