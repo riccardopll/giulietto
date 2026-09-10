@@ -205,9 +205,9 @@ export function MatchBoard({
           )}
         </section>
       </section>
-      <div className="@container/hand mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[3rem_minmax(0,1fr)_3rem] items-center pt-2">
+      <div className="@container/hand mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[2rem_minmax(0,1fr)_2rem] items-center pt-2">
         <section
-          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.5rem] @min-2xl/board:[--hand-card-limit:6rem] [--hand-card-width:min(var(--hand-card-limit),calc(100cqw/6),11dvh)] [--hand-card-gap:min(.375rem,calc((100cqw-6rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
+          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] @min-2xl/board:[--hand-card-limit:6rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
           style={{ "--hand-count": me?.hand.length ?? 0 } as CSSProperties}
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
