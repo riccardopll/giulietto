@@ -27,8 +27,9 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
   return visible && bid !== null ? (
     <Bubble label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}>
       <svg
-        className="prediction-digit absolute bottom-1 left-1/2 h-14 w-12 -translate-x-1/2 overflow-visible"
+        className="prediction-digit absolute bottom-1 left-1/2 h-[50px] w-12 -translate-x-1/2 overflow-visible"
         viewBox="0 0 48 56"
+        preserveAspectRatio="none"
         aria-hidden="true"
       >
         <defs>
