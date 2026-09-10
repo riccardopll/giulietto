@@ -45,7 +45,7 @@ describe("rounds", () => {
     const game = gameFixture([[1], [2], [3], [4]]);
     game.players[0].lives = 2;
     game.players[1].lives = 0;
-    game.players[2].left = true;
+    game.players[2].lives = 0;
     deal(game, 200);
 
     expect(game.order).toEqual(["p3", "p0"]);
@@ -196,19 +196,19 @@ describe("scoring", () => {
     expect(game).toMatchObject({ phase: "finished", winner: "p1", finishedAt: 200, deadline: 0 });
   });
 
-  it("revives every remaining participant to one life when everyone is eliminated", () => {
+  it("revives every participant to one life when everyone is eliminated", () => {
     const game = gameFixture([[1, 2], [3, 4], [], []]);
     game.order = ["p0", "p1"];
     Object.assign(game.players[0], { lives: 1, bid: 0, taken: 1 });
     Object.assign(game.players[1], { lives: 1, bid: 0, taken: 1 });
     game.players[2].lives = 0;
-    Object.assign(game.players[3], { lives: 0, left: true });
+    game.players[3].lives = 0;
     score(game, 200);
 
-    expect(game.players.map((p) => p.lives)).toEqual([1, 1, 1, 0]);
+    expect(game.players.map((p) => p.lives)).toEqual([1, 1, 1, 1]);
     expect(game).toMatchObject({ phase: "results", tie: true });
     tick(game, game.deadline);
-    expect(game.order).toHaveLength(3);
+    expect(game.order).toHaveLength(4);
   });
 });
 

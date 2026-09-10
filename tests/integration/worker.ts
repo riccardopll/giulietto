@@ -106,6 +106,10 @@ async function createWorker() {
       await expect.poll(latest).toBeDefined();
       return {
         latest,
+        close: () => {
+          socket.close(1000);
+          sockets.splice(sockets.indexOf(socket), 1);
+        },
         async command(input: Input) {
           const commandId = crypto.randomUUID();
           socket.send(JSON.stringify({ ...input, commandId }));

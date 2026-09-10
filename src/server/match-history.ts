@@ -38,8 +38,7 @@ export function historyStatements(db: D1Database, g: Game, recording: { eventCou
       .prepare(`INSERT INTO match_results(match_id,player_id,display_name,outcome,lives,
         rounds_played,tricks_won,exact_predictions,prediction_error,finalized_at)
       SELECT ?,json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),
-        CASE WHEN json_extract(p.value,'$.left')=1 THEN 'forfeited'
-          WHEN ?=0 THEN 'active' WHEN ? IS NULL THEN 'abandoned'
+        CASE WHEN ?=0 THEN 'active' WHEN ? IS NULL THEN 'abandoned'
           WHEN json_extract(p.value,'$.id')=? THEN 'won' ELSE 'lost' END,
         json_extract(p.value,'$.lives'),json_extract(p.value,'$.stats.roundsPlayed'),
         json_extract(p.value,'$.stats.tricksWon'),json_extract(p.value,'$.stats.exactPredictions'),

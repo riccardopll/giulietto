@@ -14,7 +14,6 @@ export type Player = {
   taken: number;
   seen: number;
   stats: PlayerStats;
-  left?: boolean;
 };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
 export type Result = {
@@ -36,6 +35,7 @@ export type Game = {
   startingLives: number;
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
+  spectators?: { id: string; name: string; seen: number }[];
   order: string[];
   round: number;
   count: number;
@@ -106,13 +106,13 @@ export function deal(g: Game, now: number) {
   if (g.round === 0) {
     g.matchId = crypto.randomUUID();
     g.startedAt = now;
-    for (const p of g.players) p.lives = p.left ? 0 : g.startingLives;
+    for (const p of g.players) p.lives = g.startingLives;
     shuffle(g.players);
   }
   g.round++;
   g.count = 6 - ((g.round - 1) % 6);
   g.cycle = Math.floor((g.round - 1) / 6) + 1;
-  const active = g.players.filter((p) => p.lives > 0 && !p.left);
+  const active = g.players.filter((p) => p.lives > 0);
   g.order = active.map((p) => p.id);
   const offset = (g.round - 1) % active.length;
   g.order = [...g.order.slice(offset), ...g.order.slice(0, offset)];
@@ -176,18 +176,18 @@ export function score(g: Game, now: number) {
     p.stats.tricksWon += p.taken;
     p.stats.exactPredictions += lost === 0 ? 1 : 0;
     p.stats.predictionError += lost;
-    p.lives = p.left ? 0 : Math.max(0, p.lives - lost);
+    p.lives = Math.max(0, p.lives - lost);
     return { id: p.id, name: p.name, bid: p.bid!, taken: p.taken, lost, lives: p.lives };
   });
-  let alive = g.players.filter((p) => p.lives > 0 && !p.left);
+  let alive = g.players.filter((p) => p.lives > 0);
   if (!alive.length) {
     for (const p of g.players) {
-      if (!p.left) p.lives = 1;
+      p.lives = 1;
     }
     for (const r of g.results) {
       r.lives = g.players.find((p) => p.id === r.id)!.lives;
     }
-    alive = g.players.filter((p) => p.lives > 0 && !p.left);
+    alive = g.players.filter((p) => p.lives > 0);
     g.tie = true;
   }
   if (alive.length <= 1) {
@@ -202,7 +202,7 @@ export function score(g: Game, now: number) {
 }
 export function tick(g: Game, now: number) {
   if (g.phase === "lobby") {
-    g.players = g.players.filter((p) => now - p.seen < 120000 && !p.left);
+    g.players = g.players.filter((p) => now - p.seen < 120000);
     if (!g.players.some((p) => p.id === g.host)) g.host = g.players[0]?.id ?? "";
     return;
   }
@@ -223,14 +223,21 @@ export function tick(g: Game, now: number) {
     }
   } else if (g.phase === "results") deal(g, now);
 }
-export function view(g: Game, id: string) {
+export function view(g: Game, id: string, connected?: ReadonlySet<string>) {
   const me = g.players.find((p) => p.id === id);
-  if (!me) throw new GameError("You are no longer at this table. Join again.");
-  const active = g.order.includes(id) && !me.left;
+  const spectator = g.spectators?.find((p) => p.id === id);
+  if (!me && !spectator) throw new GameError("You are no longer at this table. Join again.");
+  const active = !!me && g.order.includes(id);
   const blind = g.count === 1 && ["bidding", "playing", "trick"].includes(g.phase);
   return {
     ...g,
     you: id,
+    viewerName: (me ?? spectator)!.name,
+    spectatorCount: [
+      ...(g.spectators ?? []),
+      ...g.players.filter((p) => g.phase !== "lobby" && p.lives <= 0),
+    ].filter((p) => !connected || connected.has(p.id)).length,
+    spectating: !me || (g.phase !== "lobby" && me.lives <= 0),
     canChooseAce: active && g.phase === "playing" && g.order[g.turn] === id && me.hand.includes(31),
     players: g.players.map((p) => ({
       ...p,

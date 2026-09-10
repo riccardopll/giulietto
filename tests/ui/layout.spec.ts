@@ -92,8 +92,8 @@ const scenarios = [
       "people=6&phase=blind&played=0&viewer=5&seats=active,active,active,active,active,eliminated",
   },
   {
-    name: "departed spectator, blind round",
-    query: "people=6&phase=blind&played=0&viewer=5&seats=active,active,active,active,active,left",
+    name: "unseated spectator, blind round",
+    query: "people=6&phase=blind&played=0&viewer=-1",
   },
 ];
 
@@ -221,11 +221,11 @@ test("played and revealed cards are readable in small and large portrait views",
 
 test("spectators and round results are readable on a small phone", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
-  for (const inactive of ["eliminated", "left"]) {
-    await test.step(`${inactive} spectator`, async () => {
+  for (const viewer of [5, -1]) {
+    await test.step(`spectator viewer ${viewer}`, async () => {
       await openPreview(
         page,
-        `people=6&cards=6&played=3&viewer=5&seats=active,active,active,active,active,${inactive}`,
+        `people=6&cards=6&played=3&viewer=${viewer}&seats=active,active,active,active,active,eliminated`,
       );
       await checkLayout(page);
     });
@@ -290,14 +290,13 @@ function* roundFixtures(people: number): Generator<PreviewFixture> {
 }
 
 function* seatPatterns(people: number): Generator<PreviewSeatState[]> {
-  const states: PreviewSeatState[] = ["active", "eliminated", "left", "leaving"];
+  const states: PreviewSeatState[] = ["active", "eliminated"];
   for (let code = 0; code < states.length ** people; code++) {
     const pattern = Array.from(
       { length: people },
       (_, index) => states[Math.floor(code / states.length ** index) % states.length],
     );
-    if (pattern.filter((state) => state === "active" || state === "leaving").length >= 2)
-      yield pattern;
+    if (pattern.filter((state) => state === "active").length >= 2) yield pattern;
   }
 }
 
@@ -310,7 +309,7 @@ function* seatFixtures(people: number): Generator<PreviewFixture> {
       { length: people },
       (_, seat) => relativeSeats[(seat - viewer + people) % people],
     );
-    const active = seatStates.filter((state) => state === "active" || state === "leaving").length;
+    const active = seatStates.filter((state) => state === "active").length;
     const shared = { people, seatStates, viewer, startingLives: 5, longNames: true };
     yield { ...shared, cards: 6, phase: "trick", played: active };
     for (let played = 0; played <= active; played++)

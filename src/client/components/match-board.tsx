@@ -27,7 +27,7 @@ export function MatchBoard({
   const board = useRef<HTMLDivElement>(null);
   const seating = tableOrder(game);
   const me = game.players.find((p) => p.id === game.you);
-  const active = !!me && me.lives > 0 && !me.left;
+  const active = !!me && me.lives > 0;
   const myTurn = seating.current === game.you && active;
   const canPlay = myTurn && game.phase === "playing" && !busy;
   const opponents = seating.seats.slice(1);
@@ -44,7 +44,7 @@ export function MatchBoard({
           [opponents.at(-1)!, { side: "bottom" as const, column: 5 }] as const,
         ]
       : []),
-    [game.you, { side: "bottom" as const, column: 3 }] as const,
+    [seating.seats[0], { side: "bottom" as const, column: 3 }] as const,
   ]);
   const trickNumber =
     game.count -
@@ -85,11 +85,8 @@ export function MatchBoard({
     const position = positions.get(id)!;
     const number = game.players.findIndex((p) => p.id === id) + 1;
     const player = game.players[number - 1];
-    const status = player.left
-      ? game.order.includes(id)
-        ? "Left · auto play"
-        : "Left"
-      : player.lives <= 0
+    const status =
+      player.lives <= 0
         ? "Out"
         : seating.current === id
           ? game.phase === "bidding"
@@ -122,9 +119,7 @@ export function MatchBoard({
           number={number}
           you={id === game.you}
           current={seating.current === id}
-          activeTurn={
-            game.phase === "playing" && seating.current === id && !player.left && player.lives > 0
-          }
+          activeTurn={game.phase === "playing" && seating.current === id && player.lives > 0}
           deadline={game.deadline}
           serverTime={game.serverTime}
           round={game.round}
@@ -210,37 +205,39 @@ export function MatchBoard({
       </section>
       <section
         className="hand-area flex min-w-0 items-center justify-center pt-2 [--hand-card-width:min(5rem,10dvh,calc((100cqw-2rem)/6))]"
-        aria-label="Your hand"
+        aria-label={game.spectating ? "Spectator mode" : "Your hand"}
       >
         <div
           className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center gap-1.5"
           key={`hand-${game.round}`}
           data-active-turn={(canPlay && !!me?.hand.length) || undefined}
         >
-          {me?.hand.map((card, i) => {
-            const middle = (me.hand.length - 1) / 2;
-            const position = middle ? (i - middle) / middle : 0;
-            return (
-              <div
-                className="hand-card relative w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
-                key={card ?? i}
-                style={
-                  {
-                    "--hand-angle": `${position * 3}deg`,
-                    "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
-                  } as CSSProperties
-                }
-              >
-                <PlayingCard
-                  card={card}
-                  className={canPlay ? "turn-glow" : undefined}
-                  disabled={!canPlay}
-                  pending={pendingCard === (card ?? -1)}
-                  onClick={() => onPlay(card)}
-                />
-              </div>
-            );
-          })}
+          {game.spectating && <p className="text-sm text-muted-foreground">You are spectating.</p>}
+          {!game.spectating &&
+            me?.hand.map((card, i) => {
+              const middle = (me.hand.length - 1) / 2;
+              const position = middle ? (i - middle) / middle : 0;
+              return (
+                <div
+                  className="hand-card relative w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                  key={card ?? i}
+                  style={
+                    {
+                      "--hand-angle": `${position * 3}deg`,
+                      "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
+                    } as CSSProperties
+                  }
+                >
+                  <PlayingCard
+                    card={card}
+                    className={canPlay ? "turn-glow" : undefined}
+                    disabled={!canPlay}
+                    pending={pendingCard === (card ?? -1)}
+                    onClick={() => onPlay(card)}
+                  />
+                </div>
+              );
+            })}
         </div>
       </section>
     </div>

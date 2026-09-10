@@ -12,7 +12,7 @@ import {
 } from "../../shared/game.ts";
 
 export type PreviewPhase = "playing" | "bidding" | "trick" | "results" | "blind";
-export type PreviewSeatState = "active" | "eliminated" | "left" | "leaving";
+export type PreviewSeatState = "active" | "eliminated";
 export type PreviewOptions = {
   people: number;
   cards: number;
@@ -35,10 +35,10 @@ export function normalizePreview(options: PreviewOptions): Required<PreviewOptio
     { length: people },
     (_, index) => options.seatStates?.[index] ?? "active",
   );
-  // A round needs at least two dealt hands, including players who left during it.
-  let active = seatStates.filter((state) => state === "active" || state === "leaving").length;
+  // A round needs at least two active players.
+  let active = seatStates.filter((state) => state === "active").length;
   for (let index = 0; active < 2; index++) {
-    if (seatStates[index] !== "active" && seatStates[index] !== "leaving") {
+    if (seatStates[index] !== "active") {
       seatStates[index] = "active";
       active++;
     }
@@ -97,8 +97,7 @@ export function makePreview(input: PreviewOptions): Game {
   game.players.sort((a, b) => seatOrder.indexOf(a.id) - seatOrder.indexOf(b.id));
   game.players.forEach((p, i) => {
     const state = seatStates[i];
-    p.lives = state === "eliminated" || state === "left" ? 0 : startingLives;
-    p.left = state === "left" || state === "leaving";
+    p.lives = state === "eliminated" ? 0 : startingLives;
     if (p.lives === 0) p.hand = [];
   });
   game.order = game.players.filter((p) => p.hand.length > 0).map((p) => p.id);

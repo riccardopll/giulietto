@@ -42,10 +42,19 @@ export class GameTable extends DurableObject<Env> {
       ws.close(1011, "Reconnect");
     }
   }
+  private view(g: Game, id: string) {
+    const connected = new Set(
+      this.ctx
+        .getWebSockets()
+        .filter((ws) => ws.readyState === WebSocket.OPEN)
+        .map((ws) => (ws.deserializeAttachment() as Attachment).id),
+    );
+    return view(g, id, connected);
+  }
   private snapshot(ws: WebSocket, g: Game) {
     const { id } = ws.deserializeAttachment() as Attachment;
     try {
-      this.send(ws, { type: "state", state: view(g, id) });
+      this.send(ws, { type: "state", state: this.view(g, id) });
     } catch {
       /* A leave acknowledgement is sent before the client closes its socket. */
     }
@@ -152,7 +161,7 @@ export class GameTable extends DurableObject<Env> {
       r = await this.save(r, g, { id, commandId: b.commandId });
     }
     return {
-      state: b.action === "leave" ? { ok: true } : view(r.game, id),
+      state: b.action === "leave" ? { ok: true } : this.view(r.game, id),
       duplicate: !!duplicate,
     };
   }
@@ -176,21 +185,25 @@ export class GameTable extends DurableObject<Env> {
             this.ctx.storage.kv.put("room", r);
             await this.schedule(r);
           }
-          return Response.json(view(r.game, id));
+          return Response.json(this.view(r.game, id));
         }
         let r = this.load();
         // Membership must be checked before reads can advance or broadcast a room.
-        if (req.method === "GET" && !r.game.players.some((p) => p.id === id))
+        if (
+          req.method === "GET" &&
+          !r.game.players.some((p) => p.id === id) &&
+          !r.game.spectators?.some((p) => p.id === id)
+        )
           throw new GameError("Join this table first.");
         r = await this.advance(r);
         if (url.pathname.endsWith("/socket")) {
-          view(r.game, id);
+          this.view(r.game, id);
           const sockets = this.ctx.getWebSockets(id);
           if (sockets.length >= 3) sockets[0].close(4002, "Connected in another tab.");
           const { 0: client, 1: server } = new WebSocketPair();
           this.ctx.acceptWebSocket(server, [id]);
           server.serializeAttachment({ id } satisfies Attachment);
-          this.snapshot(server, r.game);
+          this.broadcast(r.game);
           await this.schedule(r);
           return new Response(null, {
             status: 101,
@@ -198,7 +211,7 @@ export class GameTable extends DurableObject<Env> {
             headers: { "Sec-WebSocket-Protocol": "giulietto" },
           });
         }
-        if (req.method === "GET") return Response.json(view(r.game, id));
+        if (req.method === "GET") return Response.json(this.view(r.game, id));
         const { state } = await this.execute(r, id, command(await req.json()));
         return Response.json(state);
       } catch (error) {
@@ -282,6 +295,7 @@ export class GameTable extends DurableObject<Env> {
         p.seen = Date.now();
         this.ctx.storage.kv.put("room", r);
       }
+      this.broadcast(r.game);
       await this.schedule(r);
     });
   }

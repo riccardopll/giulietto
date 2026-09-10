@@ -182,10 +182,10 @@ test("opening an existing trick or watching does not replay history", async ({ p
   await expect(events(page)).toHaveCount(0);
   await openPreview(page, "people=6&cards=6&phase=trick");
   await expect(events(page)).toHaveCount(0);
-  for (const inactive of ["eliminated", "left"]) {
+  for (const viewer of [5, -1]) {
     await openPreview(
       page,
-      `people=6&cards=6&played=3&viewer=5&seats=active,active,active,active,active,${inactive}`,
+      `people=6&cards=6&played=3&viewer=${viewer}&seats=active,active,active,active,active,eliminated`,
     );
     await pausePreview(page);
     await expect(events(page)).toHaveCount(0);

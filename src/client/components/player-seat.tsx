@@ -89,7 +89,7 @@ export function PlayerSeat({
                 you
                   ? "size-9 text-lg @min-2xl/board:size-12 @min-2xl/board:text-2xl"
                   : "size-7 text-sm @min-2xl/board:size-10 @min-2xl/board:text-xl",
-                player.lives <= 0 || player.left
+                player.lives <= 0
                   ? "bg-[#e6e0e3] text-[#80727b]"
                   : "bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642]",
               )}

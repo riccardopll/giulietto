@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { toast, Toaster } from "sonner";
 import { toRoman } from "@/client/utils";
-import { Check, Copy, LogOut } from "lucide-react";
+import { Check, Copy, Eye, LogOut } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import {
   Dialog,
@@ -102,7 +102,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     if (previous && previous.code === s.code && s.revision < previous.revision) return;
     clockOffset.current = s.serverTime - Date.now();
     if (!previous || previous.code !== s.code) {
-      const playerName = s.players.find((player) => player.id === s.you)!.name;
+      const playerName = s.viewerName;
       setName(playerName);
       try {
         savePlayerName(playerName);
@@ -123,8 +123,15 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     if (isPreview) return;
     if (session.error) setError(session.error);
     if (session.saved) {
-      fetch(`/api/game?code=${encodeURIComponent(session.saved)}`, {
-        headers: { "x-player-token": token.current },
+      fetch("/api/game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-player-token": token.current },
+        body: JSON.stringify({
+          action: "join",
+          commandId: crypto.randomUUID(),
+          code: session.saved,
+          name: session.name,
+        }),
       })
         .then(readResponse<State>)
         .then(accept)
@@ -279,16 +286,31 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         }
       >
         <header className="site-header grid min-h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1 sm:min-h-16">
-          <a
-            href="/"
-            className={`wordmark row-start-1 text-primary ${game ? "col-start-1 justify-self-start text-xl sm:text-3xl" : "col-span-3 justify-self-center text-3xl"}`}
-            onClick={(e) => {
-              if (game) e.preventDefault();
-            }}
-            aria-label="Giulietto home"
+          <div
+            className={`row-start-1 flex flex-col items-start sm:flex-row sm:items-center sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
           >
-            Giulietto
-          </a>
+            <a
+              href="/"
+              className={`wordmark text-primary ${game ? "text-xl sm:text-3xl" : "text-3xl"}`}
+              onClick={(e) => {
+                if (game) e.preventDefault();
+              }}
+              aria-label="Giulietto home"
+            >
+              Giulietto
+            </a>
+            {game && !waiting && (
+              <span
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums"
+                role="status"
+                aria-label={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
+                title={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
+              >
+                <Eye className="size-3.5" aria-hidden="true" />
+                <span aria-hidden="true">{game.spectatorCount}</span>
+              </span>
+            )}
+          </div>
           {game && !waiting && (
             <h2 className="col-start-2 row-start-1 max-w-18 text-center text-sm leading-tight font-semibold min-[360px]:max-w-none sm:text-xl">
               Round {toRoman(game.round)}
@@ -331,9 +353,9 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             <AlertDialogHeader>
               <AlertDialogTitle>Leave this table?</AlertDialogTitle>
               <AlertDialogDescription>
-                {waiting
+                {waiting || game?.spectating || phase === "finished"
                   ? "You can rejoin using the invite code."
-                  : "Leaving forfeits your place in this game."}
+                  : "Your seat keeps playing automatically. Rejoin with the invite code to resume."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
