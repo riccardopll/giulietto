@@ -21,11 +21,17 @@ function predictions(players: Player[], eliminated: string) {
 
 test("three players complete a game, including round results and elimination", async ({
   players,
-}) => {
+}, testInfo) => {
   test.setTimeout(120_000);
+  const slider = players[0].page.getByRole("slider", { name: "Starting lives" });
+  expect((await slider.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await players[0].page.screenshot({ path: testInfo.outputPath("lobby.png"), fullPage: true });
   await players[0].page.getByRole("slider", { name: "Starting lives" }).press("Home");
   await synced(players, (state) => state.startingLives === 1);
   await start(players);
+  await expect(
+    players[0].page.getByRole("status", { name: "0 spectators", exact: true }),
+  ).toHaveCount(0);
   await players[0].page.getByRole("button", { name: "Emotes", exact: true }).click();
   await players[0].page.getByRole("button", { name: "Send chicken emote" }).click();
   for (const { page } of players) {
@@ -73,6 +79,9 @@ test("three players complete a game, including round results and elimination", a
     }
   }
 
+  await expect(
+    players[0].page.getByRole("status", { name: "2 spectators", exact: true }),
+  ).toBeVisible();
   for (const { page, state } of players) {
     expect(state!.winner).toBe(winner);
     await expect(page.getByText("Game over", { exact: true })).toBeVisible();

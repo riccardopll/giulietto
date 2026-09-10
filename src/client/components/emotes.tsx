@@ -76,11 +76,11 @@ export function EmotePicker({
         <Button
           variant="ghost"
           size="icon"
-          className="col-start-3 row-start-1 size-11 shrink-0 translate-x-[min(1rem,calc((100vw-100cqw)/2))] justify-self-end rounded-xl bg-transparent hover:bg-transparent hover:text-red-600 disabled:text-gray-400 disabled:opacity-100"
+          className="absolute right-0 top-0 -translate-y-1/4 size-12 shrink-0 rounded-xl bg-transparent hover:bg-transparent hover:text-red-600 disabled:text-gray-400 disabled:opacity-100"
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
-          <Smile className="size-6" aria-hidden="true" />
+          <Smile className="size-7" aria-hidden="true" />
         </Button>
       </Popover.Trigger>
       <Popover.Portal>

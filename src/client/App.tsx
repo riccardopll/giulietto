@@ -285,13 +285,13 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             : "safe-area mx-auto min-h-svh max-w-6xl [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
         }
       >
-        <header className="site-header grid min-h-14 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1 sm:min-h-16">
+        <header className="site-header grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-20">
           <div
             className={`row-start-1 flex items-center gap-1 sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
           >
             <a
               href="/"
-              className={`wordmark text-primary ${game ? "text-xl sm:text-3xl" : "text-3xl"}`}
+              className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "text-4xl"}`}
               onClick={(e) => {
                 if (game) e.preventDefault();
               }}
@@ -299,20 +299,20 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             >
               Giulietto
             </a>
-            {game && !waiting && (
+            {game && !waiting && game.spectatorCount > 1 && (
               <span
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground tabular-nums"
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground tabular-nums"
                 role="status"
                 aria-label={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
                 title={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
               >
-                <Eye className="size-3.5" aria-hidden="true" />
+                <Eye className="size-4" aria-hidden="true" />
                 <span aria-hidden="true">{game.spectatorCount}</span>
               </span>
             )}
           </div>
           {game && !waiting && (
-            <h2 className="col-start-2 row-start-1 max-w-18 text-center text-sm leading-tight font-semibold min-[360px]:max-w-none sm:text-xl">
+            <h2 className="col-start-2 row-start-1 max-w-18 text-center text-base leading-tight font-semibold min-[360px]:max-w-none sm:text-2xl">
               Round {toRoman(game.round)}
             </h2>
           )}
@@ -325,10 +325,10 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onClick={copy}
                 aria-label="Copy lobby invite"
               >
-                <span className="font-mono text-[10px] leading-none sm:text-xs sm:tracking-wide">
+                <span className="font-mono text-xs leading-none sm:text-sm sm:tracking-wide">
                   {game.code}
                 </span>
-                {copied ? <Check /> : <Copy />}
+                {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
               </Button>
               {preview?.exitControl ?? (
                 <Button
@@ -337,7 +337,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                   aria-label="Leave table"
                   onClick={() => setLeaveOpen(true)}
                 >
-                  <LogOut size={18} />
+                  <LogOut className="size-5" />
                 </Button>
               )}
             </div>
