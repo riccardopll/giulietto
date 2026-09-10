@@ -80,7 +80,7 @@ export function EmotePicker({
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
-          <Smile className="size-7" aria-hidden="true" />
+          <Smile className="size-6" aria-hidden="true" />
         </Button>
       </Popover.Trigger>
       <Popover.Portal>
