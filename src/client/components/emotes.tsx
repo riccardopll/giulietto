@@ -76,7 +76,7 @@ export function EmotePicker({
         <Button
           variant="ghost"
           size="icon"
-          className="size-14 shrink-0 rounded-xl bg-transparent hover:bg-transparent hover:text-red-600 disabled:text-gray-400 disabled:opacity-100"
+          className="col-start-3 row-start-1 size-11 shrink-0 justify-self-center rounded-xl bg-transparent hover:bg-transparent hover:text-red-600 disabled:text-gray-400 disabled:opacity-100"
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >

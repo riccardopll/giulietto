@@ -205,9 +205,9 @@ export function MatchBoard({
           )}
         </section>
       </section>
-      <div className="mx-auto flex w-full max-w-[36rem] min-w-0 items-center justify-center pt-2">
+      <div className="@container/hand mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[3rem_minmax(0,1fr)_3rem] items-center pt-2">
         <section
-          className="hand-area min-w-0 flex-1 [--hand-card-width:clamp(2.75rem,calc((100cqw-6rem)/6),min(5rem,10dvh))]"
+          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-width:clamp(2.75rem,calc((100cqw-7.875rem)/6),min(5rem,10dvh))]"
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
           <div
@@ -224,7 +224,7 @@ export function MatchBoard({
                 const position = middle ? (i - middle) / middle : 0;
                 return (
                   <div
-                    className="hand-card relative -ml-1.5 first:ml-0 @min-sm/board:ml-1.5 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                    className="hand-card relative -ml-3 first:ml-0 @min-md/board:ml-1.5 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
                     key={card ?? i}
                     style={
                       {

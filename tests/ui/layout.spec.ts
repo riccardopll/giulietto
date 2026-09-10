@@ -45,6 +45,15 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     return errors;
   });
   expect(errors).toEqual([]);
+  const handCenter = await page.locator(".hand-card").evaluateAll((cards) => {
+    const bounds = cards.map((card) => card.getBoundingClientRect());
+    return (
+      (Math.min(...bounds.map((card) => card.left)) +
+        Math.max(...bounds.map((card) => card.right))) /
+      2
+    );
+  });
+  expect(handCenter).toBeCloseTo(160, 0);
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
   const prediction = page.getByRole("status", { name: /predicts 0 tricks/ });
@@ -104,5 +113,14 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     Math.max(...cards.map((card) => card.y)) - Math.min(...cards.map((card) => card.y)),
   ).toBeLessThan(1);
   expect(Math.min(...cards.map((card) => card.width))).toBeGreaterThan(68);
+  const desktopHandCenter = await page.locator(".hand-card").evaluateAll((cards) => {
+    const bounds = cards.map((card) => card.getBoundingClientRect());
+    return (
+      (Math.min(...bounds.map((card) => card.left)) +
+        Math.max(...bounds.map((card) => card.right))) /
+      2
+    );
+  });
+  expect(desktopHandCenter).toBeCloseTo(640, 0);
   await page.screenshot({ path: testInfo.outputPath("desktop-trick.png"), animations: "disabled" });
 });
