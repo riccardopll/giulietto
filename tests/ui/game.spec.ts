@@ -1,4 +1,4 @@
-import { expect } from "@playwright/test";
+import { expect, type Route } from "@playwright/test";
 import { playCard, predict, start, synced, test, type Player } from "./helpers";
 
 function predictions(players: Player[], eliminated: string) {
@@ -98,7 +98,7 @@ test("three players complete a game, including round results and elimination", a
 
 test("reloading during play restores the player and hand and allows the next move", async ({
   players,
-}) => {
+}, testInfo) => {
   await start(players);
   for (let i = 0; i < 3; i++) await predict(players, 0);
   await playCard(players);
@@ -110,8 +110,12 @@ test("reloading during play restores the player and hand and allows the next mov
     .getByRole("region", { name: "Your hand", exact: true })
     .getByRole("button")
     .evaluateAll((cards) => cards.map((card) => card.getAttribute("aria-label")));
+  const pendingImages: Route[] = [];
+  await returning.page.route("**/cards/neapolitan/*.webp", (route) => {
+    pendingImages.push(route);
+  });
   returning.state = undefined;
-  await returning.page.reload();
+  await returning.page.reload({ waitUntil: "domcontentloaded" });
   await synced(players, (state) => state.phase === "playing");
   expect(returning.state).toMatchObject({
     you: before.you,
@@ -135,6 +139,34 @@ test("reloading during play restores the player and hand and allows the next mov
       .getByRole("button")
       .evaluateAll((cards) => cards.map((card) => card.getAttribute("aria-label"))),
   ).toEqual(labels);
+  // All card faces and the back preload on resume, even though most are not on screen.
+  await expect
+    .poll(() => new Set(pendingImages.map((route) => route.request().url())).size)
+    .toBe(41);
+  const hand = returning.page.getByRole("region", { name: "Your hand", exact: true });
+  const fallbacks = hand.locator(".card-fallback");
+  for (let i = 0; i < own.hand.length; i++) {
+    await expect(fallbacks.nth(i)).toBeVisible();
+    await expect(fallbacks.nth(i)).toContainText(
+      own.hand[i] === 31 ? "0 / 41" : String(own.hand[i]),
+    );
+    await expect(hand.locator(".card-art").nth(i)).toBeHidden();
+  }
+  await expect(returning.page.locator(".seat-hand .card-fallback").first()).toHaveText(
+    "Hidden card",
+  );
+  await returning.page.screenshot({ path: testInfo.outputPath("cards-loading.png") });
+  const failedPath = `/cards/neapolitan/${own.hand[0]}.webp`;
+  await Promise.all(
+    pendingImages.map((route) =>
+      route.request().url().endsWith(failedPath) ? route.abort() : route.continue(),
+    ),
+  );
+  await expect(fallbacks.first()).toBeVisible();
+  await expect(hand.locator(".card-art").first()).toBeHidden();
+  await expect(fallbacks.nth(1)).toBeHidden();
+  await expect(hand.locator(".card-art").nth(1)).toBeVisible();
+  await returning.page.unroute("**/cards/neapolitan/*.webp");
   const emoteMenu = returning.page.getByRole("button", { name: "Emotes", exact: true });
   const menuBefore = await emoteMenu.boundingBox();
   await playCard(players, true);

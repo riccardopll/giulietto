@@ -186,11 +186,13 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   }, [isPreview]);
   useEffect(() => {
     if (!game?.code) return;
+    // Warm the deck in the lobby and retry when a match starts, without delaying play.
     for (let i = 0; i <= 40; i++) {
       const img = new Image();
+      img.fetchPriority = "low";
       img.src = `/cards/neapolitan/${i || "back"}.webp`;
     }
-  }, [game?.code]);
+  }, [game?.code, game?.matchId]);
   async function act(action: string, extra: Record<string, unknown> = {}) {
     if (preview) {
       try {

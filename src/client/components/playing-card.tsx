@@ -17,6 +17,38 @@ export function cardLabel(card: number) {
   return `${name} of ${suits[Math.floor((card - 1) / 10)]}`;
 }
 
+function CardFace({ card, mode }: { card: number | null; mode?: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <>
+      <span
+        className={cn(
+          "card-fallback absolute inset-0 flex size-full flex-col items-center justify-center gap-1 p-0.5 text-center text-[10px] leading-3 text-foreground [overflow-wrap:anywhere]",
+          mode && "pb-6",
+        )}
+        aria-hidden="true"
+        style={{ visibility: loaded ? "hidden" : "visible" }}
+      >
+        <span>{card === null ? "Hidden card" : cardLabel(card)}</span>
+        {card !== null && (
+          <span className="text-sm font-semibold">{card === 31 ? "0 / 41" : card}</span>
+        )}
+      </span>
+      <img
+        className="card-art pointer-events-none absolute inset-0 block size-full rounded-[inherit] object-contain"
+        src={`/cards/neapolitan/${card ?? "back"}.webp`}
+        alt=""
+        draggable={false}
+        width={300}
+        height={480}
+        style={{ visibility: loaded ? "visible" : "hidden" }}
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(false)}
+      />
+    </>
+  );
+}
+
 export function PlayingCard({
   card,
   className,
@@ -32,35 +64,12 @@ export function PlayingCard({
   mode?: string;
   pending?: boolean;
 }) {
-  const [failedCard, setFailedCard] = useState<number | null | undefined>(undefined);
   const label = card
     ? `${cardLabel(card)}, ${card === 31 ? "lowest or highest" : `value ${card}`}`
     : "Hidden card";
   const content = (
     <>
-      <span
-        className={cn(
-          "card-fallback absolute inset-0 flex size-full items-center justify-center p-0.5 text-center text-[10px] leading-3 text-foreground [overflow-wrap:anywhere]",
-          mode && "pb-6",
-        )}
-        aria-hidden="true"
-        style={{ visibility: failedCard === card ? "visible" : "hidden" }}
-      >
-        {card === null ? "Hidden card" : cardLabel(card)}
-      </span>
-      <img
-        key={card ?? "back"}
-        className="card-art pointer-events-none absolute inset-0 block size-full rounded-[inherit] object-contain"
-        src={`/cards/neapolitan/${card ?? "back"}.webp`}
-        alt=""
-        draggable={false}
-        width={300}
-        height={480}
-        onError={(event) => {
-          setFailedCard(card);
-          event.currentTarget.style.visibility = "hidden";
-        }}
-      />
+      <CardFace key={card ?? "back"} card={card} mode={mode} />
       {mode && (
         <span className="played-mode absolute bottom-[.35rem] left-1/2 -translate-x-1/2 rounded-full bg-[#202b45eb] px-2 py-0.5 text-xs text-white capitalize">
           {mode}
