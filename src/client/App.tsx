@@ -45,7 +45,9 @@ export type PreviewSession = {
 export default function App({ preview }: { preview?: PreviewSession }) {
   const isPreview = !!preview;
   const [session] = useState(() =>
-    preview ? { name: "bot_1", code: "", joinCode: null, token: "", error: "" } : restoreSession(),
+    preview
+      ? { name: preview.state.viewerName, code: "", joinCode: null, token: "", error: "" }
+      : restoreSession(),
   );
   const [name, setName] = useState(session.name);
   const [code, setCode] = useState(session.code);
