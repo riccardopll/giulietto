@@ -377,6 +377,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         </AlertDialog>
         {!game ? (
           <Home
+            token={session.token}
             name={name}
             code={code}
             ready={ready}

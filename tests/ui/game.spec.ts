@@ -93,6 +93,24 @@ test("three players complete a game, including round results and elimination", a
     ).toBeVisible();
     await page.getByRole("button", { name: "Back to tables", exact: true }).click();
     await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
+    const stats = page.getByRole("region", { name: "Player stats and leaderboards" });
+    await expect(async () => {
+      await stats.getByRole("button", { name: "Refresh stats" }).click();
+      await expect(
+        stats.getByText(state!.you === winner ? "Level 1 · 30 XP" : "Level 1 · 10 XP", {
+          exact: true,
+        }),
+      ).toBeVisible();
+    }).toPass();
+    await stats.getByRole("button", { name: "Wins", exact: true }).click();
+    await expect(stats.getByRole("button", { name: "Wins", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await page.screenshot({
+      path: testInfo.outputPath(`stats-${state!.viewerName}.png`),
+      fullPage: true,
+    });
   }
 });
 

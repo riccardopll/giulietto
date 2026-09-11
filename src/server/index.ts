@@ -1,3 +1,4 @@
+import { playerStats } from "./player-stats";
 import type { Env } from "./env";
 import { command, failure, roomCode } from "./protocol";
 import { GameError } from "../shared/game-error";
@@ -8,11 +9,15 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     try {
       const url = new URL(req.url);
+      const stats = url.pathname === "/api/stats";
       const socket = url.pathname === "/api/game/socket";
-      if (url.pathname !== "/api/game" && !socket)
+      if (url.pathname !== "/api/game" && !socket && !stats)
         return Response.json({ error: "Not found." }, { status: 404 });
-      if (!["GET", "POST"].includes(req.method) || (socket && req.method !== "GET"))
-        return new Response(null, { status: 405, headers: { Allow: "GET, POST" } });
+      if (!["GET", "POST"].includes(req.method) || ((socket || stats) && req.method !== "GET"))
+        return new Response(null, {
+          status: 405,
+          headers: { Allow: socket || stats ? "GET" : "GET, POST" },
+        });
       if (req.headers.has("origin") && req.headers.get("origin") !== url.origin)
         return Response.json({ error: "Invalid origin." }, { status: 403 });
       if (socket && req.headers.get("upgrade")?.toLowerCase() !== "websocket")
@@ -41,6 +46,10 @@ export default {
       const id = Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join(
         "",
       );
+      if (stats)
+        return Response.json(await playerStats(env.DB, id), {
+          headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+        });
       let body;
       if (req.method === "POST") {
         const raw = await req.text();
