@@ -15,8 +15,11 @@ export function AceSelection({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[min(20rem,calc(100%-2rem))] sm:max-w-80">
-        <DialogHeader>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-[min(20rem,calc(100%-2rem))] gap-0 border-0 bg-transparent p-2 shadow-none sm:max-w-80"
+      >
+        <DialogHeader className="sr-only">
           <DialogTitle>Ace of Coins</DialogTitle>
           <DialogDescription>Choose its value before playing.</DialogDescription>
         </DialogHeader>
@@ -34,22 +37,19 @@ export function AceSelection({
                 <span className="relative block" aria-hidden="true">
                   <PlayingCard card={31} />
                   <span
-                    className={`pointer-events-none absolute inset-x-2 top-1/2 flex -translate-y-1/2 justify-center gap-1 rounded-lg bg-white/90 py-2 shadow-sm ${mode === "low" ? "text-blue-700" : "text-orange-700"}`}
+                    className={`pointer-events-none absolute top-1/2 left-1/2 h-36 max-h-[calc(100%-1rem)] w-12 -translate-x-1/2 -translate-y-1/2 overflow-hidden [mask-image:linear-gradient(transparent,black_15%,black_85%,transparent)] ${mode === "low" ? "text-blue-600" : "text-orange-600"}`}
                   >
-                    {[0, 1].map((index) => (
-                      <Arrow
-                        key={index}
-                        className="size-9 animate-[ace-arrow_1.2s_ease-in-out_infinite]"
-                        strokeWidth={3}
-                        style={{
-                          animationDelay: `${index * 0.15}s`,
-                          animationDirection: mode === "low" ? "normal" : "reverse",
-                        }}
-                      />
-                    ))}
+                    <span
+                      className="ace-arrow-track flex flex-col animate-[ace-arrow_2s_linear_infinite]"
+                      style={{ animationDirection: mode === "low" ? "normal" : "reverse" }}
+                    >
+                      {Array.from({ length: 6 }, (_, index) => (
+                        <Arrow key={index} className="size-12 shrink-0" strokeWidth={3} />
+                      ))}
+                    </span>
                   </span>
                 </span>
-                <span className="text-sm font-semibold">
+                <span className="text-sm font-semibold text-white [text-shadow:0_1px_3px_#000]">
                   {mode === "low" ? "Low · 0" : "High · 41"}
                 </span>
               </button>
