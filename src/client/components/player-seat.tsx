@@ -67,7 +67,7 @@ export function PlayerSeat({
             <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
           </div>
           <div className="seat-avatar-wrap relative shrink-0">
-            {current && (
+            {current && player.lives > 0 && (
               <svg
                 key={`${deadline}-${serverTime}`}
                 className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 -scale-y-100 overflow-visible"
@@ -90,20 +90,18 @@ export function PlayerSeat({
             )}
             <div
               className={cn(
-                "seat-avatar relative grid place-items-center rounded-full border-2 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
+                "seat-avatar relative grid place-items-center rounded-full border-2 font-semibold",
                 you
                   ? "size-9 text-lg @min-2xl/board:size-12 @min-2xl/board:text-2xl"
                   : "size-7 text-sm @min-2xl/board:size-10 @min-2xl/board:text-xl",
                 player.lives <= 0
-                  ? "bg-[#e6e0e3] text-[#80727b]"
-                  : "bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642]",
+                  ? "border-transparent"
+                  : "border-background bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642] shadow-[0_0_0_1px_#6f4a5e12]",
               )}
               style={{ "--avatar-hue": avatarHue(player.id) } as CSSProperties}
               aria-hidden="true"
             >
-              <span className={player.lives <= 0 ? "opacity-15" : undefined}>
-                {Array.from(player.name)[0]?.toLocaleUpperCase()}
-              </span>
+              {player.lives > 0 && <span>{Array.from(player.name)[0]?.toLocaleUpperCase()}</span>}
               {player.lives <= 0 && (
                 <span
                   key={round}
@@ -112,7 +110,7 @@ export function PlayerSeat({
                   <img
                     src="/skull.svg"
                     alt=""
-                    className="size-full object-contain [filter:drop-shadow(0_1px_0_#f3f4f6)_drop-shadow(0_2px_0_#454b54)_drop-shadow(0_4px_2px_#302a3066)]"
+                    className="size-full object-contain drop-shadow-[0_2px_1px_#302a3026]"
                     draggable={false}
                   />
                 </span>
@@ -141,7 +139,14 @@ export function PlayerSeat({
             >
               {you ? "You" : player.name}
             </strong>
-            <div className="seat-stats flex shrink-0 items-center gap-1" data-seat-stats>
+            <div
+              className={cn(
+                "seat-stats flex shrink-0 items-center gap-1",
+                player.lives <= 0 && "invisible",
+              )}
+              aria-hidden={player.lives <= 0 || undefined}
+              data-seat-stats
+            >
               <Lives n={player.lives} total={startingLives} compact />
               <span
                 className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
