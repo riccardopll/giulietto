@@ -89,6 +89,14 @@
   line-height: 1.3;
   font-weight: 400;
 }
+@keyframes ace-arrow {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
 @font-face {
   font-family: GiuliettoScript;
   src: url("/fonts/pacifico-wordmark.woff") format("woff");

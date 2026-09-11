@@ -94,10 +94,16 @@ export async function playCard(players: Player[], keyboard = false) {
     await button.press("Enter");
   } else await button.click();
   if (state!.canChooseAce && (card === 31 || card === null)) {
-    await page
-      .getByRole("dialog", { name: "Ace of Coins", exact: true })
-      .getByRole("button", { name: "High · 41", exact: true })
-      .click();
+    const dialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
+    await expect(dialog.locator('img[src="/cards/neapolitan/31.webp"]')).toHaveCount(2);
+    const low = dialog.getByRole("button", { name: "Low · 0", exact: true });
+    const high = dialog.getByRole("button", { name: "High · 41", exact: true });
+    await expect(low).toBeFocused();
+    if (keyboard) {
+      await page.keyboard.press("Tab");
+      await expect(high).toBeFocused();
+      await page.keyboard.press("Enter");
+    } else await high.click();
   }
   await synced(
     players,

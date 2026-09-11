@@ -2,14 +2,8 @@ import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "rea
 import { toast, Toaster } from "sonner";
 import { toRoman } from "@/client/utils";
 import { Check, Copy, Eye, LogOut } from "lucide-react";
+import { AceSelection } from "./components/ace-selection";
 import { Button } from "@/client/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/client/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -424,31 +418,14 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             )}
           </main>
         )}
-        <Dialog
+        <AceSelection
           open={ace !== null && !!game?.canChooseAce}
           onOpenChange={(open) => {
             if (!open) setAce(null);
           }}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Ace of Coins</DialogTitle>
-              <DialogDescription>Choose its value before playing.</DialogDescription>
-            </DialogHeader>
-            <div className="flex gap-3 [&>button]:h-12 [&>button]:min-w-0 [&>button]:flex-1">
-              <Button
-                variant="outline"
-                disabled={busy}
-                onClick={() => act("play", { card: ace, mode: "low" })}
-              >
-                Low · 0
-              </Button>
-              <Button disabled={busy} onClick={() => act("play", { card: ace, mode: "high" })}>
-                High · 41
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+          disabled={busy}
+          onSelect={(mode) => act("play", { card: ace, mode })}
+        />
       </div>
       <Toaster
         position="top-center"
