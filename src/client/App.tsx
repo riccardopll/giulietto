@@ -73,7 +73,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     const previous = gameRef.current;
     if (previous && previous.code === s.code && s.revision < previous.revision) return;
     clockOffset.current = s.serverTime - Date.now();
-    if (!previous || previous.code !== s.code) {
+    if (!previous || previous.code !== s.code || previous.viewerName !== s.viewerName) {
       const playerName = s.viewerName;
       setName(playerName);
       try {
@@ -191,7 +191,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       if (
         gameRef.current &&
         transport.current &&
-        ["settings", "start", "bid", "play", "emote", "leave"].includes(action)
+        ["rename", "settings", "start", "bid", "play", "emote", "leave"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -380,6 +380,10 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onCopy={copy}
                 onStart={() => void act("start")}
                 onSettings={(startingLives) => act("settings", { startingLives })}
+                onRename={async (name) => {
+                  await act("rename", { name });
+                  return gameRef.current?.viewerName === name.trim();
+                }}
               />
             ) : result ? (
               <ResultsPanel game={game} seconds={seconds} onReset={reset} />

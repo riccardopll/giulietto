@@ -259,7 +259,7 @@ export class GameTable extends DurableObject<Env> {
         const b = command(value);
         commandId = b.commandId;
         action = b.action;
-        if (!["settings", "start", "bid", "play", "emote", "leave"].includes(b.action))
+        if (!["rename", "settings", "start", "bid", "play", "emote", "leave"].includes(b.action))
           throw new GameError("Invalid room command.");
         const r = this.read();
         if (!r) throw new GameError("Table expired.");
