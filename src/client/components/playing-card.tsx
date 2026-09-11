@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "../utils";
 
 export function cardLabel(card: number) {
@@ -17,15 +18,12 @@ export function cardLabel(card: number) {
   return `${name} of ${suits[Math.floor((card - 1) / 10)]}`;
 }
 
-function CardFace({ card, mode }: { card: number | null; mode?: string }) {
+function CardFace({ card }: { card: number | null }) {
   const [loaded, setLoaded] = useState(false);
   return (
     <>
       <span
-        className={cn(
-          "card-fallback absolute inset-0 flex size-full flex-col items-center justify-center gap-1 p-0.5 text-center text-[10px] leading-3 text-foreground [overflow-wrap:anywhere]",
-          mode && "pb-6",
-        )}
+        className="card-fallback absolute inset-0 flex size-full flex-col items-center justify-center gap-1 p-0.5 text-center text-[10px] leading-3 text-foreground [overflow-wrap:anywhere]"
         aria-hidden="true"
         style={{ visibility: loaded ? "hidden" : "visible" }}
       >
@@ -64,15 +62,30 @@ export function PlayingCard({
   mode?: string;
   pending?: boolean;
 }) {
+  const aceMode = card === 31 && (mode === "low" || mode === "high") ? mode : undefined;
+  const Arrow = aceMode === "low" ? ArrowDown : ArrowUp;
   const label = card
-    ? `${cardLabel(card)}, ${card === 31 ? "lowest or highest" : `value ${card}`}`
+    ? `${cardLabel(card)}, ${card === 31 ? (aceMode ? `${aceMode}, value ${aceMode === "low" ? 0 : 41}` : "lowest or highest") : `value ${card}`}`
     : "Hidden card";
   const content = (
     <>
-      <CardFace key={card ?? "back"} card={card} mode={mode} />
-      {mode && (
-        <span className="played-mode absolute bottom-[.35rem] left-1/2 -translate-x-1/2 rounded-full bg-[#202b45eb] px-2 py-0.5 text-xs text-white capitalize">
-          {mode}
+      <CardFace key={card ?? "back"} card={card} />
+      {aceMode && (
+        <span
+          className={cn(
+            "pointer-events-none absolute top-1/2 left-1/2 aspect-[1/3] w-1/3 -translate-x-1/2 -translate-y-1/2 overflow-hidden [mask-image:linear-gradient(transparent,black_15%,black_85%,transparent)]",
+            aceMode === "low" ? "text-blue-600" : "text-orange-600",
+          )}
+          aria-hidden="true"
+        >
+          <span
+            className="ace-arrow-track flex flex-col animate-[ace-arrow_2s_linear_infinite]"
+            style={{ animationDirection: aceMode === "low" ? "normal" : "reverse" }}
+          >
+            {Array.from({ length: 6 }, (_, index) => (
+              <Arrow key={index} className="aspect-square h-auto w-full shrink-0" strokeWidth={3} />
+            ))}
+          </span>
         </span>
       )}
       {pending && (
