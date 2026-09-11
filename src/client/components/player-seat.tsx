@@ -110,7 +110,7 @@ export function PlayerSeat({
                   <img
                     src="/skull.png"
                     alt=""
-                    className="size-full object-contain drop-shadow-[0_2px_1px_#302a3026]"
+                    className="size-full object-contain"
                     draggable={false}
                   />
                 </span>
