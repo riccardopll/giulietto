@@ -69,6 +69,7 @@ export function Preview() {
   const [running, setRunning] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [aceOpen, setAceOpen] = useState(false);
+  const [eliminationSeat, setEliminationSeat] = useState(0);
   const [tables, setTables] = useState<Record<number, Entry>>(() =>
     Object.fromEntries(
       counts.map((people) => {
@@ -79,6 +80,10 @@ export function Preview() {
   );
   const entry = tables[people];
   const active = entry.options.seatStates.filter((state) => state === "active").length;
+  const eliminationTarget =
+    entry.options.seatStates[eliminationSeat] === "active"
+      ? eliminationSeat
+      : entry.options.seatStates.indexOf("active");
   const hasTrick = ["playing", "blind"].includes(entry.options.phase);
 
   function configure(patch: Partial<PreviewOptions> = {}) {
@@ -379,6 +384,39 @@ export function Preview() {
               </label>
             ))}
           </fieldset>
+          <div className="space-y-2">
+            <label className={labelClass}>
+              Player to eliminate
+              <select
+                className={selectClass}
+                value={eliminationTarget}
+                onChange={(event) => setEliminationSeat(Number(event.target.value))}
+              >
+                {entry.options.seatStates.map((state, index) => (
+                  <option key={index} value={index} disabled={state === "eliminated"}>
+                    Seat {index + 1} — {entry.game.players[index].name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button
+              variant="outline"
+              className="h-11 w-full"
+              disabled={active <= 2}
+              onClick={() => {
+                configure({
+                  phase: "bidding",
+                  bids: 0,
+                  seatStates: entry.options.seatStates.map((state, index) =>
+                    index === eliminationTarget ? "eliminated" : state,
+                  ),
+                });
+                setControlsOpen(false);
+              }}
+            >
+              Eliminate player
+            </Button>
+          </div>
           <label className="flex min-h-11 items-center gap-2 text-sm">
             <input
               className="size-4 accent-primary"
