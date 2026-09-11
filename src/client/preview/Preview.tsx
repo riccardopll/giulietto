@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 import { Settings2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import App from "../App";
+import { AceSelection } from "../components/ace-selection";
 import { sendEmote } from "@/shared/emotes";
 import { Button } from "../components/ui/button";
 import { bid, play, view, type Game } from "../../shared/game";
@@ -67,6 +68,7 @@ export function Preview() {
   const [viewer, setViewer] = useState(initial.viewer);
   const [running, setRunning] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
+  const [aceOpen, setAceOpen] = useState(false);
   const [tables, setTables] = useState<Record<number, Entry>>(() =>
     Object.fromEntries(
       counts.map((people) => {
@@ -209,6 +211,7 @@ export function Preview() {
         key={`${people}-${entry.reset}-${viewer}`}
         preview={{ state: snapshot, command, reset: () => configure(), exitControl }}
       />
+      <AceSelection open={aceOpen} onOpenChange={setAceOpen} onSelect={() => setAceOpen(false)} />
       <Dialog.Portal>
         <Dialog.Content
           aria-describedby={undefined}
@@ -385,6 +388,17 @@ export function Preview() {
             />
             Long names
           </label>
+          <Button
+            variant="outline"
+            className="h-11 w-full"
+            onClick={() => {
+              setRunning(false);
+              setControlsOpen(false);
+              setAceOpen(true);
+            }}
+          >
+            Test ace selection
+          </Button>
           <div className="grid grid-cols-3 gap-2">
             <Button
               className="h-11 px-2 text-xs"
