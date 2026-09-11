@@ -108,7 +108,7 @@ export function PlayerSeat({
               {player.lives <= 0 && (
                 <span
                   key={round}
-                  className="seat-elimination pointer-events-none absolute inset-0 grid place-items-center motion-safe:animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
+                  className="seat-elimination pointer-events-none absolute inset-0 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
                 >
                   <Skull className="size-4/5 fill-[#d1d5db] text-[#636973]" strokeWidth={2} />
                 </span>

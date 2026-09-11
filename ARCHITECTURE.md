@@ -8,3 +8,6 @@ Only notification bubbles may clip.
 
 Use Tailwind for layout and component styles. Reserve shared CSS for theme tokens,
 reusable utilities, paint, and animations.
+
+Always play animations regardless of the system's reduced-motion preference.
+Do not add reduced-motion overrides or gate animations behind `motion-safe`.
