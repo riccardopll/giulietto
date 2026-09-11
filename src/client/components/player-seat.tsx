@@ -105,7 +105,7 @@ export function PlayerSeat({
               {player.lives <= 0 && (
                 <span
                   key={round}
-                  className="seat-elimination pointer-events-none absolute -inset-1.5 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
+                  className="seat-elimination pointer-events-none absolute -inset-1 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
                 >
                   <img
                     src="/skull.png"
