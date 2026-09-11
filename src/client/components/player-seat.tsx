@@ -16,6 +16,7 @@ function avatarHue(id: string) {
 }
 
 export function PlayerSeat({
+  emoteMenuOpen,
   player,
   number,
   you,
@@ -28,6 +29,7 @@ export function PlayerSeat({
   status,
   side,
 }: {
+  emoteMenuOpen: boolean;
   player: SeatPlayer;
   number: number;
   you: boolean;
@@ -55,6 +57,7 @@ export function PlayerSeat({
         className={cn(
           "seat-identity relative flex size-full min-w-0 items-center justify-center px-1",
           side === "bottom" ? "row-start-2" : "row-start-1",
+          emoteMenuOpen && (you ? "invisible" : side === "bottom" && "@max-2xl/board:invisible"),
         )}
         data-seat-identity
       >

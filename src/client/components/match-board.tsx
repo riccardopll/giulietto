@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useRef, type CSSProperties } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import type { view } from "@/shared/game";
 import { tableOrder } from "../table-order";
 import { EmotePicker } from "./emotes";
@@ -28,6 +28,7 @@ export function MatchBoard({
   onPlay: (card: number | null) => void;
 }) {
   const board = useRef<HTMLDivElement>(null);
+  const [emoteMenuOpen, setEmoteMenuOpen] = useState(false);
   const seating = tableOrder(game);
   const me = game.players.find((p) => p.id === game.you);
   const active = !!me && me.lives > 0;
@@ -117,6 +118,7 @@ export function MatchBoard({
         }
       >
         <PlayerSeat
+          emoteMenuOpen={emoteMenuOpen}
           player={player}
           number={number}
           you={id === game.you}
@@ -247,6 +249,8 @@ export function MatchBoard({
           </div>
         </section>
         <EmotePicker
+          open={emoteMenuOpen}
+          onOpenChange={setEmoteMenuOpen}
           disabled={busy || !active}
           emote={me?.emote}
           serverTime={game.serverTime}

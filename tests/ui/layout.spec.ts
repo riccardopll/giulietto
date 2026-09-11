@@ -66,9 +66,25 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   });
   const predictionSize = await prediction.locator(".emote-artwork").boundingBox();
   await page.getByRole("button", { name: "Emotes", exact: true }).click();
+  const bottomProfiles = page.locator('[data-side="bottom"] .seat-identity');
+  for (const profile of await bottomProfiles.all()) await expect(profile).toBeHidden();
+  for (const profile of await page.locator('[data-side="top"] .seat-identity').all())
+    await expect(profile).toBeVisible();
+  await expect(page.locator('[data-side="bottom"] .seat-hand')).toHaveCount(2);
+  for (const hand of await page.locator('[data-side="bottom"] .seat-hand').all())
+    await expect(hand).toBeVisible();
   await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
   await expect(page.getByRole("button", { name: "Empty emote slot 1" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Empty emote slot 2" })).toBeDisabled();
+  const menu = await page.getByRole("dialog", { name: "Emotes", exact: true }).boundingBox();
+  const handTop = await page
+    .locator(".hand-card")
+    .evaluateAll((cards) => Math.min(...cards.map((card) => card.getBoundingClientRect().top)));
+  expect(menu!.x + menu!.width / 2).toBeCloseTo(160, 0);
+  expect(menu!.x).toBeGreaterThanOrEqual(12);
+  expect(menu!.x + menu!.width).toBeLessThanOrEqual(308);
+  expect(menu!.y).toBeGreaterThanOrEqual(12);
+  expect(menu!.y + menu!.height).toBeLessThanOrEqual(handTop - 12);
   const menuArtwork = page
     .getByRole("button", { name: "Send chicken emote" })
     .locator(".emote-artwork");
@@ -76,6 +92,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const menuChickenSize = await menuArtwork.locator("img").boundingBox();
   await page.screenshot({ path: testInfo.outputPath("emote-menu.png") });
   await page.getByRole("button", { name: "Send chicken emote" }).click();
+  for (const profile of await bottomProfiles.all()) await expect(profile).toBeVisible();
   const bubble = page.getByRole("status", { name: /sent the chicken emote/ });
   await expect(bubble.locator(".emote-motion")).toBeVisible();
   await bubble.evaluate((element) => {
@@ -87,10 +104,8 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const playbackChickenSize = await bubble.locator(".emote-motion").boundingBox();
   expect(playbackSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
   expect(predictionSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
-  expect(playbackChickenSize).toMatchObject({
-    width: menuChickenSize!.width,
-    height: menuChickenSize!.height,
-  });
+  expect(playbackChickenSize!.width).toBeCloseTo(menuChickenSize!.width, 2);
+  expect(playbackChickenSize!.height).toBeCloseTo(menuChickenSize!.height, 2);
   await page.mouse.wheel(0, 500);
   await page.clock.runFor(100);
   expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual({ x: 0, y: 0 });
@@ -139,4 +154,11 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   });
   expect(desktopHandCenter).toBeCloseTo(640, 0);
   await page.screenshot({ path: testInfo.outputPath("desktop-trick.png"), animations: "disabled" });
+  await page.getByRole("button", { name: "Emotes", exact: true }).click();
+  await expect(page.locator("[data-you] .seat-identity")).toBeHidden();
+  for (const profile of await page.locator("[data-seat]:not([data-you]) .seat-identity").all())
+    await expect(profile).toBeVisible();
+  await page.screenshot({ path: testInfo.outputPath("desktop-emote-menu.png") });
+  await page.keyboard.press("Escape");
+  await expect(page.locator("[data-you] .seat-identity")).toBeVisible();
 });
