@@ -108,7 +108,7 @@ export function PlayerSeat({
                   className="seat-elimination pointer-events-none absolute -inset-1.5 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
                 >
                   <img
-                    src="/skull.svg"
+                    src="/skull.png"
                     alt=""
                     className="size-full object-contain drop-shadow-[0_2px_1px_#302a3026]"
                     draggable={false}

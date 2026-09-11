@@ -1,5 +1,4 @@
-Skull and crossbones (U+2620) from Twemoji.
-Copyright Twitter, Inc. and other contributors.
-Source: https://github.com/jdecked/twemoji/blob/main/assets/svg/2620.svg
-Licensed under CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
-SVG artwork is unmodified. Displayed with CSS sizing, shadow, and animation.
+Apple skull and crossbones emoji (iOS 17.4), copyright Apple Inc.
+Source: https://emojipedia.org/apple/ios-17.4/skull-and-crossbones
+Image: https://em-content.zobj.net/source/apple/391/skull-and-crossbones_2620-fe0f.png
+Original PNG, unmodified.
