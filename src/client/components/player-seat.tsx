@@ -1,5 +1,4 @@
 import type { CSSProperties } from "react";
-import { Skull } from "lucide-react";
 import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
 import { cn, toRoman } from "../utils";
@@ -110,7 +109,29 @@ export function PlayerSeat({
                   key={round}
                   className="seat-elimination pointer-events-none absolute inset-0 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
                 >
-                  <Skull className="size-4/5 fill-[#d1d5db] text-[#636973]" strokeWidth={2} />
+                  <svg className="size-4/5" viewBox="0 0 32 32" fill="none">
+                    <path
+                      d="M16 3C8 3 4 7.5 4 14c0 4.5 2.5 7 6 8v5c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2v-5c3.5-1 6-3.5 6-8C28 7.5 24 3 16 3Z"
+                      fill="#e5e7eb"
+                      stroke="#636973"
+                      strokeWidth="1.8"
+                      strokeLinejoin="round"
+                    />
+                    <ellipse cx="10.5" cy="14.5" rx="4" ry="4.5" fill="#636973" />
+                    <ellipse cx="21.5" cy="14.5" rx="4" ry="4.5" fill="#636973" />
+                    <path
+                      d="m16 18-2.5 4h5L16 18Z"
+                      fill="#636973"
+                      stroke="#636973"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M14 25v4m4-4v4"
+                      stroke="#636973"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </span>
               )}
             </div>
