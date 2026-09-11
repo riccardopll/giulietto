@@ -39,7 +39,7 @@ export function AceSelection({
                     {[0, 1].map((index) => (
                       <Arrow
                         key={index}
-                        className="size-9 motion-safe:animate-[ace-arrow_1.2s_ease-in-out_infinite]"
+                        className="size-9 animate-[ace-arrow_1.2s_ease-in-out_infinite]"
                         strokeWidth={3}
                         style={{
                           animationDelay: `${index * 0.15}s`,

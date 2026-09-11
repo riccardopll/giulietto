@@ -161,4 +161,17 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.screenshot({ path: testInfo.outputPath("desktop-emote-menu.png") });
   await page.keyboard.press("Escape");
   await expect(page.locator("[data-you] .seat-identity")).toBeVisible();
+  await page.getByRole("button", { name: "Preview settings", exact: true }).click();
+  await page.getByRole("button", { name: "Test ace selection", exact: true }).click();
+  const aceDialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
+  const arrows = aceDialog.locator("svg.lucide-arrow-down, svg.lucide-arrow-up");
+  await expect(arrows).toHaveCount(4);
+  // Keep arrows animated even when the browser requests reduced motion.
+  expect(
+    await arrows.evaluateAll((elements) =>
+      elements.map((element) => getComputedStyle(element).animationName),
+    ),
+  ).toEqual(["ace-arrow", "ace-arrow", "ace-arrow", "ace-arrow"]);
+  await page.keyboard.press("Escape");
+  await expect(aceDialog).toBeHidden();
 });
