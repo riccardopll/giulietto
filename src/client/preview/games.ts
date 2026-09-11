@@ -11,7 +11,7 @@ import {
   type Game,
 } from "../../shared/game.ts";
 
-export type PreviewPhase = "playing" | "bidding" | "trick" | "results" | "blind";
+export type PreviewPhase = "lobby" | "playing" | "bidding" | "trick" | "results" | "blind";
 export type PreviewSeatState = "active" | "eliminated";
 export type PreviewOptions = {
   people: number;
@@ -57,6 +57,7 @@ export function normalizePreview(options: PreviewOptions): Required<PreviewOptio
 }
 
 export function advancePreview(source: Game): Game {
+  if (source.phase === "lobby") return source;
   const game = structuredClone(source);
   const now = Date.now();
   if (game.phase === "bidding") {
@@ -91,6 +92,12 @@ export function makePreview(input: PreviewOptions): Game {
   let game = makeGame(`PREVIEW${people}`, players[0], false);
   game.players = players;
   game.startingLives = startingLives;
+  if (phase === "lobby") {
+    game.players.forEach((p) => {
+      p.lives = startingLives;
+    });
+    return game;
+  }
   game.round = 6 * options.cycle + 6 - cards;
   deal(game, Date.now());
   // Use a stable seat order so repeated resets are easy to compare.

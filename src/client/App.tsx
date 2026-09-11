@@ -383,6 +383,10 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onStart={() => void act("start")}
                 onSettings={(startingLives) => act("settings", { startingLives })}
                 onRename={async (name) => {
+                  if (preview) {
+                    preview.command("rename", { name });
+                    return true;
+                  }
                   await act("rename", { name });
                   return gameRef.current?.viewerName === name.trim();
                 }}
