@@ -107,12 +107,12 @@ export function PlayerSeat({
               {player.lives <= 0 && (
                 <span
                   key={round}
-                  className="seat-elimination pointer-events-none absolute inset-0 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
+                  className="seat-elimination pointer-events-none absolute -inset-1.5 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
                 >
                   <img
                     src="/skull.svg"
                     alt=""
-                    className="size-4/5 object-contain"
+                    className="size-full object-contain [filter:drop-shadow(0_1px_0_#f3f4f6)_drop-shadow(0_2px_0_#454b54)_drop-shadow(0_4px_2px_#302a3066)]"
                     draggable={false}
                   />
                 </span>
@@ -120,7 +120,7 @@ export function PlayerSeat({
             </div>
             <span
               className={cn(
-                "seat-number absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-5 sm:min-w-5 sm:text-[10px]",
+                "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-5 sm:min-w-5 sm:text-[10px]",
                 current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
               )}
               aria-label={`Seat ${toRoman(number)}`}
