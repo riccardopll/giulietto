@@ -191,7 +191,7 @@ export function Lobby({
                       {player.name}
                       {player.id === game.you ? " (you)" : ""}
                     </strong>
-                    <span className="text-xs">{player.id === game.host ? "Host" : "Ready"}</span>
+                    {player.id === game.host && <span className="text-xs">Host</span>}
                   </div>
                   {player.id === game.you && (
                     <Button
