@@ -5,7 +5,7 @@ import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 type State = ReturnType<typeof view>;
 
@@ -117,10 +117,9 @@ export function Lobby({
           if (!busy) setEditing(open);
         }}
       >
-        <DialogContent>
+        <DialogContent aria-describedby={undefined}>
           <DialogHeader>
             <DialogTitle>Edit your name</DialogTitle>
-            <DialogDescription>Choose the name other players see.</DialogDescription>
           </DialogHeader>
           <form
             className="grid gap-4"
@@ -130,21 +129,17 @@ export function Lobby({
               if (await onRename(draftName)) setEditing(false);
             }}
           >
-            <div className="grid gap-2">
-              <label htmlFor="lobby-name" className="text-sm font-medium">
-                Display name
-              </label>
-              <Input
-                id="lobby-name"
-                className="h-12 text-base md:text-base"
-                autoComplete="nickname"
-                maxLength={20}
-                value={draftName}
-                disabled={busy}
-                onChange={(event) => setDraftName(event.target.value)}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
+            <Input
+              id="lobby-name"
+              aria-label="Display name"
+              className="h-12 text-base md:text-base"
+              autoComplete="nickname"
+              maxLength={20}
+              value={draftName}
+              disabled={busy}
+              onChange={(event) => setDraftName(event.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-2">
               <Button
                 type="button"
                 variant="outline"
