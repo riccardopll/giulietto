@@ -15,10 +15,7 @@ export function AceSelection({
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-w-[min(20rem,calc(100%-2rem))] gap-0 border-0 bg-transparent p-2 shadow-none sm:max-w-80"
-      >
+      <DialogContent className="max-w-[min(20rem,calc(100%-2rem))] gap-0 border-0 bg-transparent p-2 shadow-none sm:max-w-80">
         <DialogHeader className="sr-only">
           <DialogTitle>Ace of Coins</DialogTitle>
           <DialogDescription>Choose its value before playing.</DialogDescription>
