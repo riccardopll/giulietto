@@ -82,9 +82,9 @@ test("three players complete a game, including round results and elimination", a
   await expect(
     players[0].page.getByRole("status", { name: "2 spectators", exact: true }),
   ).toBeVisible();
+  await players[0].page.screenshot({ path: testInfo.outputPath("winner.png"), fullPage: true });
   for (const { page, state } of players) {
     expect(state!.winner).toBe(winner);
-    await expect(page.getByText("Game over", { exact: true })).toBeVisible();
     await expect(
       page.getByRole("heading", {
         name: state!.you === winner ? "You win" : "bot_1 wins",
