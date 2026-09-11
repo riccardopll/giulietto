@@ -66,3 +66,20 @@ export function savePlayerName(name: string) {
   // Replace incomplete Unicode characters before encoding the cookie.
   writeCookie(nameKey, new TextDecoder().decode(new TextEncoder().encode(name)));
 }
+
+export function restoreSession() {
+  try {
+    const player = restorePlayer();
+    const code = new URLSearchParams(location.search).get("table")?.toUpperCase() || "";
+    const joinCode = code || readStored("giulietto-room");
+    return {
+      ...player,
+      name: player.name || (joinCode ? "Guest" : ""),
+      code,
+      joinCode,
+      error: "",
+    };
+  } catch {
+    return { token: "", name: "", code: "", joinCode: null, error: cookieError };
+  }
+}

@@ -23,13 +23,29 @@ export const test = base.extend<{ players: Player[] }>({
             if (message.state?.you) player.state = message.state;
           });
         });
-        await page.goto(i === 0 ? "/" : `/?table=${players[0].state!.code}`);
-        await page.getByLabel("Display name").fill(`bot_${i + 1}`);
-        await page
-          .getByRole("button", { name: i === 0 ? "Create private lobby" : "Join", exact: true })
-          .click();
+        if (i === 0) {
+          await page.goto("/");
+          await page.getByLabel("Display name").fill("bot_1");
+          await page.getByRole("button", { name: "Create private lobby", exact: true }).click();
+        } else {
+          await page.goto(`/?table=${players[0].state!.code.toLowerCase()}`);
+        }
         await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
         await expect.poll(() => player.state?.phase).toBe("lobby");
+        await expect(page.getByRole("button", { name: "Edit your name", exact: true })).toHaveCount(
+          1,
+        );
+        if (i > 0) {
+          await page.getByRole("button", { name: "Edit your name", exact: true }).click();
+          await page.getByLabel("Display name", { exact: true }).fill(`bot_${i + 1}`);
+          await page.getByRole("button", { name: "Save name", exact: true }).click();
+          await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
+          await expect.poll(() => player.state?.viewerName).toBe(`bot_${i + 1}`);
+          expect(
+            (await page.context().cookies()).find((cookie) => cookie.name === "giulietto-name")
+              ?.value,
+          ).toBe(`bot_${i + 1}`);
+        }
       }
       await synced(players, (state) => state.players.length === 3);
       await use(players);

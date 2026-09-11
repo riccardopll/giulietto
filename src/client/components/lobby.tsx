@@ -1,9 +1,11 @@
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowRight, Check, Link } from "lucide-react";
+import { ArrowRight, Check, Link, Pencil } from "lucide-react";
 import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type view } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 
 type State = ReturnType<typeof view>;
 
@@ -95,6 +97,7 @@ export function Lobby({
   onCopy,
   onStart,
   onSettings,
+  onRename,
 }: {
   game: State;
   busy: boolean;
@@ -102,9 +105,57 @@ export function Lobby({
   onCopy: () => void;
   onStart: () => void;
   onSettings: (startingLives: number) => Promise<void>;
+  onRename: (name: string) => Promise<boolean>;
 }) {
+  const [editing, setEditing] = useState(false);
+  const [draftName, setDraftName] = useState(game.viewerName);
   return (
     <section className="mx-auto w-full max-w-xl py-3 sm:py-5">
+      <Dialog
+        open={editing}
+        onOpenChange={(open) => {
+          if (!busy) setEditing(open);
+        }}
+      >
+        <DialogContent aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>Edit your name</DialogTitle>
+          </DialogHeader>
+          <form
+            className="grid gap-4"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (busy || !draftName.trim()) return;
+              if (await onRename(draftName)) setEditing(false);
+            }}
+          >
+            <Input
+              id="lobby-name"
+              aria-label="Display name"
+              className="h-12 text-base md:text-base"
+              autoComplete="nickname"
+              maxLength={20}
+              value={draftName}
+              disabled={busy}
+              onChange={(event) => setDraftName(event.target.value)}
+            />
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                disabled={busy}
+                onClick={() => setEditing(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" className="min-h-11" disabled={busy || !draftName.trim()}>
+                {busy ? "Saving…" : "Save name"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
         {game.host !== game.you && (
@@ -140,8 +191,23 @@ export function Lobby({
                       {player.name}
                       {player.id === game.you ? " (you)" : ""}
                     </strong>
-                    <span className="text-xs">{player.id === game.host ? "Host" : "Ready"}</span>
+                    {player.id === game.host && <span className="text-xs">Host</span>}
                   </div>
+                  {player.id === game.you && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 shrink-0"
+                      aria-label="Edit your name"
+                      disabled={busy}
+                      onClick={() => {
+                        setDraftName(game.viewerName);
+                        setEditing(true);
+                      }}
+                    >
+                      <Pencil className="size-4" />
+                    </Button>
+                  )}
                   <Lives n={game.startingLives} />
                 </>
               ) : (

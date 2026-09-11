@@ -17,9 +17,18 @@ export function command(value: unknown): Command {
     throw new GameError("Invalid request.");
   const b = value as Record<string, unknown>;
   if (
-    !["create", "match", "join", "settings", "start", "bid", "play", "emote", "leave"].includes(
-      String(b.action),
-    )
+    ![
+      "create",
+      "match",
+      "join",
+      "rename",
+      "settings",
+      "start",
+      "bid",
+      "play",
+      "emote",
+      "leave",
+    ].includes(String(b.action))
   )
     throw new GameError("Unknown action.");
   if (typeof b.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.commandId))
@@ -60,7 +69,11 @@ export function apply(g: Game, id: string, b: Command, now: number) {
   const p = g.players.find((p) => p.id === id);
   if (!p) throw new GameError("Join this table first.");
   p.seen = now;
-  if (b.action === "emote") {
+  if (b.action === "rename") {
+    if (g.phase !== "lobby") throw new GameError("Names can only change in the lobby.");
+    if (typeof b.name !== "string") throw new GameError("Enter a display name.");
+    p.name = displayName(b.name);
+  } else if (b.action === "emote") {
     sendEmote(g, id, b.emote, now);
   } else if (b.action === "settings") {
     if (g.host !== id) throw new GameError("Only the host can change starting lives.");

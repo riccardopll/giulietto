@@ -59,6 +59,37 @@ for (const { visibility, action } of [
   });
 }
 
+test("players rename only themselves in the lobby and keep the name on reconnect", async ({
+  api,
+}) => {
+  const host = guest(1);
+  const other = guest(2);
+  const { code, you: hostId } = await api.state(host, { action: "create" });
+  const joined = await api.state(other, { action: "join", code });
+  const observer = await api.connect(host, code);
+  const socket = await api.connect(other, code);
+  for (const name of ["", "   ", null, 42]) {
+    expect((await socket.command({ action: "rename", name })).type).toBe("error");
+  }
+  expect((await api.post(guest(3), { action: "rename", code, name: "bot_3" })).status).toBe(400);
+  expect((await socket.command({ action: "rename", name: "  bot_3  ", id: hostId })).type).toBe(
+    "ack",
+  );
+  await expect
+    .poll(() => observer.latest()?.players.map((player) => player.name))
+    .toEqual(["bot_1", "bot_3"]);
+  socket.close();
+  const resumed = await api.state(other, { action: "join", code });
+  expect(resumed).toMatchObject({ you: joined.you, viewerName: "bot_3" });
+  const renamed = await api.state(other, { action: "rename", code, name: "bot_2" });
+  expect(renamed.viewerName).toBe("bot_2");
+  await api.state(host, { action: "start", code });
+  expect((await api.post(other, { action: "rename", code, name: "bot_3" })).status).toBe(400);
+  const spectator = guest(3);
+  await api.state(spectator, { action: "join", code });
+  expect((await api.post(spectator, { action: "rename", code, name: "bot_4" })).status).toBe(400);
+});
+
 test("WebSockets send each player their own hand and broadcast accepted moves", async ({ api }) => {
   const host = guest(1);
   const other = guest(2);

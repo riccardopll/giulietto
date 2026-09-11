@@ -5,7 +5,7 @@ import App from "../App";
 import { AceSelection } from "../components/ace-selection";
 import { sendEmote } from "@/shared/emotes";
 import { Button } from "../components/ui/button";
-import { bid, play, view, type Game } from "../../shared/game";
+import { bid, deal, play, view, type Game } from "../../shared/game";
 import {
   advancePreview,
   makePreview,
@@ -17,7 +17,7 @@ import {
 
 type Entry = { options: Required<PreviewOptions>; game: Game; reset: number };
 const counts = [2, 3, 4, 5, 6];
-const phases: PreviewPhase[] = ["playing", "bidding", "trick", "results", "blind"];
+const phases: PreviewPhase[] = ["lobby", "playing", "bidding", "trick", "results", "blind"];
 const seatStates: PreviewSeatState[] = ["active", "eliminated"];
 const selectClass =
   "h-11 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none disabled:opacity-50";
@@ -131,12 +131,12 @@ export function Preview() {
   }, []);
 
   useEffect(() => {
-    if (!running) return;
+    if (!running || entry.game.phase === "lobby") return;
     const timer = setInterval(() => {
       setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people]) }));
     }, 1800);
     return () => clearInterval(timer);
-  }, [running, people]);
+  }, [running, people, entry.game.phase]);
 
   const navigate = useEffectEvent(() => {
     const { options, viewer } = readSettings();
@@ -188,7 +188,15 @@ export function Preview() {
     if (viewer === -1) return;
     const game = structuredClone(entry.game);
     const id = game.players[viewer].id;
-    if (action === "emote") sendEmote(game, id, extra.emote, Date.now());
+    if (action === "rename" && game.phase === "lobby")
+      game.players[viewer].name = String(extra.name).trim().slice(0, 20);
+    else if (action === "settings" && game.phase === "lobby") {
+      game.startingLives = Number(extra.startingLives);
+      game.players.forEach((p) => {
+        p.lives = game.startingLives;
+      });
+    } else if (action === "start" && game.phase === "lobby") deal(game, Date.now());
+    else if (action === "emote") sendEmote(game, id, extra.emote, Date.now());
     else if (action === "bid") bid(game, id, Number(extra.bid), Date.now());
     else if (action === "play") {
       const card = Number(extra.card);
@@ -230,6 +238,17 @@ export function Preview() {
               </Button>
             </Dialog.Close>
           </div>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full"
+            onClick={() => {
+              setViewer(0);
+              configure({ phase: "lobby" });
+              setControlsOpen(false);
+            }}
+          >
+            Show lobby
+          </Button>
           <div className="grid grid-cols-2 gap-3">
             <label className={labelClass}>
               Players
@@ -256,6 +275,7 @@ export function Preview() {
                 value={entry.options.phase}
                 onChange={(e) => configure({ phase: e.target.value as PreviewPhase })}
               >
+                <option value="lobby">Lobby</option>
                 <option value="playing">Playing</option>
                 <option value="bidding">Predictions</option>
                 <option value="trick">Trick won</option>
@@ -268,6 +288,7 @@ export function Preview() {
               <select
                 className={selectClass}
                 value={entry.options.cycle}
+                disabled={entry.options.phase === "lobby"}
                 onChange={(e) => configure({ cycle: Number(e.target.value) })}
               >
                 {[0, 1, 2, 3, 4].map((cycle) => (
@@ -281,7 +302,7 @@ export function Preview() {
               Cards each
               <select
                 className={selectClass}
-                disabled={entry.options.phase === "blind"}
+                disabled={entry.options.phase === "blind" || entry.options.phase === "lobby"}
                 value={entry.options.phase === "blind" ? 1 : entry.options.cards}
                 onChange={(e) => configure({ cards: Number(e.target.value) })}
               >
@@ -370,6 +391,7 @@ export function Preview() {
                 <select
                   className={selectClass}
                   value={state}
+                  disabled={entry.options.phase === "lobby"}
                   onChange={(e) =>
                     configure({
                       seatStates: entry.options.seatStates.map((value, seat) =>
@@ -442,6 +464,7 @@ export function Preview() {
               className="h-11 px-2 text-xs"
               onClick={() => setRunning(!running)}
               aria-pressed={running}
+              disabled={entry.game.phase === "lobby"}
             >
               {running ? "Pause" : "Autoplay"}
             </Button>
@@ -449,6 +472,7 @@ export function Preview() {
               variant="outline"
               className="h-11 gap-1 px-2 text-xs"
               onClick={step}
+              disabled={entry.game.phase === "lobby"}
               aria-keyshortcuts="n"
               title="Next move (N)"
             >
