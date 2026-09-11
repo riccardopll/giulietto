@@ -348,6 +348,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         />
         {!game ? (
           <Home
+            token={session.token}
             name={name}
             code={code}
             ready={ready}
