@@ -75,6 +75,23 @@
     transform: translateY(0);
   }
 }
+@keyframes seat-elimination {
+  0% {
+    opacity: 0;
+    transform: scale(0.35) rotate(-18deg);
+  }
+  55% {
+    opacity: 1;
+    transform: scale(1.12) rotate(8deg);
+  }
+  78% {
+    transform: scale(0.94) rotate(-4deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0);
+  }
+}
 @keyframes pending-pulse {
   from {
     opacity: 0.15;

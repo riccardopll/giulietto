@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { Skull } from "lucide-react";
 import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
 import { cn, toRoman } from "../utils";
@@ -90,7 +91,7 @@ export function PlayerSeat({
             )}
             <div
               className={cn(
-                "seat-avatar grid place-items-center rounded-full border-2 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
+                "seat-avatar relative grid place-items-center rounded-full border-2 border-background font-semibold shadow-[0_0_0_1px_#6f4a5e12]",
                 you
                   ? "size-9 text-lg @min-2xl/board:size-12 @min-2xl/board:text-2xl"
                   : "size-7 text-sm @min-2xl/board:size-10 @min-2xl/board:text-xl",
@@ -101,7 +102,17 @@ export function PlayerSeat({
               style={{ "--avatar-hue": avatarHue(player.id) } as CSSProperties}
               aria-hidden="true"
             >
-              {Array.from(player.name)[0]?.toLocaleUpperCase()}
+              <span className={player.lives <= 0 ? "opacity-15" : undefined}>
+                {Array.from(player.name)[0]?.toLocaleUpperCase()}
+              </span>
+              {player.lives <= 0 && (
+                <span
+                  key={round}
+                  className="seat-elimination pointer-events-none absolute inset-0 grid place-items-center motion-safe:animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
+                >
+                  <Skull className="size-4/5 fill-[#d1d5db] text-[#636973]" strokeWidth={2} />
+                </span>
+              )}
             </div>
             <span
               className={cn(
