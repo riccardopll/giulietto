@@ -55,23 +55,26 @@ export function EmoteBubble({
 }
 
 export function EmotePicker({
+  open,
+  onOpenChange,
   disabled,
   emote,
   serverTime,
   onSend,
 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   disabled: boolean;
   emote?: Emote;
   serverTime: number;
   onSend: () => void;
 }) {
-  const [open, setOpen] = useState(false);
   useEffect(() => {
     void preloadWebp("/emotes/chicken.webp").catch(() => {});
   }, []);
   const coolingDown = useRecent(emote?.sentAt, serverTime, EMOTE_COOLDOWN_MS);
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Trigger asChild>
         <Button
           variant="ghost"
@@ -83,16 +86,16 @@ export function EmotePicker({
           <Smile className="size-7" aria-hidden="true" />
         </Button>
       </Popover.Trigger>
+      <Popover.Anchor className="pointer-events-none absolute left-1/2 top-0 size-px -translate-x-1/2" />
       <Popover.Portal>
         <Popover.Content
           side="top"
-          align="end"
-          alignOffset={-88}
-          sideOffset={6}
+          align="center"
+          sideOffset={16}
           collisionPadding={12}
           aria-label="Emotes"
           onOpenAutoFocus={(event) => event.preventDefault()}
-          className="z-50 grid w-auto grid-cols-3 gap-x-3 gap-y-6 bg-transparent px-2 pt-6 pb-2"
+          className="z-50 grid w-auto grid-cols-3 gap-1 sm:gap-3 bg-transparent p-2"
         >
           <button
             type="button"
@@ -101,7 +104,7 @@ export function EmotePicker({
             onClick={() => {
               if (disabled || coolingDown) return;
               onSend();
-              setOpen(false);
+              onOpenChange(false);
             }}
           >
             <BubbleArtwork>
