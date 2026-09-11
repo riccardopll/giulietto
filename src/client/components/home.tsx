@@ -2,7 +2,10 @@ import { Globe2, Loader2, Users } from "lucide-react";
 import { Button } from "@/client/components/ui/button";
 import { Input } from "@/client/components/ui/input";
 
+import { PlayerStats } from "./player-stats";
+
 type HomeProps = {
+  token: string;
   name: string;
   code: string;
   ready: boolean;
@@ -15,7 +18,16 @@ type HomeProps = {
 const inputClass = "h-13 rounded-lg bg-card px-4 text-base md:text-base";
 const actionClass = "h-auto min-h-12 w-full rounded-lg px-4 py-3 text-sm whitespace-normal";
 
-export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAction }: HomeProps) {
+export function Home({
+  token,
+  name,
+  code,
+  ready,
+  busy,
+  onNameChange,
+  onCodeChange,
+  onAction,
+}: HomeProps) {
   return (
     <main className="mx-auto w-full max-w-sm py-6 sm:py-8">
       <div className="grid gap-2.5">
@@ -92,6 +104,7 @@ export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAc
           </Button>
         </div>
       </form>
+      {ready && <PlayerStats token={token} />}
     </main>
   );
 }
