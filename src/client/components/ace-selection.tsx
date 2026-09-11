@@ -32,7 +32,7 @@ export function AceSelection({
                 type="button"
                 disabled={disabled}
                 onClick={() => onSelect(mode)}
-                className="grid min-w-0 gap-3 rounded-lg p-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                className="grid min-w-0 rounded-lg p-1 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
               >
                 <span className="relative block" aria-hidden="true">
                   <PlayingCard card={31} />
@@ -49,9 +49,7 @@ export function AceSelection({
                     </span>
                   </span>
                 </span>
-                <span className="text-sm font-semibold text-white [text-shadow:0_1px_3px_#000]">
-                  {mode === "low" ? "Low · 0" : "High · 41"}
-                </span>
+                <span className="sr-only">{mode === "low" ? "Low · 0" : "High · 41"}</span>
               </button>
             );
           })}
