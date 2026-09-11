@@ -23,11 +23,16 @@ export const test = base.extend<{ players: Player[] }>({
             if (message.state?.you) player.state = message.state;
           });
         });
-        await page.goto(i === 0 ? "/" : `/?table=${players[0].state!.code}`);
-        await page.getByLabel("Display name").fill(`bot_${i + 1}`);
-        await page
-          .getByRole("button", { name: i === 0 ? "Create private lobby" : "Join", exact: true })
-          .click();
+        if (i === 0) {
+          await page.goto("/");
+          await page.getByLabel("Display name").fill("bot_1");
+          await page.getByRole("button", { name: "Create private lobby", exact: true }).click();
+        } else {
+          await page
+            .context()
+            .addCookies([{ name: "giulietto-name", value: `bot_${i + 1}`, url: baseURL! }]);
+          await page.goto(`/?table=${players[0].state!.code.toLowerCase()}`);
+        }
         await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
         await expect.poll(() => player.state?.phase).toBe("lobby");
       }

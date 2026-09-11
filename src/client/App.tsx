@@ -19,7 +19,7 @@ import { GameConnection } from "./game-connection";
 import {
   cookieError,
   readStored,
-  restorePlayer,
+  restoreSession,
   savePlayerName,
   storeRoom,
 } from "./player-session";
@@ -35,28 +35,6 @@ async function readResponse<T>(response: Response): Promise<T> {
   return data;
 }
 
-function restoreSession() {
-  try {
-    const player = restorePlayer();
-    const invite = new URLSearchParams(location.search).get("table")?.toUpperCase() || "";
-    const saved = readStored("giulietto-room");
-    return {
-      ...player,
-      code: invite,
-      saved: saved && (!invite || saved === invite) ? saved : null,
-      error: "",
-    };
-  } catch {
-    return {
-      token: "",
-      name: "",
-      code: "",
-      saved: null,
-      error: cookieError,
-    };
-  }
-}
-
 export type PreviewSession = {
   state: State;
   exitControl?: ReactNode;
@@ -67,13 +45,13 @@ export type PreviewSession = {
 export default function App({ preview }: { preview?: PreviewSession }) {
   const isPreview = !!preview;
   const [session] = useState(() =>
-    preview ? { name: "bot_1", code: "", saved: null, token: "", error: "" } : restoreSession(),
+    preview ? { name: "bot_1", code: "", joinCode: null, token: "", error: "" } : restoreSession(),
   );
   const [name, setName] = useState(session.name);
   const [code, setCode] = useState(session.code);
   const [liveGame, setGame] = useState<State | null>(null);
   const game = preview?.state ?? liveGame;
-  const [busy, setBusy] = useState(!!session.saved);
+  const [busy, setBusy] = useState(!!session.joinCode);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [connection, setConnection] = useState("");
   const [copied, setCopied] = useState(false);
@@ -85,7 +63,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const token = useRef(session.token);
   const transport = useRef<GameConnection | null>(null);
   const gameRef = useRef<State | null>(null);
-  const busyRef = useRef(!!session.saved);
+  const busyRef = useRef(!!session.joinCode);
   const clockOffset = useRef(0);
   function setError(message: string) {
     if (message) toast.error(message, { id: "game-error", duration: 4500 });
@@ -116,20 +94,23 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   useEffect(() => {
     if (isPreview) return;
     if (session.error) setError(session.error);
-    if (session.saved) {
+    if (session.joinCode) {
       fetch("/api/game", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-player-token": token.current },
         body: JSON.stringify({
           action: "join",
           commandId: crypto.randomUUID(),
-          code: session.saved,
+          code: session.joinCode,
           name: session.name,
         }),
       })
         .then(readResponse<State>)
         .then(accept)
-        .catch(() => storeRoom(null))
+        .catch((error: Error) => {
+          if (readStored("giulietto-room") === session.joinCode) storeRoom(null);
+          if (session.code) setError(error.message);
+        })
         .finally(() => {
           setBusy(false);
           busyRef.current = false;
