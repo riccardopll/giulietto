@@ -209,9 +209,25 @@ test("reconnected players resume and late spectators receive live updates", asyn
   const { code } = await api.state(host, { action: "create" });
   await api.state(other, { action: "join", code });
   const connection = await api.connect(host, code);
-  await connection.command({ action: "start" });
+  const start = { action: "start", commandId: crypto.randomUUID() };
+  await connection.command(start);
   const before = connection.latest()!;
+  const openedLog = () =>
+    api.logs.find((log) => log.includes("event: 'opened'") && log.includes(before.you));
+  await expect.poll(openedLog).toBeDefined();
+  const connectionId = openedLog()!.match(/connectionId: '([^']+)'/)![1];
   connection.close();
+  await expect
+    .poll(() =>
+      api.logs.some(
+        (log) =>
+          log.includes("event: 'closed'") &&
+          log.includes(connectionId) &&
+          log.includes(before.you) &&
+          log.includes(code),
+      ),
+    )
+    .toBe(true);
   const resumed = await api.state(host, { action: "join", code });
   expect(resumed.you).toBe(before.you);
   expect(resumed.players).toEqual(
@@ -219,6 +235,10 @@ test("reconnected players resume and late spectators receive live updates", asyn
   );
   const reconnected = await api.connect(host, code);
   expect(reconnected.latest()!.spectating).toBe(false);
+  expect(await reconnected.command(start)).toMatchObject({
+    type: "ack",
+    state: { revision: resumed.revision },
+  });
   const watching = await api.state(watcher, { action: "join", code });
   expect(watching.spectating).toBe(true);
   expect(watching.players).toHaveLength(2);
@@ -244,7 +264,22 @@ test("reconnected players resume and late spectators receive live updates", asyn
   await watchingAgain.command({ action: "leave" });
   await expect.poll(() => reconnected.latest()?.spectatorCount).toBe(0);
   expect((await api.get(watcher, code)).status).toBe(400);
+  await expect
+    .poll(() =>
+      api.logs.some(
+        (log) =>
+          log.includes("request_failed") &&
+          log.includes(watching.you) &&
+          log.includes(code) &&
+          log.includes("Join this table first."),
+      ),
+    )
+    .toBe(true);
   expect((await api.state(watcher, { action: "join", code })).spectating).toBe(true);
+  const restored = await api.connect(watcher, code);
+  expect(restored.latest()!.spectating).toBe(true);
+  expect(restored.latest()!.players).toHaveLength(2);
+  expect(api.logs.join("\n")).not.toContain(watcher.token);
 });
 
 test("matchmaking skips games that have started", async ({ api }) => {

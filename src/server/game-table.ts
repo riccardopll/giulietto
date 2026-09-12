@@ -14,7 +14,7 @@ type Record = {
   failures?: number;
   deliveredSequence: number;
 };
-type Attachment = { id: string };
+type Attachment = { id: string; roomCode: string; connectionId?: string };
 const DAY = 86400000;
 
 export class GameTable extends DurableObject<Env> {
@@ -35,10 +35,27 @@ export class GameTable extends DurableObject<Env> {
   private read() {
     return this.ctx.storage.kv.get("room") as Record | undefined;
   }
+  private logConnection(
+    event: string,
+    attachment: Attachment,
+    details: { [key: string]: unknown } = {},
+  ) {
+    console.log({
+      message: "websocket_connection",
+      event,
+      playerId: attachment.id,
+      connectionId: attachment.connectionId ?? null,
+      roomCode: attachment.roomCode,
+      ...details,
+    });
+  }
   private send(ws: WebSocket, message: unknown) {
     try {
       ws.send(JSON.stringify(message));
-    } catch {
+    } catch (error) {
+      this.logConnection("send_failed", ws.deserializeAttachment() as Attachment, {
+        reason: error instanceof Error ? error.message : "WebSocket send failed",
+      });
       ws.close(1011, "Reconnect");
     }
   }
@@ -172,10 +189,11 @@ export class GameTable extends DurableObject<Env> {
   }
   async fetch(req: Request) {
     return this.ctx.blockConcurrencyWhile(async () => {
+      const url = new URL(req.url);
+      const code = url.pathname.split("/")[1];
+      const id = req.headers.get("x-player-id")!;
+      const attachment: Attachment = { id, roomCode: code };
       try {
-        const url = new URL(req.url);
-        const code = url.pathname.split("/")[1];
-        const id = req.headers.get("x-player-id")!;
         if (url.pathname.endsWith("/create")) {
           const b = (await req.json()) as Command;
           let r = this.read();
@@ -207,9 +225,14 @@ export class GameTable extends DurableObject<Env> {
           if (sockets.length >= 3) sockets[0].close(4002, "Connected in another tab.");
           const { 0: client, 1: server } = new WebSocketPair();
           this.ctx.acceptWebSocket(server, [id]);
-          server.serializeAttachment({ id } satisfies Attachment);
+          attachment.connectionId = crypto.randomUUID();
+          server.serializeAttachment(attachment);
           this.broadcast(r.game);
           await this.schedule(r);
+          this.logConnection("opened", attachment, {
+            matchId: r.game.matchId ?? null,
+            phase: r.game.phase,
+          });
           return new Response(null, {
             status: 101,
             webSocket: client,
@@ -220,7 +243,14 @@ export class GameTable extends DurableObject<Env> {
         const { state } = await this.execute(r, id, command(await req.json()));
         return Response.json(state);
       } catch (error) {
-        return failure(error);
+        const response = failure(error);
+        this.logConnection("request_failed", attachment, {
+          path: url.pathname,
+          method: req.method,
+          status: response.status,
+          reason: error instanceof GameError ? error.message : "Table temporarily unavailable",
+        });
+        return response;
       }
     });
   }
@@ -279,6 +309,7 @@ export class GameTable extends DurableObject<Env> {
           commandId: commandId ?? null,
           action: action ?? null,
           playerId: playerId ?? null,
+          connectionId: (ws.deserializeAttachment() as Attachment).connectionId ?? null,
           roomCode: g?.code ?? null,
           matchId: g?.matchId ?? null,
           revision: g?.revision ?? null,
@@ -288,9 +319,17 @@ export class GameTable extends DurableObject<Env> {
       }
     });
   }
-  async webSocketClose(ws: WebSocket, code: number) {
+  async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
+    this.logConnection("closed", ws.deserializeAttachment() as Attachment, {
+      code,
+      reason,
+      wasClean,
+    });
     // Complete the handshake without echoing reserved, diagnostic-only codes.
     ws.close([1004, 1005, 1006, 1015].includes(code) ? 1000 : code);
+    await this.disconnected(ws);
+  }
+  private async disconnected(ws: WebSocket) {
     await this.ctx.blockConcurrencyWhile(async () => {
       const r = this.read();
       if (!r) return;
@@ -307,9 +346,12 @@ export class GameTable extends DurableObject<Env> {
       await this.schedule(r);
     });
   }
-  async webSocketError(ws: WebSocket) {
+  async webSocketError(ws: WebSocket, error: unknown) {
+    this.logConnection("error", ws.deserializeAttachment() as Attachment, {
+      reason: error instanceof Error ? error.message : "WebSocket error",
+    });
     ws.close(1011, "Reconnect");
-    await this.webSocketClose(ws, 1011);
+    await this.disconnected(ws);
   }
   async alarm() {
     const pending = await this.ctx.blockConcurrencyWhile(async () => {

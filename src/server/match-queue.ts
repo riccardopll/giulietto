@@ -34,10 +34,6 @@ export class MatchQueue extends DurableObject<Env> {
             // Persist the reservation target before cross-object I/O so retries cannot lose a seat.
             this.ctx.storage.kv.put(key, { code: candidate.code, at: Date.now() });
             const res = await send(candidate.code, "join", false, true);
-            if (res.ok) {
-              this.ctx.storage.kv.put(key, { code: candidate.code, at: Date.now() });
-              return res;
-            }
             if (res.status !== 400) return res;
             this.ctx.storage.kv.delete(key);
             unavailable.add(candidate.code);
