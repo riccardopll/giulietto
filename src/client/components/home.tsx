@@ -47,9 +47,6 @@ export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAc
         <a className="underline underline-offset-4" href="#about">
           About
         </a>
-        <a className="underline underline-offset-4" href="#rules">
-          How to play
-        </a>
       </nav>
       <div data-nosnippet>
         <div className="grid gap-2.5">
@@ -141,46 +138,6 @@ export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAc
           Create a private lobby and share the code with friends, or find a public table. Play
           directly in your browser, with no download or account required.
         </p>
-      </section>
-      <section id="rules" aria-labelledby="rules-title" className="mt-8 scroll-mt-6 border-t pt-7">
-        <h2 id="rules-title" className="text-lg font-semibold">
-          How to play Giulietto
-        </h2>
-        <ol className="mt-3 list-decimal space-y-4 pl-5 text-sm leading-6 text-muted-foreground">
-          <li>
-            <strong className="font-medium text-foreground">Join a table.</strong> Choose a display
-            name, create a private lobby or find a public table. The host starts with 2–6 players
-            and chooses 1–5 starting lives. The default is 3.
-          </li>
-          <li>
-            <strong className="font-medium text-foreground">Predict your tricks.</strong> Rounds
-            start with 6 cards per player, dropping to 1 before the cycle repeats. Bid how many
-            tricks you expect to win. The last player to bid cannot make the total predictions equal
-            the number of available tricks.
-          </li>
-          <li>
-            <strong className="font-medium text-foreground">Play a card.</strong> Everyone plays one
-            card per trick. You may play any card in your hand; there is no requirement to follow
-            suit. The highest card wins, and the winner leads the next trick.
-          </li>
-          <li>
-            <strong className="font-medium text-foreground">Know the card order.</strong> Coins beat
-            cups, cups beat swords, and swords beat clubs. Within each suit, the order from low to
-            high is ace, 2–7, jack, knight, king. The Ace of Coins is special: choose whether it is
-            the lowest or highest card when you play it.
-          </li>
-          <li>
-            <strong className="font-medium text-foreground">Keep your lives.</strong> Lose one life
-            for each trick above or below your prediction. Predict 2 and win 3, for example, and you
-            lose 1 life. At zero lives, you watch as a spectator. If everyone is eliminated in the
-            same round, all players return with 1 life.
-          </li>
-          <li>
-            <strong className="font-medium text-foreground">Play the blind round.</strong> With one
-            card each, you see the other active players’ cards but not your own. Predict your trick
-            before playing. Be the last player with lives remaining to win.
-          </li>
-        </ol>
       </section>
     </main>
   );
