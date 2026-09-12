@@ -9,8 +9,9 @@ This project is a work in progress. Prefer simpler architecture over backward
 compatibility. Remove obsolete code, schemas, data, and tests. Test current
 requirements; do not keep tests solely to record past bugs.
 
-Read [ARCHITECTURE.md](ARCHITECTURE.md) before changing the UI or game architecture.
-
-Read [DESIGN.md](DESIGN.md) before creating or changing emote artwork or animation.
+Read [ARCHITECTURE.md](ARCHITECTURE.md) before changing the UI, game architecture,
+emote artwork, or animation.
 
 Read [TESTS.md](TESTS.md) before testing.
+
+Read [PR.md](PR.md) before opening, updating, or merging a pull request.
