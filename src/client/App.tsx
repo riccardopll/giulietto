@@ -25,7 +25,7 @@ import {
   storeRoom,
 } from "./player-session";
 import { MatchBoard } from "./components/match-board";
-import { Home, HomeHeader, homeShellClass } from "./components/home";
+import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { ResultsPanel } from "./components/results-panel";
 type State = ReturnType<typeof view>;
@@ -275,71 +275,68 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         className={
           game && !waiting
             ? "match-screen safe-area mx-auto grid h-dvh max-w-6xl grid-rows-[auto_minmax(0,1fr)]"
-            : homeShellClass
+            : "safe-area mx-auto min-h-svh max-w-6xl [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
         }
       >
-        {!game ? (
-          <HomeHeader />
-        ) : (
-          <header className="site-header grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-20">
-            <div
-              className={`row-start-1 flex items-center gap-1 sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
+        <header className="site-header grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-20">
+          <div
+            className={`row-start-1 flex items-center gap-1 sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
+          >
+            <a
+              href="/"
+              className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "flex items-center gap-2 text-4xl"}`}
+              onClick={(e) => {
+                if (game) e.preventDefault();
+              }}
+              aria-label="Giulietto home"
             >
-              <a
-                href="/"
-                className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "text-4xl"}`}
-                onClick={(e) => {
-                  if (game) e.preventDefault();
-                }}
-                aria-label="Giulietto home"
+              {!game && <img src="/logo.png" width={48} height={48} alt="" className="size-12" />}
+              Giulietto
+            </a>
+            {game && !waiting && game.spectatorCount > 1 && (
+              <span
+                className="inline-flex items-center gap-1 text-sm text-muted-foreground tabular-nums"
+                role="status"
+                aria-label={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
+                title={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
               >
-                Giulietto
-              </a>
-              {game && !waiting && game.spectatorCount > 1 && (
-                <span
-                  className="inline-flex items-center gap-1 text-sm text-muted-foreground tabular-nums"
-                  role="status"
-                  aria-label={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
-                  title={`${game.spectatorCount} ${game.spectatorCount === 1 ? "spectator" : "spectators"}`}
-                >
-                  <Eye className="size-4" aria-hidden="true" />
-                  <span aria-hidden="true">{game.spectatorCount}</span>
-                </span>
-              )}
-            </div>
-            {game && !waiting && (
-              <h2 className="col-start-2 row-start-1 max-w-18 text-center text-base leading-tight font-semibold min-[360px]:max-w-none sm:text-2xl">
-                Round {toRoman(game.round)}
-              </h2>
+                <Eye className="size-4" aria-hidden="true" />
+                <span aria-hidden="true">{game.spectatorCount}</span>
+              </span>
             )}
-            {game && (
-              <div className="col-start-3 row-start-1 flex items-center justify-self-end">
+          </div>
+          {game && !waiting && (
+            <h2 className="col-start-2 row-start-1 max-w-18 text-center text-base leading-tight font-semibold min-[360px]:max-w-none sm:text-2xl">
+              Round {toRoman(game.round)}
+            </h2>
+          )}
+          {game && (
+            <div className="col-start-3 row-start-1 flex items-center justify-self-end">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-auto flex-nowrap gap-1 rounded-lg p-0 text-muted-foreground hover:bg-transparent sm:gap-2 sm:px-3"
+                onClick={copy}
+                aria-label="Copy lobby invite"
+              >
+                <span className="font-mono text-xs leading-none sm:text-sm sm:tracking-wide">
+                  {game.code}
+                </span>
+                {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
+              </Button>
+              {preview?.exitControl ?? (
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-11 w-auto flex-nowrap gap-1 rounded-lg p-0 text-muted-foreground hover:bg-transparent sm:gap-2 sm:px-3"
-                  onClick={copy}
-                  aria-label="Copy lobby invite"
+                  className="size-11 rounded-lg p-0 text-muted-foreground"
+                  aria-label="Leave table"
+                  onClick={() => setLeaveOpen(true)}
                 >
-                  <span className="font-mono text-xs leading-none sm:text-sm sm:tracking-wide">
-                    {game.code}
-                  </span>
-                  {copied ? <Check className="size-5" /> : <Copy className="size-5" />}
+                  <LogOut className="size-5" />
                 </Button>
-                {preview?.exitControl ?? (
-                  <Button
-                    variant="ghost"
-                    className="size-11 rounded-lg p-0 text-muted-foreground"
-                    aria-label="Leave table"
-                    onClick={() => setLeaveOpen(true)}
-                  >
-                    <LogOut className="size-5" />
-                  </Button>
-                )}
-              </div>
-            )}
-          </header>
-        )}
+              )}
+            </div>
+          )}
+        </header>
         <AlertDialog
           open={leaveOpen}
           onOpenChange={(open) => {
