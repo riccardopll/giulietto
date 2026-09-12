@@ -32,7 +32,7 @@ export function WinnerPodium({
   onReset: () => void;
 }) {
   const groups = standings(game.players, winner.id);
-  const others = groups.filter((group) => group.place > 3).flatMap((group) => group.players);
+  const others = groups.filter((group) => group.place > 3);
   return (
     <section className="mx-auto my-4 w-full max-w-lg px-2 py-3 text-center sm:px-6">
       <h1 className="text-3xl font-bold wrap-anywhere sm:text-4xl">
@@ -124,13 +124,19 @@ export function WinnerPodium({
         <div className="mt-5">
           <h2 className="text-sm font-semibold">Other players</h2>
           <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-3">
-            {others.map((player) => (
-              <li key={player.id} className="min-w-0 max-w-24 space-y-1">
-                <Avatar player={player} />
-                <p className="text-xs font-semibold wrap-anywhere">
-                  {player.name}
-                  {player.id === game.you ? " (you)" : ""}
-                </p>
+            {others.map((group) => (
+              <li
+                key={group.place}
+                aria-label={`Place ${group.place}`}
+                className="min-w-0 max-w-24 space-y-1"
+              >
+                {group.players.length === 1 && <Avatar player={group.players[0]} />}
+                {group.players.map((player) => (
+                  <p key={player.id} className="text-xs font-semibold wrap-anywhere">
+                    {player.name}
+                    {player.id === game.you ? " (you)" : ""}
+                  </p>
+                ))}
               </li>
             ))}
           </ul>
