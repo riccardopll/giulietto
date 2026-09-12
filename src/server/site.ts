@@ -1,11 +1,3 @@
-export function redirectToHttps(url: URL) {
-  if (url.hostname === "giulietto.online" && url.protocol === "http:") {
-    const target = new URL(url);
-    target.protocol = "https:";
-    return Response.redirect(target.href, 308);
-  }
-}
-
 export async function serveSite(req: Request, assets: Pick<Fetcher, "fetch">) {
   const url = new URL(req.url);
   const preview = url.pathname === "/preview";

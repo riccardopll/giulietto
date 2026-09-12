@@ -1,18 +1,7 @@
 import { afterEach, expect, test, vi } from "vitest";
-import { redirectToHttps, serveSite } from "../../src/server/site";
+import { serveSite } from "../../src/server/site";
 
 afterEach(() => vi.unstubAllEnvs());
-
-test("production HTTP redirects permanently without losing invite codes or paths", () => {
-  const response = redirectToHttps(new URL("http://giulietto.online/?table=ABCD2345"))!;
-  expect(response.status).toBe(308);
-  expect(response.headers.get("Location")).toBe("https://giulietto.online/?table=ABCD2345");
-  expect(
-    redirectToHttps(new URL("http://giulietto.online/robots.txt"))!.headers.get("Location"),
-  ).toBe("https://giulietto.online/robots.txt");
-  expect(redirectToHttps(new URL("https://giulietto.online/"))).toBeUndefined();
-  expect(redirectToHttps(new URL("http://127.0.0.1:5174/"))).toBeUndefined();
-});
 
 test("public assets keep their body, status, content type, and caching", async () => {
   const request = new Request("https://giulietto.online/robots.txt");
