@@ -134,15 +134,18 @@ test("three players complete a game, including round results and elimination", a
     await button.click();
     await expect.poll(() => committed?.code).toBeDefined();
     await expect(button).toBeEnabled();
-    const retry = page.waitForRequest(
-      (request) => request.url().endsWith("/api/game") && request.method() === "POST",
+    const retry = page.waitForResponse(
+      (response) => response.url().endsWith("/api/game") && response.request().method() === "POST",
     );
     await button.click();
-    const retriedId = (await retry).postDataJSON().commandId;
+    const retryResponse = await retry;
+    const retriedId = retryResponse.request().postDataJSON().commandId;
     if (action === "create") expect(retriedId).toBe(commandId);
     else expect(retriedId).not.toBe(commandId);
     if (action === "create" && expires) {
-      await expect(page.getByText("Table already exists.", { exact: true })).toBeVisible();
+      expect(retryResponse.status()).toBe(400);
+      expect(await retryResponse.json()).toEqual({ error: "Table already exists." });
+      await expect(button).toBeEnabled();
       const replacement = page.waitForResponse(
         (response) =>
           response.url().endsWith("/api/game") && response.request().method() === "POST",
