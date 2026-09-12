@@ -435,7 +435,7 @@ export function Preview() {
               >
                 {entry.options.seatStates.map((state, index) => (
                   <option key={index} value={index} disabled={state === "eliminated"}>
-                    Seat {index + 1} — {entry.game.players[index].name}
+                    Seat {index + 1}: {entry.game.players[index].name}
                   </option>
                 ))}
               </select>

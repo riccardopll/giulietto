@@ -5,7 +5,7 @@ import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
+import { ActionDialog } from "./ui/action-dialog";
 
 type State = ReturnType<typeof view>;
 
@@ -111,51 +111,28 @@ export function Lobby({
   const [draftName, setDraftName] = useState(game.viewerName);
   return (
     <section className="mx-auto w-full max-w-xl py-3 sm:py-5">
-      <Dialog
+      <ActionDialog
         open={editing}
-        onOpenChange={(open) => {
-          if (!busy) setEditing(open);
+        onOpenChange={setEditing}
+        title="Edit your name"
+        actionLabel={busy ? "Saving…" : "Save name"}
+        busy={busy}
+        actionDisabled={!draftName.trim()}
+        onSubmit={async () => {
+          if (await onRename(draftName)) setEditing(false);
         }}
       >
-        <DialogContent aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>Edit your name</DialogTitle>
-          </DialogHeader>
-          <form
-            className="grid gap-4"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              if (busy || !draftName.trim()) return;
-              if (await onRename(draftName)) setEditing(false);
-            }}
-          >
-            <Input
-              id="lobby-name"
-              aria-label="Display name"
-              className="h-12 text-base md:text-base"
-              autoComplete="nickname"
-              maxLength={20}
-              value={draftName}
-              disabled={busy}
-              onChange={(event) => setDraftName(event.target.value)}
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="min-h-11"
-                disabled={busy}
-                onClick={() => setEditing(false)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="min-h-11" disabled={busy || !draftName.trim()}>
-                {busy ? "Saving…" : "Save name"}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+        <Input
+          id="lobby-name"
+          aria-label="Display name"
+          className="h-12 text-base md:text-base"
+          autoComplete="off"
+          maxLength={20}
+          value={draftName}
+          disabled={busy}
+          onChange={(event) => setDraftName(event.target.value)}
+        />
+      </ActionDialog>
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
         {game.host !== game.you && (

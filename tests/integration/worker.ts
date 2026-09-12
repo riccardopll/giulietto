@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { readFile, readdir } from "node:fs/promises";
 import { Miniflare, Log, LogLevel, type WebSocket } from "miniflare";
 import { build } from "rolldown";
@@ -18,7 +19,9 @@ export const guest = (number: number): Guest => ({
 });
 
 let workerCode: string;
+let siteHtml: string;
 beforeAll(async () => {
+  siteHtml = await readFile("index.html", "utf8");
   const built = await build({
     input: "src/server/index.ts",
     write: false,
@@ -51,6 +54,18 @@ async function createWorker() {
             MatchQueue: { type: "durable-object", storage: "sqlite" },
           },
           env: {
+            ASSETS: {
+              type: "node-handler",
+              handler(_req: IncomingMessage, res: ServerResponse) {
+                res.writeHead(200, {
+                  "Content-Type": "text/html; charset=utf-8",
+                  "Cache-Control": "public, max-age=60",
+                  ETag: '"site-html"',
+                  "Content-Length": Buffer.byteLength(siteHtml),
+                });
+                res.end(siteHtml);
+              },
+            },
             ROOMS: { type: "durable-object", worker: "game-api", exportName: "GameTable" },
             MATCHMAKER: { type: "durable-object", worker: "game-api", exportName: "MatchQueue" },
             DB: { type: "d1", id: "game-api-db" },
