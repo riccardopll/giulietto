@@ -96,7 +96,7 @@ test("three players complete a game, including round results and elimination", a
   }
 });
 
-test("reloading during play restores the player and hand and allows the next move", async ({
+test("reloading and reconnecting during play restore the player and hand and allow the next move", async ({
   players,
 }, testInfo) => {
   await start(players);
@@ -114,7 +114,28 @@ test("reloading during play restores the player and hand and allows the next mov
   await returning.page.route("**/cards/neapolitan/*.webp", (route) => {
     pendingImages.push(route);
   });
+  await returning.page.addInitScript(() => {
+    const NativeSocket = window.WebSocket;
+    window.WebSocket = class extends NativeSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        super(url, protocols);
+        Reflect.set(window, "testSocket", this);
+      }
+    };
+  });
   returning.state = undefined;
+  await returning.page.route(
+    "**/api/game",
+    (route) => route.fulfill({ status: 503, body: "Temporarily unavailable" }),
+    { times: 1 },
+  );
+  await returning.page.reload({ waitUntil: "domcontentloaded" });
+  await expect(
+    returning.page.getByText("Could not reach the table. Please try again."),
+  ).toBeVisible();
+  expect(await returning.page.evaluate(() => localStorage.getItem("giulietto-room"))).toBe(
+    before.code,
+  );
   await returning.page.reload({ waitUntil: "domcontentloaded" });
   await synced(players, (state) => state.phase === "playing");
   expect(returning.state).toMatchObject({
@@ -167,6 +188,33 @@ test("reloading during play restores the player and hand and allows the next mov
   await expect(fallbacks.nth(1)).toBeHidden();
   await expect(hand.locator(".card-art").nth(1)).toBeVisible();
   await returning.page.unroute("**/cards/neapolitan/*.webp");
+  const rejoin = returning.page.waitForRequest(
+    (request) =>
+      request.url().endsWith("/api/game") &&
+      request.method() === "POST" &&
+      request.postDataJSON()?.action === "join",
+  );
+  returning.state = undefined;
+  await returning.page.evaluate(() => {
+    Reflect.get(window, "testSocket").close(4000, "Test connection loss");
+  });
+  expect((await rejoin).postDataJSON()).toMatchObject({
+    action: "join",
+    name: own.name,
+    code: before.code,
+  });
+  await synced(players, (state) => state.phase === "playing");
+  expect(returning.state).toMatchObject({
+    you: before.you,
+    round: before.round,
+    turn: before.turn,
+    trick: before.trick,
+  });
+  expect(returning.state!.players.find((player) => player.id === before.you)).toMatchObject({
+    hand: own.hand,
+    bid: own.bid,
+    taken: own.taken,
+  });
   const emoteMenu = returning.page.getByRole("button", { name: "Emotes", exact: true });
   const menuBefore = await emoteMenu.boundingBox();
   await playCard(players, true);

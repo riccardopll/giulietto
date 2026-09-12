@@ -37,6 +37,7 @@ if (args.includes("--errors"))
   filters.push({ key: "$metadata.error", operation: "exists", type: "string" });
 let offset;
 let total = 0;
+const seen = new Set();
 for (;;) {
   const response = await fetch(
     `https://api.cloudflare.com/client/v4/accounts/${account}/workers/observability/telemetry/query`,
@@ -58,8 +59,13 @@ for (;;) {
     throw Error(`Cloudflare log query failed (${response.status}): ${JSON.stringify(data.errors)}`);
   const events = data.result.events?.events ?? data.result.events ?? [];
   if (!Array.isArray(events)) throw Error("Unexpected Cloudflare event response.");
-  for (const event of events) console.log(JSON.stringify(event));
-  total += events.length;
+  for (const event of events) {
+    const id = event.$metadata?.id;
+    if (id && seen.has(id)) continue;
+    if (id) seen.add(id);
+    console.log(JSON.stringify(event));
+    total++;
+  }
   const next = events.at(-1)?.$metadata?.id;
   if (events.length < 2000 || !next || next === offset) break;
   offset = next;

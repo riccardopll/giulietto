@@ -16,6 +16,7 @@ import {
 } from "@/client/components/ui/alert-dialog";
 import type { view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
+import { GameRequestError, requestGame } from "./game-request";
 import {
   cookieError,
   readStored,
@@ -28,12 +29,6 @@ import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { ResultsPanel } from "./components/results-panel";
 type State = ReturnType<typeof view>;
-
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw Error(data.error || "Could not complete that action.");
-  return data;
-}
 
 export type PreviewSession = {
   state: State;
@@ -96,35 +91,47 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   useEffect(() => {
     if (isPreview) return;
     if (session.error) setError(session.error);
+    let disposed = false;
+    const controller = new AbortController();
     if (session.joinCode) {
-      fetch("/api/game", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-player-token": token.current },
-        body: JSON.stringify({
-          action: "join",
-          commandId: crypto.randomUUID(),
-          code: session.joinCode,
-          name: session.name,
-        }),
-      })
-        .then(readResponse<State>)
-        .then(accept)
+      requestGame(
+        token.current,
+        { action: "join", code: session.joinCode, name: session.name },
+        controller,
+      )
+        .then((state) => {
+          if (!disposed) accept(state);
+        })
         .catch((error: Error) => {
-          if (readStored("giulietto-room") === session.joinCode) storeRoom(null);
-          if (session.code) setError(error.message);
+          if (disposed) return;
+          const rejected =
+            error instanceof GameRequestError && [400, 401, 403, 404].includes(error.status);
+          if (rejected && readStored("giulietto-room") === session.joinCode) storeRoom(null);
+          if (session.code || !rejected) setError(error.message);
         })
         .finally(() => {
+          if (disposed) return;
           setBusy(false);
           busyRef.current = false;
         });
     }
     const timer = setInterval(() => setNow(Date.now() + clockOffset.current), 500);
-    return () => clearInterval(timer);
+    return () => {
+      disposed = true;
+      controller.abort();
+      clearInterval(timer);
+    };
   }, [session, isPreview]);
   const receiveState = useEffectEvent((s: State) => accept(s));
   useEffect(() => {
     if (isPreview || !game?.code) return;
-    const connection = new GameConnection(game.code, token.current, receiveState, setConnection);
+    const connection = new GameConnection(
+      game.code,
+      token.current,
+      gameRef.current!.viewerName,
+      receiveState,
+      setConnection,
+    );
     transport.current = connection;
     return () => {
       transport.current = null;
@@ -197,18 +204,12 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       ) {
         s = await transport.current.command(action, extra);
       } else {
-        const r = await fetch("/api/game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-player-token": token.current },
-          body: JSON.stringify({
-            action,
-            commandId: crypto.randomUUID(),
-            name,
-            code: gameRef.current?.code || code,
-            ...extra,
-          }),
+        s = await requestGame(token.current, {
+          action,
+          name,
+          code: gameRef.current?.code || code,
+          ...extra,
         });
-        s = await readResponse<State>(r);
       }
       if (action === "leave") {
         reset();
@@ -217,7 +218,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       }
       setAce(null);
     } catch (e) {
-      setError((e as Error).message);
+      if (action === "leave") reset();
+      else setError((e as Error).message);
     } finally {
       setBusy(false);
       busyRef.current = false;
