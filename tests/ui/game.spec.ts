@@ -94,9 +94,98 @@ test("three players complete a game, including round results and elimination", a
     await page.getByRole("button", { name: "Back to tables", exact: true }).click();
     await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
   }
+
+  for (const [index, { action, expires }] of [
+    { action: "create", expires: false },
+    { action: "join", expires: true },
+    { action: "create", expires: true },
+  ].entries()) {
+    const page = players[index].page;
+    if (action === "join") await page.getByLabel("Lobby code").fill(players[0].state!.code);
+    let committed: { code: string } | undefined;
+    let commandId: string | undefined;
+    await page.route(
+      "**/api/game",
+      async (route) => {
+        const command = route.request().postDataJSON();
+        commandId = command.commandId;
+        committed = await (await route.fetch()).json();
+        if (expires) {
+          // Creation recovery records a join receipt; then membership expires while offline.
+          if (action === "create") expect((await route.fetch()).ok()).toBe(true);
+          const removed = await route.fetch({
+            postData: {
+              ...command,
+              code: committed!.code,
+              action: "leave",
+              commandId: crypto.randomUUID(),
+            },
+          });
+          expect(removed.ok()).toBe(true);
+        }
+        await route.abort();
+      },
+      { times: 1 },
+    );
+    const button = page.getByRole("button", {
+      name: action === "create" ? "Create private lobby" : "Join",
+      exact: true,
+    });
+    await button.click();
+    await expect.poll(() => committed?.code).toBeDefined();
+    await expect(button).toBeEnabled();
+    const retry = page.waitForResponse(
+      (response) => response.url().endsWith("/api/game") && response.request().method() === "POST",
+    );
+    await button.click();
+    const retryResponse = await retry;
+    const retriedId = retryResponse.request().postDataJSON().commandId;
+    if (action === "create") expect(retriedId).toBe(commandId);
+    else expect(retriedId).not.toBe(commandId);
+    if (action === "create" && expires) {
+      expect(retryResponse.status()).toBe(400);
+      expect(await retryResponse.json()).toEqual({ error: "Table already exists." });
+      await expect(button).toBeEnabled();
+      const replacement = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/game") && response.request().method() === "POST",
+      );
+      await button.click();
+      const response = await replacement;
+      expect(response.request().postDataJSON().commandId).not.toBe(commandId);
+      const created = await response.json();
+      expect(created.code).not.toBe(committed!.code);
+      committed = created;
+    }
+    await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
+    await expect.poll(() => players[index].state?.code).toBe(committed!.code);
+  }
+
+  const page = players[0].page;
+  let left = false;
+  await page.route(
+    "**/api/game",
+    async (route) => {
+      expect(route.request().postDataJSON().action).toBe("leave");
+      expect((await route.fetch()).ok()).toBe(true);
+      left = true;
+      await route.abort();
+    },
+    { times: 1 },
+  );
+  await page.getByRole("button", { name: "Leave table", exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Leave table", exact: true })
+    .click();
+  await expect(page.getByLabel("Display name")).toBeVisible();
+  expect(left).toBe(true);
+  await expect
+    .poll(() => players[1].state?.players.map((p) => p.id))
+    .toEqual([players[1].state!.you]);
 });
 
-test("reloading during play restores the player and hand and allows the next move", async ({
+test("reloading and reconnecting during play restore the player and hand and allow the next move", async ({
   players,
 }, testInfo) => {
   await start(players);
@@ -114,7 +203,28 @@ test("reloading during play restores the player and hand and allows the next mov
   await returning.page.route("**/cards/neapolitan/*.webp", (route) => {
     pendingImages.push(route);
   });
+  await returning.page.addInitScript(() => {
+    const NativeSocket = window.WebSocket;
+    window.WebSocket = class extends NativeSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        super(url, protocols);
+        Reflect.set(window, "testSocket", this);
+      }
+    };
+  });
   returning.state = undefined;
+  await returning.page.route(
+    "**/api/game",
+    (route) => route.fulfill({ status: 503, body: "Temporarily unavailable" }),
+    { times: 1 },
+  );
+  await returning.page.reload({ waitUntil: "domcontentloaded" });
+  await expect(
+    returning.page.getByText("Could not reach the table. Please try again."),
+  ).toBeVisible();
+  expect(await returning.page.evaluate(() => localStorage.getItem("giulietto-room"))).toBe(
+    before.code,
+  );
   await returning.page.reload({ waitUntil: "domcontentloaded" });
   await synced(players, (state) => state.phase === "playing");
   expect(returning.state).toMatchObject({
@@ -167,6 +277,33 @@ test("reloading during play restores the player and hand and allows the next mov
   await expect(fallbacks.nth(1)).toBeHidden();
   await expect(hand.locator(".card-art").nth(1)).toBeVisible();
   await returning.page.unroute("**/cards/neapolitan/*.webp");
+  const rejoin = returning.page.waitForRequest(
+    (request) =>
+      request.url().endsWith("/api/game") &&
+      request.method() === "POST" &&
+      request.postDataJSON()?.action === "join",
+  );
+  returning.state = undefined;
+  await returning.page.evaluate(() => {
+    Reflect.get(window, "testSocket").close(4000, "Test connection loss");
+  });
+  expect((await rejoin).postDataJSON()).toMatchObject({
+    action: "join",
+    name: own.name,
+    code: before.code,
+  });
+  await synced(players, (state) => state.phase === "playing");
+  expect(returning.state).toMatchObject({
+    you: before.you,
+    round: before.round,
+    turn: before.turn,
+    trick: before.trick,
+  });
+  expect(returning.state!.players.find((player) => player.id === before.you)).toMatchObject({
+    hand: own.hand,
+    bid: own.bid,
+    taken: own.taken,
+  });
   const emoteMenu = returning.page.getByRole("button", { name: "Emotes", exact: true });
   const menuBefore = await emoteMenu.boundingBox();
   await playCard(players, true);

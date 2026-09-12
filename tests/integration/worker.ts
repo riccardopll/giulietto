@@ -31,8 +31,10 @@ beforeAll(async () => {
 });
 
 async function createWorker() {
+  const logs: string[] = [];
   const runtime = new Miniflare({
     log: new Log(LogLevel.ERROR),
+    handleStructuredLogs: (log: { message: string }) => logs.push(log.message),
     workers: [
       {
         config: {
@@ -75,6 +77,7 @@ async function createWorker() {
     });
   return {
     runtime,
+    logs,
     post,
     get,
     async state(player: Guest, input: Input) {
@@ -111,7 +114,8 @@ async function createWorker() {
           sockets.splice(sockets.indexOf(socket), 1);
         },
         async command(input: Input) {
-          const commandId = crypto.randomUUID();
+          const commandId =
+            typeof input.commandId === "string" ? input.commandId : crypto.randomUUID();
           socket.send(JSON.stringify({ ...input, commandId }));
           const reply = () =>
             messages.find(

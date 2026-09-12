@@ -16,6 +16,7 @@ import {
 } from "@/client/components/ui/alert-dialog";
 import type { view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
+import { GameRequestError, requestGame } from "./game-request";
 import {
   cookieError,
   readStored,
@@ -28,12 +29,6 @@ import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { ResultsPanel } from "./components/results-panel";
 type State = ReturnType<typeof view>;
-
-async function readResponse<T>(response: Response): Promise<T> {
-  const data = (await response.json()) as T & { error?: string };
-  if (!response.ok) throw Error(data.error || "Could not complete that action.");
-  return data;
-}
 
 export type PreviewSession = {
   state: State;
@@ -64,6 +59,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const [pendingCard, setPendingCard] = useState<number | null>(null);
   const token = useRef(session.token);
   const transport = useRef<GameConnection | null>(null);
+  const httpAttempt = useRef<{ payload: string; commandId: string } | null>(null);
   const gameRef = useRef<State | null>(null);
   const busyRef = useRef(!!session.joinCode);
   const clockOffset = useRef(0);
@@ -96,35 +92,46 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   useEffect(() => {
     if (isPreview) return;
     if (session.error) setError(session.error);
+    let disposed = false;
+    const controller = new AbortController();
     if (session.joinCode) {
-      fetch("/api/game", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-player-token": token.current },
-        body: JSON.stringify({
-          action: "join",
-          commandId: crypto.randomUUID(),
-          code: session.joinCode,
-          name: session.name,
-        }),
-      })
-        .then(readResponse<State>)
-        .then(accept)
+      requestGame(
+        token.current,
+        { action: "join", code: session.joinCode, name: session.name },
+        controller,
+      )
+        .then((state) => {
+          if (!disposed) accept(state);
+        })
         .catch((error: Error) => {
-          if (readStored("giulietto-room") === session.joinCode) storeRoom(null);
-          if (session.code) setError(error.message);
+          if (disposed) return;
+          const rejected = error instanceof GameRequestError && !error.retryable;
+          if (rejected && readStored("giulietto-room") === session.joinCode) storeRoom(null);
+          if (session.code || !rejected) setError(error.message);
         })
         .finally(() => {
+          if (disposed) return;
           setBusy(false);
           busyRef.current = false;
         });
     }
     const timer = setInterval(() => setNow(Date.now() + clockOffset.current), 500);
-    return () => clearInterval(timer);
+    return () => {
+      disposed = true;
+      controller.abort();
+      clearInterval(timer);
+    };
   }, [session, isPreview]);
   const receiveState = useEffectEvent((s: State) => accept(s));
   useEffect(() => {
     if (isPreview || !game?.code) return;
-    const connection = new GameConnection(game.code, token.current, receiveState, setConnection);
+    const connection = new GameConnection(
+      game.code,
+      token.current,
+      gameRef.current!.viewerName,
+      receiveState,
+      setConnection,
+    );
     transport.current = connection;
     return () => {
       transport.current = null;
@@ -189,26 +196,30 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     setError("");
     if (action === "play") setPendingCard(Number(extra.card));
     try {
+      if (action === "leave") transport.current?.stop();
       let s: State;
       if (
         gameRef.current &&
         transport.current &&
-        ["rename", "settings", "start", "bid", "play", "emote", "leave"].includes(action)
+        ["rename", "settings", "start", "bid", "play", "emote"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
-        const r = await fetch("/api/game", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-player-token": token.current },
-          body: JSON.stringify({
-            action,
-            commandId: crypto.randomUUID(),
-            name,
-            code: gameRef.current?.code || code,
-            ...extra,
-          }),
+        const command = {
+          action,
+          name,
+          code: gameRef.current?.code || code,
+          ...extra,
+        };
+        const payload = JSON.stringify(command);
+        // Reuse mutation IDs after failures; a fresh join must restore expired membership.
+        if (action === "join" || httpAttempt.current?.payload !== payload)
+          httpAttempt.current = { payload, commandId: crypto.randomUUID() };
+        s = await requestGame(token.current, {
+          ...command,
+          commandId: httpAttempt.current.commandId,
         });
-        s = await readResponse<State>(r);
+        httpAttempt.current = null;
       }
       if (action === "leave") {
         reset();
@@ -217,7 +228,9 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       }
       setAce(null);
     } catch (e) {
-      setError((e as Error).message);
+      if (e instanceof GameRequestError && !e.retryable) httpAttempt.current = null;
+      if (action === "leave") reset();
+      else setError((e as Error).message);
     } finally {
       setBusy(false);
       busyRef.current = false;
@@ -230,6 +243,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       return;
     }
     gameRef.current = null;
+    httpAttempt.current = null;
     setGame(null);
     setCode("");
     setError("");
