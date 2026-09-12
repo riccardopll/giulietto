@@ -342,14 +342,20 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             if (!busy) setLeaveOpen(open);
           }}
         >
-          <AlertDialogContent>
+          <AlertDialogContent
+            aria-describedby={
+              waiting || game?.spectating || phase === "finished"
+                ? undefined
+                : "leave-table-description"
+            }
+          >
             <AlertDialogHeader>
               <AlertDialogTitle>Leave this table?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {waiting || game?.spectating || phase === "finished"
-                  ? "You can rejoin using the invite code."
-                  : "Your seat keeps playing automatically. Rejoin with the invite code to resume."}
-              </AlertDialogDescription>
+              {!waiting && !game?.spectating && phase !== "finished" && (
+                <AlertDialogDescription id="leave-table-description">
+                  Your seat keeps playing automatically. Rejoin with the invite code to resume.
+                </AlertDialogDescription>
+              )}
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="min-h-11" disabled={busy}>
