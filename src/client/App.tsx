@@ -314,7 +314,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-11 w-auto flex-nowrap gap-1 rounded-lg p-0 text-muted-foreground sm:gap-2 sm:px-3"
+                className="h-11 w-auto flex-nowrap gap-1 rounded-lg p-0 text-muted-foreground hover:bg-transparent sm:gap-2 sm:px-3"
                 onClick={copy}
                 aria-label="Copy lobby invite"
               >
@@ -413,7 +413,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 busy={busy}
                 pendingCard={pendingCard}
                 preview={isPreview}
-                onEmote={() => void act("emote", { emote: "chicken" })}
+                onEmote={(emote) => void act("emote", { emote })}
                 onBid={(bid) => void act("bid", { bid })}
                 onPlay={(card) => {
                   if (game.canChooseAce && (card === null || card === 31)) setAce(card ?? -1);

@@ -121,7 +121,7 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
   expect(sent.deadline).toBe(beforeEmote.deadline);
   expect((await api.state(host, emoteRequest)).revision).toBe(sent.revision);
   expect((await sockets[0].command({ action: "emote", emote: "chicken" })).type).toBe("error");
-  expect((await sockets[1].command({ action: "emote", emote: "chicken" })).type).toBe("ack");
+  expect((await sockets[1].command({ action: "emote", emote: "perso" })).type).toBe("ack");
   const spectator = guest(3);
   await api.state(spectator, { action: "join", code });
   expect((await api.post(spectator, { action: "emote", emote: "chicken", code })).status).toBe(400);

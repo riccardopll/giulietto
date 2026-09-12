@@ -1,5 +1,6 @@
 node_modules/
 dist/
+/output/
 .wrangler/
 .env*
 .dev.vars*

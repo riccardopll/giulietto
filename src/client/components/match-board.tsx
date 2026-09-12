@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
+import type { Emote } from "@/shared/emotes";
 import type { view } from "@/shared/game";
 import { tableOrder } from "../table-order";
 import { EmotePicker } from "./emotes";
@@ -23,7 +24,7 @@ export function MatchBoard({
   busy: boolean;
   pendingCard: number | null;
   preview: boolean;
-  onEmote: () => void;
+  onEmote: (emote: Emote["id"]) => void;
   onBid: (bid: number) => void;
   onPlay: (card: number | null) => void;
 }) {
@@ -150,6 +151,16 @@ export function MatchBoard({
         aria-label="Game table"
       >
         <TableSurface />
+        <div className="pointer-events-none relative z-40 col-span-full row-start-2 row-end-5 min-h-0">
+          <EmotePicker
+            open={emoteMenuOpen}
+            onOpenChange={setEmoteMenuOpen}
+            disabled={busy || !active}
+            emote={me?.emote}
+            serverTime={game.serverTime}
+            onSend={onEmote}
+          />
+        </div>
         <div className="seats contents">{seating.seats.map(seat)}</div>
         <section
           className="play-table @container/play col-span-full row-start-3 grid min-h-0 min-w-0 place-items-center [container-type:size]"
@@ -184,7 +195,7 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1] @min-2xl/board:[--trick-columns:var(--trick-players)] @min-2xl/board:[--trick-rows:1] @min-2xl/board:[--played-card-max-width:5.5rem]"
+              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1] @min-2xl/board:[--trick-columns:var(--trick-players)] @min-2xl/board:[--trick-rows:1] @min-2xl/board:[--played-card-max-width:5.5rem] @min-2xl/board:[--played-card-extra-height:0rem]"
               style={
                 {
                   "--trick-players": game.order.length,
@@ -214,7 +225,7 @@ export function MatchBoard({
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
           <div
-            className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] items-center justify-center"
+            className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-[.hand-card]:scale-[1.08]"
             key={`hand-${game.round}`}
             data-active-turn={(canPlay && !!me?.hand.length) || undefined}
           >
@@ -248,14 +259,6 @@ export function MatchBoard({
               })}
           </div>
         </section>
-        <EmotePicker
-          open={emoteMenuOpen}
-          onOpenChange={setEmoteMenuOpen}
-          disabled={busy || !active}
-          emote={me?.emote}
-          serverTime={game.serverTime}
-          onSend={onEmote}
-        />
       </div>
     </div>
   );
