@@ -126,7 +126,7 @@ export function Lobby({
           id="lobby-name"
           aria-label="Display name"
           className="h-12 text-base md:text-base"
-          autoComplete="nickname"
+          autoComplete="off"
           maxLength={20}
           value={draftName}
           disabled={busy}
