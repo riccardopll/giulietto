@@ -89,7 +89,7 @@ export class GameConnection {
   private reconnect() {
     if (this.stopped) return;
     this.status("Connection lost. Reconnecting…");
-    const delay = Math.min(10000, 500 * 2 ** Math.min(this.attempt++, 5)) + Math.random() * 250;
+    const delay = Math.min(10000, 500 * 2 ** this.attempt++) + Math.random() * 250;
     this.retry = setTimeout(() => void this.rejoin(), delay);
   }
   private async rejoin() {
@@ -105,13 +105,13 @@ export class GameConnection {
       this.connect();
     } catch (error) {
       if (this.stopped) return;
-      if (error instanceof GameRequestError && [400, 401, 403, 404].includes(error.status)) {
+      if (error instanceof GameRequestError && !error.retryable) {
         this.closedReason = error.message;
         this.status(this.closedReason);
         this.stop();
       } else this.reconnect();
     } finally {
-      if (this.joining === controller) this.joining = undefined;
+      this.joining = undefined;
     }
   }
   command(action: string, extra: Record<string, unknown>) {

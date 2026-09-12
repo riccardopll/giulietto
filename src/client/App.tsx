@@ -105,8 +105,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         })
         .catch((error: Error) => {
           if (disposed) return;
-          const rejected =
-            error instanceof GameRequestError && [400, 401, 403, 404].includes(error.status);
+          const rejected = error instanceof GameRequestError && !error.retryable;
           if (rejected && readStored("giulietto-room") === session.joinCode) storeRoom(null);
           if (session.code || !rejected) setError(error.message);
         })
@@ -197,11 +196,12 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     setError("");
     if (action === "play") setPendingCard(Number(extra.card));
     try {
+      if (action === "leave") transport.current?.stop();
       let s: State;
       if (
         gameRef.current &&
         transport.current &&
-        ["rename", "settings", "start", "bid", "play", "emote", "leave"].includes(action)
+        ["rename", "settings", "start", "bid", "play", "emote"].includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -228,6 +228,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       }
       setAce(null);
     } catch (e) {
+      if (e instanceof GameRequestError && !e.retryable) httpAttempt.current = null;
       if (action === "leave") reset();
       else setError((e as Error).message);
     } finally {

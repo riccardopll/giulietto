@@ -95,7 +95,11 @@ test("three players complete a game, including round results and elimination", a
     await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
   }
 
-  for (const [index, action] of ["create", "join"].entries()) {
+  for (const [index, { action, expires }] of [
+    { action: "create", expires: false },
+    { action: "join", expires: true },
+    { action: "create", expires: true },
+  ].entries()) {
     const page = players[index].page;
     if (action === "join") await page.getByLabel("Lobby code").fill(players[0].state!.code);
     let committed: { code: string } | undefined;
@@ -106,10 +110,16 @@ test("three players complete a game, including round results and elimination", a
         const command = route.request().postDataJSON();
         commandId = command.commandId;
         committed = await (await route.fetch()).json();
-        if (action === "join") {
-          // Remove membership to model expiry while the join response is lost.
+        if (expires) {
+          // Creation recovery records a join receipt; then membership expires while offline.
+          if (action === "create") expect((await route.fetch()).ok()).toBe(true);
           const removed = await route.fetch({
-            postData: { ...command, action: "leave", commandId: crypto.randomUUID() },
+            postData: {
+              ...command,
+              code: committed!.code,
+              action: "leave",
+              commandId: crypto.randomUUID(),
+            },
           });
           expect(removed.ok()).toBe(true);
         }
@@ -131,9 +141,45 @@ test("three players complete a game, including round results and elimination", a
     const retriedId = (await retry).postDataJSON().commandId;
     if (action === "create") expect(retriedId).toBe(commandId);
     else expect(retriedId).not.toBe(commandId);
+    if (action === "create" && expires) {
+      await expect(page.getByText("Table already exists.", { exact: true })).toBeVisible();
+      const replacement = page.waitForResponse(
+        (response) =>
+          response.url().endsWith("/api/game") && response.request().method() === "POST",
+      );
+      await button.click();
+      const response = await replacement;
+      expect(response.request().postDataJSON().commandId).not.toBe(commandId);
+      const created = await response.json();
+      expect(created.code).not.toBe(committed!.code);
+      committed = created;
+    }
     await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
     await expect.poll(() => players[index].state?.code).toBe(committed!.code);
   }
+
+  const page = players[0].page;
+  let left = false;
+  await page.route(
+    "**/api/game",
+    async (route) => {
+      expect(route.request().postDataJSON().action).toBe("leave");
+      expect((await route.fetch()).ok()).toBe(true);
+      left = true;
+      await route.abort();
+    },
+    { times: 1 },
+  );
+  await page.getByRole("button", { name: "Leave table", exact: true }).click();
+  await page
+    .getByRole("alertdialog")
+    .getByRole("button", { name: "Leave table", exact: true })
+    .click();
+  await expect(page.getByLabel("Display name")).toBeVisible();
+  expect(left).toBe(true);
+  await expect
+    .poll(() => players[1].state?.players.map((p) => p.id))
+    .toEqual([players[1].state!.you]);
 });
 
 test("reloading and reconnecting during play restore the player and hand and allow the next move", async ({

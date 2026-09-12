@@ -7,6 +7,9 @@ export class GameRequestError extends Error {
   ) {
     super(message);
   }
+  get retryable() {
+    return ![400, 401, 403, 404].includes(this.status);
+  }
 }
 
 export async function requestGame(
@@ -23,7 +26,7 @@ export async function requestGame(
       method: "POST",
       headers: { "Content-Type": "application/json", "x-player-token": token },
       signal: controller.signal,
-      body: JSON.stringify({ commandId: crypto.randomUUID(), ...command }),
+      body: JSON.stringify({ ...command, commandId: command.commandId ?? crypto.randomUUID() }),
     });
     const data = (await response.json().catch(() => null)) as
       | (ReturnType<typeof view> & { error?: string })

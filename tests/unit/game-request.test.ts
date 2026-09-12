@@ -9,11 +9,15 @@ afterEach(() => {
 it.each([
   {
     response: Response.json({ error: "Table expired." }, { status: 400 }),
-    error: { message: "Table expired.", status: 400 },
+    error: { message: "Table expired.", status: 400, retryable: false },
   },
   {
     response: new Response("<html>Unavailable</html>", { status: 503 }),
-    error: { message: "Could not reach the table. Please try again.", status: 503 },
+    error: {
+      message: "Could not reach the table. Please try again.",
+      status: 503,
+      retryable: true,
+    },
   },
   {
     response: new Response("<html>Unexpected page</html>"),
