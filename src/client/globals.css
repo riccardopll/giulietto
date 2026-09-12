@@ -90,13 +90,19 @@
   line-height: 1.3;
   font-weight: 400;
 }
-@keyframes ace-arrow {
-  from {
-    transform: translateY(-50%);
-  }
-  to {
-    transform: translateY(0);
-  }
+.ace-stamp {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%237b6142' opacity='.12' filter='url(%23grain)' d='M0 0h100v100H0z'/%3E%3C/svg%3E");
+}
+.ace-stamp-ink {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 12 -2'/%3E%3C/filter%3E%3Cpath filter='url(%23grain)' d='M0 0h100v100H0z'/%3E%3C/svg%3E");
+  mask-size: 64px 64px;
+}
+@font-face {
+  font-family: AceStamp;
+  src: url("/fonts/alfa-slab-one.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
   font-family: GiuliettoScript;

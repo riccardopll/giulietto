@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "../utils";
 
 export function cardLabel(card: number) {
@@ -63,7 +62,6 @@ export function PlayingCard({
   pending?: boolean;
 }) {
   const aceMode = card === 31 && (mode === "low" || mode === "high") ? mode : undefined;
-  const Arrow = aceMode === "low" ? ArrowDown : ArrowUp;
   const label = card
     ? `${cardLabel(card)}, ${card === 31 ? (aceMode ? `${aceMode}, value ${aceMode === "low" ? 0 : 41}` : "lowest or highest") : `value ${card}`}`
     : "Hidden card";
@@ -73,18 +71,16 @@ export function PlayingCard({
       {aceMode && (
         <span
           className={cn(
-            "pointer-events-none absolute top-1/2 left-1/2 aspect-[1/3] w-1/3 -translate-x-1/2 -translate-y-1/2 overflow-hidden [mask-image:linear-gradient(transparent,black_15%,black_85%,transparent)]",
+            "ace-mode pointer-events-none absolute inset-0 grid place-items-center text-center",
             aceMode === "low" ? "text-blue-600" : "text-orange-600",
           )}
           aria-hidden="true"
         >
-          <span
-            className="ace-arrow-track flex flex-col animate-[ace-arrow_2s_linear_infinite]"
-            style={{ animationDirection: aceMode === "low" ? "normal" : "reverse" }}
-          >
-            {Array.from({ length: 6 }, (_, index) => (
-              <Arrow key={index} className="aspect-square h-auto w-full shrink-0" strokeWidth={3} />
-            ))}
+          <span className="ace-stamp relative grid h-[56cqw] w-[84cqw] -rotate-6 place-items-center rounded-[50%] bg-[#fff8e7] p-[2cqw]">
+            <span className="ace-stamp-ink absolute inset-[1cqw] rounded-[50%] border-[1.1cqw] border-current before:absolute before:inset-[1.2cqw] before:rounded-[50%] before:border-[0.5cqw] before:border-current" />
+            <span className="ace-stamp-ink scale-x-[0.85] font-[AceStamp,Georgia,serif] text-[34cqw] leading-none tracking-[-0.04em]">
+              {aceMode}
+            </span>
           </span>
         </span>
       )}
@@ -97,7 +93,7 @@ export function PlayingCard({
     </>
   );
   const cardClassName = cn(
-    "playing-card relative isolate block aspect-[5/8] w-full shrink-0 rounded-md border-0 bg-white p-0 shadow-[0_2px_3px_#1b294126,0_7px_14px_#1b29410d] select-none",
+    "playing-card @container relative isolate block aspect-[5/8] w-full shrink-0 rounded-md border-0 bg-white p-0 shadow-[0_2px_3px_#1b294126,0_7px_14px_#1b29410d] select-none",
     onClick &&
       "outline-2 outline-offset-2 outline-transparent transition-transform enabled:hover:-translate-y-1 enabled:hover:outline-ring disabled:cursor-default",
     { playable: !!onClick, "pending-card outline-ring": pending },
