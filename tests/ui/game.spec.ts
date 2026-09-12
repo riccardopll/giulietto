@@ -94,6 +94,30 @@ test("three players complete a game, including round results and elimination", a
     await page.getByRole("button", { name: "Back to tables", exact: true }).click();
     await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
   }
+
+  const page = players[0].page;
+  let created: { code: string } | undefined;
+  let commandId: string | undefined;
+  await page.route(
+    "**/api/game",
+    async (route) => {
+      commandId = route.request().postDataJSON().commandId;
+      created = await (await route.fetch()).json();
+      await route.abort();
+    },
+    { times: 1 },
+  );
+  const create = page.getByRole("button", { name: "Create private lobby", exact: true });
+  await create.click();
+  await expect.poll(() => created?.code).toBeDefined();
+  await expect(create).toBeEnabled();
+  const retry = page.waitForRequest(
+    (request) => request.url().endsWith("/api/game") && request.method() === "POST",
+  );
+  await create.click();
+  expect((await retry).postDataJSON().commandId).toBe(commandId);
+  await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
+  await expect.poll(() => players[0].state?.code).toBe(created!.code);
 });
 
 test("reloading and reconnecting during play restore the player and hand and allow the next move", async ({

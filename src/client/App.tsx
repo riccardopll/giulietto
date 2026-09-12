@@ -59,6 +59,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const [pendingCard, setPendingCard] = useState<number | null>(null);
   const token = useRef(session.token);
   const transport = useRef<GameConnection | null>(null);
+  const httpAttempt = useRef<{ payload: string; commandId: string } | null>(null);
   const gameRef = useRef<State | null>(null);
   const busyRef = useRef(!!session.joinCode);
   const clockOffset = useRef(0);
@@ -204,12 +205,21 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       ) {
         s = await transport.current.command(action, extra);
       } else {
-        s = await requestGame(token.current, {
+        const command = {
           action,
           name,
           code: gameRef.current?.code || code,
           ...extra,
+        };
+        const payload = JSON.stringify(command);
+        // A failed response can hide a committed mutation. Keep its ID for a retry.
+        if (httpAttempt.current?.payload !== payload)
+          httpAttempt.current = { payload, commandId: crypto.randomUUID() };
+        s = await requestGame(token.current, {
+          ...command,
+          commandId: httpAttempt.current.commandId,
         });
+        httpAttempt.current = null;
       }
       if (action === "leave") {
         reset();
@@ -232,6 +242,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       return;
     }
     gameRef.current = null;
+    httpAttempt.current = null;
     setGame(null);
     setCode("");
     setError("");
