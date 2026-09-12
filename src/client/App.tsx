@@ -4,16 +4,7 @@ import { toRoman } from "@/client/utils";
 import { Check, Copy, Eye, LogOut } from "lucide-react";
 import { AceSelection } from "./components/ace-selection";
 import { Button } from "@/client/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction,
-} from "@/client/components/ui/alert-dialog";
+import { ActionDialog } from "./components/ui/action-dialog";
 import type { view } from "@/shared/game";
 import { GameConnection } from "./game-connection";
 import { GameRequestError, requestGame } from "./game-request";
@@ -284,12 +275,13 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           >
             <a
               href="/"
-              className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "text-4xl"}`}
+              className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "flex items-center gap-2 text-4xl"}`}
               onClick={(e) => {
                 if (game) e.preventDefault();
               }}
               aria-label="Giulietto home"
             >
+              {!game && <img src="/logo.png" width={48} height={48} alt="" className="size-12" />}
               Giulietto
             </a>
             {game && !waiting && game.spectatorCount > 1 && (
@@ -336,38 +328,21 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             </div>
           )}
         </header>
-        <AlertDialog
+        <ActionDialog
+          confirmation
           open={leaveOpen}
-          onOpenChange={(open) => {
-            if (!busy) setLeaveOpen(open);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Leave this table?</AlertDialogTitle>
-              <AlertDialogDescription className="empty:hidden">
-                {!waiting && !game?.spectating && phase !== "finished"
-                  ? "Your seat keeps playing automatically. Rejoin with the invite code to resume."
-                  : null}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel className="min-h-11" disabled={busy}>
-                Stay
-              </AlertDialogCancel>
-              <AlertDialogAction
-                className="min-h-11"
-                disabled={busy}
-                onClick={(e) => {
-                  e.preventDefault();
-                  void act("leave");
-                }}
-              >
-                {busy ? "Leaving…" : "Leave table"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          onOpenChange={setLeaveOpen}
+          title="Leave this table?"
+          description={
+            !waiting && !game?.spectating && phase !== "finished"
+              ? "Your seat keeps playing automatically. Rejoin with the invite code to resume."
+              : undefined
+          }
+          cancelLabel="Stay"
+          actionLabel={busy ? "Leaving…" : "Leave table"}
+          busy={busy}
+          onSubmit={() => act("leave")}
+        />
         {!game ? (
           <Home
             name={name}
