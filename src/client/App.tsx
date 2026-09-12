@@ -345,11 +345,11 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>Leave this table?</AlertDialogTitle>
-              {!waiting && !game?.spectating && phase !== "finished" && (
-                <AlertDialogDescription>
-                  Your seat keeps playing automatically. Rejoin with the invite code to resume.
-                </AlertDialogDescription>
-              )}
+              <AlertDialogDescription className="empty:hidden">
+                {!waiting && !game?.spectating && phase !== "finished"
+                  ? "Your seat keeps playing automatically. Rejoin with the invite code to resume."
+                  : null}
+              </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel className="min-h-11" disabled={busy}>
