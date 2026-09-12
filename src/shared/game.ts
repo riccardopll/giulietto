@@ -15,6 +15,7 @@ export type Player = {
   taken: number;
   seen: number;
   stats: PlayerStats;
+  eliminatedRound?: number;
   emote?: Emote;
 };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
@@ -180,12 +181,14 @@ export function score(g: Game, now: number) {
     p.stats.exactPredictions += lost === 0 ? 1 : 0;
     p.stats.predictionError += lost;
     p.lives = Math.max(0, p.lives - lost);
+    if (p.lives === 0) p.eliminatedRound = g.round;
     return { id: p.id, name: p.name, bid: p.bid!, taken: p.taken, lost, lives: p.lives };
   });
   let alive = g.players.filter((p) => p.lives > 0);
   if (!alive.length) {
     for (const p of g.players) {
       p.lives = 1;
+      delete p.eliminatedRound;
     }
     for (const r of g.results) {
       r.lives = g.players.find((p) => p.id === r.id)!.lives;

@@ -1,6 +1,7 @@
-import { Clock3, Trophy } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import type { view } from "../../shared/game";
 import { cn, toRoman } from "../utils";
+import { WinnerPodium } from "./winner-podium";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -18,19 +19,12 @@ export function ResultsPanel({
   onReset: () => void;
 }) {
   const finished = game.phase === "finished";
+  const winner = finished ? game.players.find((player) => player.id === game.winner) : undefined;
+  if (winner) return <WinnerPodium game={game} winner={winner} onReset={onReset} />;
   return (
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card px-2 py-6 text-center sm:p-8">
-      {finished && <Trophy className="mx-auto my-4 size-9 text-[#bd9144]" />}
       <h1 className="mb-6 text-2xl font-semibold wrap-anywhere">
-        {finished
-          ? game.winner === game.you
-            ? "You win"
-            : game.winner
-              ? `${game.players.find((player) => player.id === game.winner)?.name} wins`
-              : "Table closed"
-          : game.tie
-            ? "Everyone returns"
-            : "Round results"}
+        {finished ? "Table closed" : game.tie ? "Everyone returns" : "Round results"}
       </h1>
       {game.tie && (
         <p className="mb-5 text-sm text-muted-foreground">All players return with one life.</p>

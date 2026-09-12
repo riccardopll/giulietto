@@ -161,6 +161,7 @@ describe("scoring", () => {
     score(game, 200);
 
     expect(game.players.map((p) => p.lives)).toEqual([1, 3, 0]);
+    expect(game.players.map((p) => p.eliminatedRound)).toEqual([undefined, undefined, game.round]);
     expect(game.results.map((result) => result.lost)).toEqual([2, 0, 3]);
     expect(game.players[0].stats).toEqual({
       roundsPlayed: 1,
@@ -187,9 +188,12 @@ describe("scoring", () => {
     Object.assign(game.players[1], { lives: 1, bid: 0, taken: 1 });
     game.players[2].lives = 0;
     game.players[3].lives = 0;
+    game.players[2].eliminatedRound = 0;
+    game.players[3].eliminatedRound = 0;
     score(game, 200);
 
     expect(game.players.map((p) => p.lives)).toEqual([1, 1, 1, 1]);
+    expect(game.players.every((p) => p.eliminatedRound === undefined)).toBe(true);
     expect(game).toMatchObject({ phase: "results", tie: true });
     tick(game, game.deadline);
     expect(game.order).toHaveLength(4);

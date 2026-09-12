@@ -27,3 +27,10 @@ export function toRoman(value: number): string {
   }
   return result;
 }
+
+// Player IDs keep avatar colors stable across screens and reconnects.
+export function avatarHue(id: string) {
+  let hash = 0;
+  for (const character of id) hash = (Math.imul(hash, 31) + character.charCodeAt(0)) | 0;
+  return ((hash % 360) + 360) % 360;
+}
