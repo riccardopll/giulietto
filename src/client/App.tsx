@@ -352,7 +352,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                   : null}
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooter className="grid grid-cols-2">
               <AlertDialogCancel className="min-h-11" disabled={busy}>
                 Stay
               </AlertDialogCancel>
