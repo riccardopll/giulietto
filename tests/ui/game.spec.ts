@@ -95,29 +95,45 @@ test("three players complete a game, including round results and elimination", a
     await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
   }
 
-  const page = players[0].page;
-  let created: { code: string } | undefined;
-  let commandId: string | undefined;
-  await page.route(
-    "**/api/game",
-    async (route) => {
-      commandId = route.request().postDataJSON().commandId;
-      created = await (await route.fetch()).json();
-      await route.abort();
-    },
-    { times: 1 },
-  );
-  const create = page.getByRole("button", { name: "Create private lobby", exact: true });
-  await create.click();
-  await expect.poll(() => created?.code).toBeDefined();
-  await expect(create).toBeEnabled();
-  const retry = page.waitForRequest(
-    (request) => request.url().endsWith("/api/game") && request.method() === "POST",
-  );
-  await create.click();
-  expect((await retry).postDataJSON().commandId).toBe(commandId);
-  await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
-  await expect.poll(() => players[0].state?.code).toBe(created!.code);
+  for (const [index, action] of ["create", "join"].entries()) {
+    const page = players[index].page;
+    if (action === "join") await page.getByLabel("Lobby code").fill(players[0].state!.code);
+    let committed: { code: string } | undefined;
+    let commandId: string | undefined;
+    await page.route(
+      "**/api/game",
+      async (route) => {
+        const command = route.request().postDataJSON();
+        commandId = command.commandId;
+        committed = await (await route.fetch()).json();
+        if (action === "join") {
+          // Remove membership to model expiry while the join response is lost.
+          const removed = await route.fetch({
+            postData: { ...command, action: "leave", commandId: crypto.randomUUID() },
+          });
+          expect(removed.ok()).toBe(true);
+        }
+        await route.abort();
+      },
+      { times: 1 },
+    );
+    const button = page.getByRole("button", {
+      name: action === "create" ? "Create private lobby" : "Join",
+      exact: true,
+    });
+    await button.click();
+    await expect.poll(() => committed?.code).toBeDefined();
+    await expect(button).toBeEnabled();
+    const retry = page.waitForRequest(
+      (request) => request.url().endsWith("/api/game") && request.method() === "POST",
+    );
+    await button.click();
+    const retriedId = (await retry).postDataJSON().commandId;
+    if (action === "create") expect(retriedId).toBe(commandId);
+    else expect(retriedId).not.toBe(commandId);
+    await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
+    await expect.poll(() => players[index].state?.code).toBe(committed!.code);
+  }
 });
 
 test("reloading and reconnecting during play restore the player and hand and allow the next move", async ({

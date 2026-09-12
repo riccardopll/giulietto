@@ -212,8 +212,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           ...extra,
         };
         const payload = JSON.stringify(command);
-        // A failed response can hide a committed mutation. Keep its ID for a retry.
-        if (httpAttempt.current?.payload !== payload)
+        // Reuse mutation IDs after failures; a fresh join must restore expired membership.
+        if (action === "join" || httpAttempt.current?.payload !== payload)
           httpAttempt.current = { payload, commandId: crypto.randomUUID() };
         s = await requestGame(token.current, {
           ...command,
