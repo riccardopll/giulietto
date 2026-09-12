@@ -1,6 +1,7 @@
 import type { Env } from "./env";
 import { command, failure, roomCode } from "./protocol";
 import { GameError } from "../shared/game-error";
+import { redirectToHttps, serveSite } from "./site";
 export { GameTable } from "./game-table";
 export { MatchQueue } from "./match-queue";
 
@@ -8,6 +9,9 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     try {
       const url = new URL(req.url);
+      const redirect = redirectToHttps(url);
+      if (redirect) return redirect;
+      if (!url.pathname.startsWith("/api/")) return serveSite(req, env.ASSETS);
       const socket = url.pathname === "/api/game/socket";
       if (url.pathname !== "/api/game" && !socket)
         return Response.json({ error: "Not found." }, { status: 404 });
