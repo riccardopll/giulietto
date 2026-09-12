@@ -17,7 +17,15 @@ import {
 
 type Entry = { options: Required<PreviewOptions>; game: Game; reset: number };
 const counts = [2, 3, 4, 5, 6];
-const phases: PreviewPhase[] = ["lobby", "playing", "bidding", "trick", "results", "blind"];
+const phases: PreviewPhase[] = [
+  "lobby",
+  "playing",
+  "bidding",
+  "trick",
+  "results",
+  "finished",
+  "blind",
+];
 const seatStates: PreviewSeatState[] = ["active", "eliminated"];
 const selectClass =
   "h-11 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none disabled:opacity-50";
@@ -249,6 +257,16 @@ export function Preview() {
           >
             Show lobby
           </Button>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full"
+            onClick={() => {
+              configure({ phase: "finished" });
+              setControlsOpen(false);
+            }}
+          >
+            Show winning screen
+          </Button>
           <div className="grid grid-cols-2 gap-3">
             <label className={labelClass}>
               Players
@@ -280,6 +298,7 @@ export function Preview() {
                 <option value="bidding">Predictions</option>
                 <option value="trick">Trick won</option>
                 <option value="results">Round results</option>
+                <option value="finished">Winner podium</option>
                 <option value="blind">Blind round</option>
               </select>
             </label>

@@ -1,19 +1,12 @@
 import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
-import { cn, toRoman } from "../utils";
+import { avatarHue, cn, toRoman } from "../utils";
 import { Lives } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
 
 type SeatPlayer = ReturnType<typeof view>["players"][number];
-
-// Player IDs are random; deriving a hue keeps each pastel stable on reconnect.
-function avatarHue(id: string) {
-  let hash = 0;
-  for (const character of id) hash = (Math.imul(hash, 31) + character.charCodeAt(0)) | 0;
-  return ((hash % 360) + 360) % 360;
-}
 
 export function PlayerSeat({
   emoteMenuOpen,

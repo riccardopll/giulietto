@@ -61,10 +61,15 @@ test("three players complete a game, including round results and elimination", a
     }
     await synced(players, (state) => state.phase === (round === 1 ? "results" : "finished"));
     for (const { page, state } of players) {
-      await expect(page.getByRole("table").getByRole("row")).toHaveCount(4);
       expect(state!.players.filter((player) => player.lives > 0)).toHaveLength(3 - round);
-      if (round === 1)
+      if (round === 1) {
+        await expect(page.getByRole("table").getByRole("row")).toHaveCount(4);
         await expect(page.getByRole("heading", { name: "Round results" })).toBeVisible();
+      } else {
+        await expect(page.getByLabel("First place", { exact: true })).toBeVisible();
+        await expect(page.getByLabel("Second place", { exact: true })).toBeVisible();
+        await expect(page.getByLabel("Third place", { exact: true })).toBeVisible();
+      }
     }
     if (round === 1) {
       await synced(players, (state) => state.round === 2 && state.phase === "bidding");

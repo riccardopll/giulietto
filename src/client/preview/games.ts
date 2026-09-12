@@ -11,7 +11,14 @@ import {
   type Game,
 } from "../../shared/game.ts";
 
-export type PreviewPhase = "lobby" | "playing" | "bidding" | "trick" | "results" | "blind";
+export type PreviewPhase =
+  | "lobby"
+  | "playing"
+  | "bidding"
+  | "trick"
+  | "results"
+  | "finished"
+  | "blind";
 export type PreviewSeatState = "active" | "eliminated";
 export type PreviewOptions = {
   people: number;
@@ -92,6 +99,17 @@ export function makePreview(input: PreviewOptions): Game {
   let game = makeGame(`PREVIEW${people}`, players[0], false);
   game.players = players;
   game.startingLives = startingLives;
+  if (phase === "finished") {
+    game.phase = "finished";
+    game.winner = players[1].id;
+    game.finishedAt = Date.now();
+    game.round = people;
+    game.players.forEach((p, index) => {
+      p.lives = p.id === game.winner ? startingLives : 0;
+      if (p.lives === 0) p.eliminatedRound = people - (index === 0 ? 0 : index - 1);
+    });
+    return game;
+  }
   if (phase === "lobby") {
     game.players.forEach((p) => {
       p.lives = startingLives;
