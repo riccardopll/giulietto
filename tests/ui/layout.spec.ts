@@ -45,6 +45,10 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     return errors;
   });
   expect(errors).toEqual([]);
+  const emoteButton = await page.getByRole("button", { name: "Emotes", exact: true }).boundingBox();
+  const table = await page.locator(".table-surface").boundingBox();
+  expect(emoteButton!.x + emoteButton!.width).toBeCloseTo(table!.x + table!.width * 0.98, 0);
+  expect(emoteButton!.y + emoteButton!.height / 2).toBeCloseTo(table!.y + table!.height / 2, 0);
   await expect(page.getByRole("status", { name: "1 spectator", exact: true })).toHaveCount(0);
   const handCenter = await page.locator(".hand-card").evaluateAll((cards) => {
     const bounds = cards.map((card) => card.getBoundingClientRect());
@@ -75,7 +79,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     await expect(hand).toBeVisible();
   await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
   await expect(page.getByRole("button", { name: "Empty emote slot 1" })).toBeDisabled();
-  await expect(page.getByRole("button", { name: "Empty emote slot 2" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Send Perso emote" })).toBeEnabled();
   const menu = await page.getByRole("dialog", { name: "Emotes", exact: true }).boundingBox();
   const handTop = await page
     .locator(".hand-card")
@@ -92,6 +96,9 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const menuChickenSize = await menuArtwork.locator("img").boundingBox();
   await page.screenshot({ path: testInfo.outputPath("emote-menu.png") });
   await page.getByRole("button", { name: "Send chicken emote" }).click();
+  const emoteTrigger = page.locator('button[aria-label="Emotes"]');
+  await expect(emoteTrigger).toBeVisible();
+  await expect(emoteTrigger).toBeDisabled();
   for (const profile of await bottomProfiles.all()) await expect(profile).toBeVisible();
   const bubble = page.getByRole("status", { name: /sent the chicken emote/ });
   await expect(bubble.locator(".emote-motion")).toBeVisible();
@@ -115,6 +122,26 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.clock.runFor(1600);
   await expect(prediction).toHaveCount(0);
   await expect(bubble).toHaveCount(0);
+  await expect(emoteTrigger).toBeVisible();
+  await expect(emoteTrigger).toBeDisabled();
+  await page.clock.runFor(1400);
+  await expect(emoteTrigger).toBeVisible();
+  await expect(emoteTrigger).toBeEnabled();
+
+  await emoteTrigger.click();
+  await page.getByRole("button", { name: "Send Perso emote" }).click();
+  const perso = page.getByRole("status", { name: /sent the perso emote/ });
+  await expect(perso).toBeVisible();
+  const persoImage = perso.locator(".emote-motion");
+  await expect(persoImage).toBeVisible();
+  await expect(persoImage).toHaveAttribute("src", /^blob:/);
+  await expect
+    .poll(() => persoImage.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
+    .toBe(true);
+  await page.clock.runFor(300);
+  await page.screenshot({ path: testInfo.outputPath("perso-emote.png") });
+  await page.clock.runFor(1600);
+  await expect(perso).toHaveCount(0);
 
   await page.goto("/preview?people=6&cards=6&phase=playing&completedTricks=2");
   await expect(page.locator(".hand-card")).toHaveCount(4);

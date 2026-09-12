@@ -210,7 +210,7 @@ export function Preview() {
     <Dialog.Trigger asChild>
       <Button
         variant="ghost"
-        className="size-11 rounded-lg p-0 text-muted-foreground"
+        className="size-11 rounded-lg p-0 text-muted-foreground hover:bg-transparent"
         aria-label="Preview settings"
       >
         <Settings2 className="size-5" />

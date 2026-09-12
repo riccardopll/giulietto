@@ -36,6 +36,23 @@ function Chicken({ animated = false }: { animated?: boolean }) {
   );
 }
 
+function Perso({ animated = false }: { animated?: boolean }) {
+  return (
+    <span className="absolute -left-6 -top-[32.55px] h-[90px] w-[108px]">
+      {animated ? (
+        <AnimatedWebp src="/emotes/perso.webp" poster="/emotes/perso-still.webp" />
+      ) : (
+        <img
+          src="/emotes/perso-picker.webp"
+          alt=""
+          className="size-full object-contain"
+          draggable={false}
+        />
+      )}
+    </span>
+  );
+}
+
 export function EmoteBubble({
   emote,
   serverTime,
@@ -48,8 +65,12 @@ export function EmoteBubble({
   const visible = useRecent(emote?.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!emote || !visible) return null;
   return (
-    <Bubble key={emote.sentAt} label={`${name} sent the chicken emote`}>
-      <Chicken animated />
+    <Bubble
+      key={emote.sentAt}
+      label={`${name} sent the ${emote.id} emote`}
+      complete={emote.id === "perso"}
+    >
+      {emote.id === "perso" ? <Perso animated /> : <Chicken animated />}
     </Bubble>
   );
 }
@@ -67,10 +88,11 @@ export function EmotePicker({
   disabled: boolean;
   emote?: Emote;
   serverTime: number;
-  onSend: () => void;
+  onSend: (emote: Emote["id"]) => void;
 }) {
   useEffect(() => {
     void preloadWebp("/emotes/chicken.webp").catch(() => {});
+    void preloadWebp("/emotes/perso.webp").catch(() => {});
   }, []);
   const coolingDown = useRecent(emote?.sentAt, serverTime, EMOTE_COOLDOWN_MS);
   return (
@@ -79,14 +101,16 @@ export function EmotePicker({
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-0 top-0 -translate-y-1/4 size-12 shrink-0 rounded-xl bg-transparent hover:bg-transparent hover:text-red-600 disabled:text-gray-400 disabled:opacity-100"
+          className="pointer-events-auto absolute right-[2%] top-1/2 -translate-y-1/2 h-11 w-11 shrink-0 rounded-none bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring disabled:text-muted-foreground disabled:opacity-100"
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
-          <Smile className="size-7" aria-hidden="true" />
+          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center rounded-l-2xl bg-[#fff8ed] shadow-sm">
+            <Smile className="size-6" aria-hidden="true" />
+          </span>
         </Button>
       </Popover.Trigger>
-      <Popover.Anchor className="pointer-events-none absolute left-1/2 top-0 size-px -translate-x-1/2" />
+      <Popover.Anchor className="pointer-events-none absolute left-1/2 -bottom-[4.5rem] size-px -translate-x-1/2 @min-2xl/board:-bottom-[5.5rem]" />
       <Popover.Portal>
         <Popover.Content
           side="top"
@@ -103,7 +127,7 @@ export function EmotePicker({
             aria-label="Send chicken emote"
             onClick={() => {
               if (disabled || coolingDown) return;
-              onSend();
+              onSend("chicken");
               onOpenChange(false);
             }}
           >
@@ -111,7 +135,21 @@ export function EmotePicker({
               <Chicken />
             </BubbleArtwork>
           </button>
-          {[1, 2].map((slot) => (
+          <button
+            type="button"
+            className="block"
+            aria-label="Send Perso emote"
+            onClick={() => {
+              if (disabled || coolingDown) return;
+              onSend("perso");
+              onOpenChange(false);
+            }}
+          >
+            <BubbleArtwork>
+              <Perso />
+            </BubbleArtwork>
+          </button>
+          {[1].map((slot) => (
             <button
               key={slot}
               type="button"
