@@ -36,9 +36,9 @@ const actionClass = "h-auto min-h-12 w-full rounded-lg px-4 py-3 text-sm whitesp
 export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAction }: HomeProps) {
   return (
     <main className="mx-auto w-full max-w-sm py-6 sm:py-8">
-      <h1 className="text-center text-xl font-semibold">Play Giulietto online with friends</h1>
+      <h1 className="text-center text-xl font-semibold">Play Giulietto</h1>
       <p className="mt-2 text-center text-sm leading-6 text-muted-foreground">
-        A Neapolitan card game for 2–6 players. Predict your tricks and protect your lives.
+        An online card game for 2 to 6 players.
       </p>
       <nav
         aria-label="About the game"
@@ -129,14 +129,11 @@ export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAc
           About Giulietto
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Giulietto is a multiplayer card game for 2–6 players, played with a 40-card Neapolitan
-          deck. Each round, predict how many tricks you’ll win, then try to match your prediction.
-          Every trick above or below your prediction costs a life. The last player with lives
-          remaining wins.
+          Giulietto is an online card game for 2 to 6 players, played with a 40-card Neapolitan
+          deck.
         </p>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Create a private lobby and share the code with friends, or find a public table. Play
-          directly in your browser, with no download or account required.
+          Create a private lobby and share its code, or join a public table.
         </p>
       </section>
     </main>
