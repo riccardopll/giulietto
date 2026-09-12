@@ -36,18 +36,6 @@ const actionClass = "h-auto min-h-12 w-full rounded-lg px-4 py-3 text-sm whitesp
 export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAction }: HomeProps) {
   return (
     <main className="mx-auto w-full max-w-sm py-6 sm:py-8">
-      <h1 className="text-center text-xl font-semibold">Play Giulietto</h1>
-      <p className="mt-2 text-center text-sm leading-6 text-muted-foreground">
-        An online card game for 2 to 6 players.
-      </p>
-      <nav
-        aria-label="About the game"
-        className="mt-3 mb-7 flex justify-center gap-6 text-sm text-primary"
-      >
-        <a className="underline underline-offset-4" href="#about">
-          About
-        </a>
-      </nav>
       <div data-nosnippet>
         <div className="grid gap-2.5">
           <label htmlFor="name" className="text-sm font-medium">
@@ -124,18 +112,6 @@ export function Home({ name, code, ready, busy, onNameChange, onCodeChange, onAc
           </div>
         </form>
       </div>
-      <section id="about" aria-labelledby="about-title" className="mt-10 scroll-mt-6 border-t pt-7">
-        <h2 id="about-title" className="text-lg font-semibold">
-          About Giulietto
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Giulietto is an online card game for 2 to 6 players, played with a 40-card Neapolitan
-          deck.
-        </p>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          Create a private lobby and share its code, or join a public table.
-        </p>
-      </section>
     </main>
   );
 }
