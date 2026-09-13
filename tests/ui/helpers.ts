@@ -64,6 +64,9 @@ export const test = base.extend<{ players: Player[] }>({
             .locator("[data-sonner-toast]")
             .filter({ hasText: "Could not load player stats." });
           await expect(statsError).toBeVisible();
+          await page.getByRole("main").evaluate(async (element) => {
+            await Promise.all(element.getAnimations().map((animation) => animation.finished));
+          });
           expect(
             await page.getByRole("button", { name: "Edit your avatar", exact: true }).boundingBox(),
           ).toEqual(avatarBounds);

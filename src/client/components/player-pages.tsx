@@ -99,7 +99,10 @@ export function PlayerPages({
   const [editing, setEditing] = useState<"name" | "avatar" | null>(null);
   const stats = data?.player;
   return (
-    <main className="mx-auto w-full max-w-md pb-8">
+    <main
+      key={page}
+      className="mx-auto w-full max-w-md animate-in fade-in slide-in-from-bottom-1 pb-8 duration-200 ease-out"
+    >
       <PageHeading title={page === "profile" ? "Your profile" : "Leaderboard"} onBack={onBack} />
       {page === "profile" ? (
         <>
