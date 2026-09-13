@@ -70,7 +70,7 @@ function ProfileEditor({
       }}
       title={mode === "name" ? "Edit your name" : "Choose your avatar"}
       hideTitle={mode === "name"}
-      actionLabel={saving ? "Saving…" : mode === "name" ? "Save name" : "Save avatar"}
+      actionLabel={saving ? "Saving…" : mode === "name" ? "Save" : "Save avatar"}
       busy={saving}
       actionDisabled={mode === "name" && !name.trim()}
       onSubmit={async () => {
@@ -86,12 +86,7 @@ function ProfileEditor({
       }}
     >
       {mode === "name" ? (
-        <NameChangeInput
-          currentName={profile.name}
-          value={name}
-          disabled={saving}
-          onChange={setName}
-        />
+        <NameChangeInput value={name} disabled={saving} onChange={setName} />
       ) : (
         <fieldset disabled={saving}>
           <legend className="sr-only">Player avatar</legend>

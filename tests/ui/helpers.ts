@@ -42,12 +42,12 @@ export const test = base.extend<{ players: Player[] }>({
               }),
             { times: 1 },
           );
-          await page.getByRole("button", { name: "Save name", exact: true }).click();
+          await page.getByRole("button", { name: "Save", exact: true }).click();
           await expect(
             page.locator("[data-sonner-toast]").filter({ hasText: "Could not save your profile." }),
           ).toBeVisible();
           expect(await renameDialog.boundingBox()).toEqual(renameBounds);
-          await page.getByRole("button", { name: "Save name", exact: true }).click();
+          await page.getByRole("button", { name: "Save", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
           await page.getByRole("button", { name: "Edit your avatar", exact: true }).click();
           await expect(page.getByLabel("New name")).toHaveCount(0);
@@ -86,7 +86,7 @@ export const test = base.extend<{ players: Player[] }>({
         if (i > 0) {
           await page.getByRole("button", { name: "Edit your name", exact: true }).click();
           await page.getByLabel("New name", { exact: true }).fill(`bot_${i + 1}`);
-          await page.getByRole("button", { name: "Save name", exact: true }).click();
+          await page.getByRole("button", { name: "Save", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
           await expect.poll(() => player.state?.viewerName).toBe(`bot_${i + 1}`);
           expect(

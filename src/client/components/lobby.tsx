@@ -108,19 +108,14 @@ export function Lobby({
         onOpenChange={setEditing}
         title="Edit your name"
         hideTitle
-        actionLabel={busy ? "Saving…" : "Save name"}
+        actionLabel={busy ? "Saving…" : "Save"}
         busy={busy}
         actionDisabled={!draftName.trim()}
         onSubmit={async () => {
           if (await onRename(draftName)) setEditing(false);
         }}
       >
-        <NameChangeInput
-          currentName={game.viewerName}
-          value={draftName}
-          disabled={busy}
-          onChange={setDraftName}
-        />
+        <NameChangeInput value={draftName} disabled={busy} onChange={setDraftName} />
       </ActionDialog>
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
