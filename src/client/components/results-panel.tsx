@@ -45,7 +45,7 @@ export function ResultsPanel({
                   className={cn(
                     "h-10 px-1 text-center text-xs whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
                     i === 0 && "pl-4 text-left sm:pl-8",
-                    i === 3 && "pr-4 sm:pr-8",
+                    i === 3 && "pr-6 sm:pr-10",
                   )}
                 >
                   {label}
@@ -74,7 +74,7 @@ export function ResultsPanel({
                   </TableCell>
                   <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
                   <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
-                  <TableCell className={cn(cellClass, "pr-4 sm:pr-8")}>
+                  <TableCell className={cn(cellClass, "pr-6 sm:pr-10")}>
                     <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
                       <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
                       <span
