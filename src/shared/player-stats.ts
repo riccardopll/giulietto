@@ -6,6 +6,9 @@ export type PlayerStats = {
   tricks: number;
   exactPredictions: number;
   predictionError: number;
+  acesOfCoinsPlayed: number | null;
+  averagePrediction: number | null;
+  averageDecisionMs: number | null;
   xp: number;
   level: number;
 };

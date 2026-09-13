@@ -8,7 +8,11 @@ const totals = `SELECT p.id, p.display_name AS name, p.avatar, COUNT(r.match_id)
   COALESCE(SUM(r.rounds_played),0) AS rounds,
   COALESCE(SUM(r.tricks_won),0) AS tricks,
   COALESCE(SUM(r.exact_predictions),0) AS exactPredictions,
-  COALESCE(SUM(r.prediction_error),0) AS predictionError
+  COALESCE(SUM(r.prediction_error),0) AS predictionError,
+  CASE WHEN COUNT(r.match_id)=0 THEN 0 ELSE SUM(r.aces_of_coins_played) END AS acesOfCoinsPlayed,
+  1.0*SUM(r.prediction_total)/NULLIF(SUM(r.prediction_count),0) AS averagePrediction,
+  1.0*SUM(COALESCE(r.play_time_ms,0)+COALESCE(r.prediction_time_ms,0))
+    /NULLIF(SUM(COALESCE(r.timed_plays,0)+COALESCE(r.timed_predictions,0)),0) AS averageDecisionMs
   FROM players p LEFT JOIN match_results r ON r.player_id=p.id
     AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL`;
 
@@ -20,6 +24,9 @@ function stats(row?: Row): PlayerStats {
     tricks = 0,
     exactPredictions = 0,
     predictionError = 0,
+    acesOfCoinsPlayed = 0,
+    averagePrediction = null,
+    averageDecisionMs = null,
   } = row ?? {};
   return {
     matches,
@@ -28,6 +35,9 @@ function stats(row?: Row): PlayerStats {
     tricks,
     exactPredictions,
     predictionError,
+    acesOfCoinsPlayed,
+    averagePrediction,
+    averageDecisionMs,
     ...progression(matches, wins),
   };
 }

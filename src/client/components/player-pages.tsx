@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ArrowLeft, Check, Pencil, RefreshCw } from "lucide-react";
+import { ArrowLeft, Check, Coins, Pencil, RefreshCw, Target, Timer } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
@@ -232,18 +232,36 @@ export function PlayerPages({
                   </div>
                 ))}
               </dl>
-              <ul aria-label="Locked stats" className="divide-y">
-                {[0, 1, 2].map((slot) => (
-                  <li
-                    key={slot}
-                    aria-label="Locked"
-                    className="flex items-center justify-between gap-4 py-4"
-                  >
-                    <span aria-hidden="true" className="h-3 w-32 rounded-full bg-muted" />
-                    <span aria-hidden="true">🔒</span>
-                  </li>
+              <dl className="divide-y">
+                {[
+                  {
+                    label: "Aces of Coins played",
+                    value: stats.acesOfCoinsPlayed ?? "—",
+                    icon: Coins,
+                  },
+                  {
+                    label: "Average prediction",
+                    value: stats.averagePrediction?.toFixed(1) ?? "—",
+                    icon: Target,
+                  },
+                  {
+                    label: "Average turn time",
+                    value:
+                      stats.averageDecisionMs == null
+                        ? "—"
+                        : `${(stats.averageDecisionMs / 1000).toFixed(1)} s`,
+                    icon: Timer,
+                  },
+                ].map(({ label, value, icon: Icon }) => (
+                  <div key={label} className="flex items-center justify-between gap-4 py-4 text-sm">
+                    <dt className="flex items-center gap-3 text-muted-foreground">
+                      <Icon className="size-5 shrink-0" aria-hidden="true" />
+                      {label}
+                    </dt>
+                    <dd className="shrink-0 font-medium tabular-nums">{value}</dd>
+                  </div>
                 ))}
-              </ul>
+              </dl>
             </>
           ) : (
             !error && (

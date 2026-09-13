@@ -3,6 +3,9 @@ import { test, guest } from "./worker";
 import { gameFixture } from "../unit/helpers";
 import { historyStatements } from "../../src/server/match-history";
 import type { StatsResponse } from "../../src/shared/player-stats";
+import { eventStatements, type GameEvent } from "../../src/server/game-events";
+import { playerStats } from "../../src/server/player-stats";
+import { readFile } from "node:fs/promises";
 
 test("stats use finalized history once, preserve identity, and rank players by wins", async ({
   api,
@@ -55,6 +58,9 @@ test("stats use finalized history once, preserve identity, and rank players by w
     predictionError: 2,
     xp: 30,
     level: 1,
+    acesOfCoinsPlayed: null,
+    averagePrediction: null,
+    averageDecisionMs: null,
   });
   // An abandoned match adds no participation or win credit.
   game.matchId = "abandoned";
@@ -81,6 +87,101 @@ test("stats use finalized history once, preserve identity, and rank players by w
   expect((await read(guest(4).token)).player.matches).toBe(0);
   expect(JSON.stringify(result)).not.toContain(id);
   expect(JSON.stringify(result)).not.toContain(host.token);
+});
+
+test("decision stats combine completed-match samples, omit missing timing, and survive replay", async ({
+  api,
+}) => {
+  const database = await api.runtime.getD1Database("DB");
+  const db = database as unknown as D1Database;
+  const read = async () => (await playerStats(db, "p0")).player;
+  const make = (matchId: string, status: "completed" | "active" | "abandoned" = "completed") => {
+    const game = gameFixture();
+    game.matchId = matchId;
+    game.revision = 10;
+    if (status !== "active") {
+      game.phase = "finished";
+      game.finishedAt = 200;
+      game.winner = status === "completed" ? "p0" : null;
+    }
+    return game;
+  };
+  const deliver = async (
+    game: ReturnType<typeof make>,
+    moves: { type: string; payload: object; source?: GameEvent["source"] }[],
+  ) => {
+    const events: GameEvent[] = moves.map((move, i) => ({
+      sequence: i + 1,
+      match_id: game.matchId!,
+      revision: game.revision,
+      round: 1,
+      type: move.type,
+      player_id: "p0",
+      source: move.source ?? "player",
+      command_id: `command-${i}`,
+      occurred_at: 200,
+      payload: JSON.stringify(move.payload),
+    }));
+    await db.batch([
+      ...eventStatements(db, game, events),
+      ...historyStatements(db, game, { eventCount: events.length }),
+    ]);
+  };
+  const first = make("timed-1");
+  const moves = [
+    { type: "bid", payload: { bid: 2, elapsedMs: 1000 } },
+    { type: "play", payload: { card: 31, elapsedMs: 3000 } },
+    { type: "play", payload: { card: 1, elapsedMs: 0 } },
+    { type: "play", payload: { card: 31, elapsedMs: 40000 }, source: "timeout" as const },
+    { type: "bid", payload: { bid: 0, elapsedMs: 40000 }, source: "timeout" as const },
+  ];
+  await deliver(first, moves);
+  await deliver(make("timed-2"), [{ type: "bid", payload: { bid: 4, elapsedMs: 5000 } }]);
+  const older = make("older");
+  await deliver(older, [
+    { type: "bid", payload: { bid: 0 } },
+    { type: "play", payload: { card: 31 } },
+  ]);
+  // Simulate the pre-migration summaries, then backfill the counts from old events.
+  await db
+    .prepare(
+      "UPDATE match_results SET aces_of_coins_played=NULL, prediction_total=NULL, prediction_count=NULL WHERE match_id='older'",
+    )
+    .run();
+  const migration = await readFile("migrations/0007_player_decision_stats.sql", "utf8");
+  await db.prepare(migration.slice(migration.indexOf("UPDATE match_results"))).run();
+  const expected = {
+    matches: 3,
+    acesOfCoinsPlayed: 3,
+    averagePrediction: 1.5,
+    averageDecisionMs: 2250,
+  };
+  expect(await read()).toMatchObject(expected);
+  const stored = await db
+    .prepare(
+      "SELECT play_time_ms, timed_plays, prediction_time_ms, timed_predictions FROM match_results WHERE match_id=? AND player_id='p0'",
+    )
+    .bind(first.matchId!)
+    .first();
+  expect(stored).toEqual({
+    play_time_ms: 3000,
+    timed_plays: 2,
+    prediction_time_ms: 1000,
+    timed_predictions: 1,
+  });
+  for (const status of ["active", "abandoned"] as const) {
+    await deliver(make(status, status), moves);
+    expect(await read()).toMatchObject(expected);
+  }
+  await deliver(first, moves);
+  first.revision--;
+  await db.batch(historyStatements(db, first, { eventCount: 0 }));
+  expect(await read()).toMatchObject(expected);
+  expect((await playerStats(db, "unknown")).player).toMatchObject({
+    acesOfCoinsPlayed: 0,
+    averagePrediction: null,
+    averageDecisionMs: null,
+  });
 });
 
 test("stats API requires a guest token and rejects writes and foreign origins", async ({ api }) => {

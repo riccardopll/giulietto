@@ -57,5 +57,30 @@ export function historyStatements(db: D1Database, g: Game, recording: { eventCou
         participants,
         ...guardValues,
       ),
+    ...(finished && g.winner
+      ? [
+          db
+            .prepare(`UPDATE match_results AS r SET
+            aces_of_coins_played=totals.aces,
+            prediction_total=totals.predictions, prediction_count=totals.bids,
+            play_time_ms=totals.play_time, timed_plays=totals.plays_timed,
+            prediction_time_ms=totals.bid_time, timed_predictions=totals.bids_timed
+          FROM (
+            SELECT player_id,
+              SUM(type='play' AND json_extract(payload,'$.card')=31) AS aces,
+              SUM(CASE WHEN type='bid' THEN json_extract(payload,'$.bid') ELSE 0 END) AS predictions,
+              SUM(type='bid') AS bids,
+              SUM(CASE WHEN type='play' AND source='player' THEN json_extract(payload,'$.elapsedMs') END) AS play_time,
+              COUNT(CASE WHEN type='play' AND source='player' THEN json_extract(payload,'$.elapsedMs') END) AS plays_timed,
+              SUM(CASE WHEN type='bid' AND source='player' THEN json_extract(payload,'$.elapsedMs') END) AS bid_time,
+              COUNT(CASE WHEN type='bid' AND source='player' THEN json_extract(payload,'$.elapsedMs') END) AS bids_timed
+            FROM match_events WHERE match_id=? AND type IN ('play','bid')
+            GROUP BY player_id
+          ) AS totals
+          WHERE r.match_id=? AND r.player_id=totals.player_id
+            AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL AND ${guard}`)
+            .bind(g.matchId!, g.matchId!, ...guardValues),
+        ]
+      : []),
   ];
 }

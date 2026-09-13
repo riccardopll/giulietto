@@ -121,6 +121,9 @@ test("three players complete a game, including round results and elimination", a
       await expect(
         page.getByText(state!.you === winner ? "30 / 100 XP" : "10 / 100 XP", { exact: true }),
       ).toBeVisible();
+      await expect(
+        page.locator("dl > div").filter({ hasText: "Average turn time" }).locator("dd"),
+      ).toHaveText(/^\d+\.\d s$/);
     }).toPass();
     await page.screenshot({
       path: testInfo.outputPath(`stats-${state!.viewerName}.png`),
