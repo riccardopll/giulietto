@@ -45,7 +45,7 @@ export function ResultsPanel({
                   className={cn(
                     "h-10 px-1 text-center text-xs whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
                     i === 0 && "pl-4 text-left sm:pl-8",
-                    i === 3 && "pr-6 sm:pr-10",
+                    i === 3 && "pr-4 sm:pr-8",
                   )}
                 >
                   {label}
@@ -74,14 +74,14 @@ export function ResultsPanel({
                   </TableCell>
                   <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
                   <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
-                  <TableCell className={cn(cellClass, "pr-6 sm:pr-10")}>
+                  <TableCell className={cn(cellClass, "pr-4 sm:pr-8")}>
                     <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
                       <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
                       <span
                         className={cn(
                           "col-start-3 justify-self-start text-xs whitespace-nowrap tabular-nums",
                           result?.lost
-                            ? "rounded-md bg-destructive/10 px-0.5 py-0.5 font-semibold text-destructive sm:px-1"
+                            ? "rounded-md bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive"
                             : "text-primary",
                         )}
                         aria-label={result ? `${result.lost} lives lost` : "No round result"}
