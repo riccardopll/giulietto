@@ -27,16 +27,48 @@ export const test = base.extend<{ players: Player[] }>({
           await page.goto("/");
           await page.getByRole("button", { name: "Open your profile" }).click();
           await page.getByRole("button", { name: "Edit your name", exact: true }).click();
-          await page.getByLabel("Display name").fill("bot_1");
+          await page.getByLabel("New name").fill("bot_1");
           await expect(page.getByRole("radio")).toHaveCount(0);
+          const renameDialog = page.getByRole("dialog", { name: "Edit your name" });
+          await expect(renameDialog).toHaveCSS("opacity", "1");
+          const renameBounds = await renameDialog.boundingBox();
+          await page.route(
+            "**/api/profile",
+            (route) =>
+              route.fulfill({
+                status: 503,
+                contentType: "application/json",
+                body: JSON.stringify({ error: "Could not save your profile." }),
+              }),
+            { times: 1 },
+          );
+          await page.getByRole("button", { name: "Save name", exact: true }).click();
+          await expect(
+            page.locator("[data-sonner-toast]").filter({ hasText: "Could not save your profile." }),
+          ).toBeVisible();
+          expect(await renameDialog.boundingBox()).toEqual(renameBounds);
           await page.getByRole("button", { name: "Save name", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
           await page.getByRole("button", { name: "Edit your avatar", exact: true }).click();
-          await expect(page.getByLabel("Display name")).toHaveCount(0);
+          await expect(page.getByLabel("New name")).toHaveCount(0);
           await page.getByRole("radio", { name: "King of Cups", exact: true }).check();
           await page.getByRole("button", { name: "Save avatar", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Choose your avatar" })).toBeHidden();
+          await page.waitForLoadState("networkidle");
+          const avatarBounds = await page
+            .getByRole("button", { name: "Edit your avatar", exact: true })
+            .boundingBox();
+          await page.route("**/api/stats", (route) => route.fulfill({ status: 503 }), { times: 1 });
           await page.reload();
+          const statsError = page
+            .locator("[data-sonner-toast]")
+            .filter({ hasText: "Could not load player stats." });
+          await expect(statsError).toBeVisible();
+          expect(
+            await page.getByRole("button", { name: "Edit your avatar", exact: true }).boundingBox(),
+          ).toEqual(avatarBounds);
+          await statsError.getByRole("button", { name: "Retry", exact: true }).click();
+          await expect(statsError).toBeHidden();
           await expect(page.getByRole("button", { name: "Edit your name" })).toHaveText("bot_1");
           await expect(
             page.getByRole("button", { name: "Edit your avatar", exact: true }).locator("img"),
@@ -53,7 +85,7 @@ export const test = base.extend<{ players: Player[] }>({
         );
         if (i > 0) {
           await page.getByRole("button", { name: "Edit your name", exact: true }).click();
-          await page.getByLabel("Display name", { exact: true }).fill(`bot_${i + 1}`);
+          await page.getByLabel("New name", { exact: true }).fill(`bot_${i + 1}`);
           await page.getByRole("button", { name: "Save name", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
           await expect.poll(() => player.state?.viewerName).toBe(`bot_${i + 1}`);

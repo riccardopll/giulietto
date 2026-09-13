@@ -9,6 +9,9 @@ Only notification bubbles may clip.
 Use Tailwind for layout and component styles. Reserve shared CSS for theme tokens,
 reusable utilities, paint, and animations.
 
+Show all errors in the shared top-down notifications. Errors must never shift the
+page or dialog layout; keep retry actions in the notification, not inline banners.
+
 Always play animations regardless of the system's reduced-motion preference.
 Do not add reduced-motion overrides or gate animations behind `motion-safe`.
 

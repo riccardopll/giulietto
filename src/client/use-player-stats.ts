@@ -1,4 +1,5 @@
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { toast } from "sonner";
 import type { StatsResponse } from "@/shared/player-stats";
 import type { AvatarId } from "@/shared/avatars";
 
@@ -14,6 +15,11 @@ export function usePlayerStats(
   const [saving, setSaving] = useState(false);
   const version = useRef(0);
   const receive = useEffectEvent(onProfile);
+  const refresh = useCallback(() => {
+    toast.dismiss("stats-error");
+    setError("");
+    setAttempt((a) => a + 1);
+  }, []);
   useEffect(() => {
     if (!token || !active) return;
     const controller = new AbortController();
@@ -27,13 +33,17 @@ export function usePlayerStats(
         if (controller.signal.aborted || current !== version.current) return;
         setData(next);
         setError("");
+        toast.dismiss("stats-error");
         if (next.profile.name) receive(next.profile);
       })
       .catch(() => {
-        if (!controller.signal.aborted) setError("Could not load player stats.");
+        if (controller.signal.aborted || current !== version.current) return;
+        const message = "Could not load player stats.";
+        setError(message);
+        toast.error(message, { id: "stats-error", action: { label: "Retry", onClick: refresh } });
       });
     return () => controller.abort();
-  }, [token, active, attempt]);
+  }, [token, active, attempt, refresh]);
   async function save(profile: Profile) {
     setSaving(true);
     ++version.current;
@@ -65,9 +75,6 @@ export function usePlayerStats(
     error,
     saving,
     save,
-    refresh: () => {
-      setError("");
-      setAttempt((a) => a + 1);
-    },
+    refresh,
   };
 }

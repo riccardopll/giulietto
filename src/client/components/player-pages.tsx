@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { ArrowLeft, Check, Coins, Pencil, RefreshCw, Target, Timer } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 import { PageHeader } from "./ui/page-header";
 import { TrophyIcon } from "./ui/trophy-icon";
@@ -59,9 +60,8 @@ function ProfileEditor({
   onSave: (profile: Profile) => Promise<void>;
   onClose: () => void;
 }) {
-  const [name, setName] = useState(profile.name);
+  const [name, setName] = useState("");
   const [avatar, setAvatar] = useState<AvatarId>(profile.avatar);
-  const [error, setError] = useState("");
   return (
     <ActionDialog
       open
@@ -69,36 +69,32 @@ function ProfileEditor({
         if (!open) onClose();
       }}
       title={mode === "name" ? "Edit your name" : "Choose your avatar"}
+      hideTitle={mode === "name"}
       actionLabel={saving ? "Saving…" : mode === "name" ? "Save name" : "Save avatar"}
       busy={saving}
       actionDisabled={mode === "name" && !name.trim()}
       onSubmit={async () => {
-        setError("");
+        toast.dismiss("profile-error");
         try {
           await onSave(
             mode === "name" ? { ...profile, name: name.trim() } : { ...profile, avatar },
           );
           onClose();
         } catch (e) {
-          setError((e as Error).message);
+          toast.error((e as Error).message, { id: "profile-error" });
         }
       }}
     >
       {mode === "name" ? (
-        <label className="grid gap-2 text-sm font-medium">
-          Display name
-          <Input
-            className="h-12 text-base md:text-base"
-            autoComplete="nickname"
-            maxLength={20}
-            value={name}
-            disabled={saving}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </label>
+        <NameChangeInput
+          currentName={profile.name}
+          value={name}
+          disabled={saving}
+          onChange={setName}
+        />
       ) : (
         <fieldset disabled={saving}>
-          <legend className="mb-3 text-sm font-medium">Player avatar</legend>
+          <legend className="sr-only">Player avatar</legend>
           <div className="grid grid-cols-3 gap-3">
             {avatars.map((option) => (
               <label key={option.id} className="relative cursor-pointer">
@@ -122,11 +118,6 @@ function ProfileEditor({
             ))}
           </div>
         </fieldset>
-      )}
-      {error && (
-        <p role="alert" className="text-sm text-destructive">
-          {error}
-        </p>
       )}
     </ActionDialog>
   );
@@ -154,20 +145,12 @@ export function PlayerPages({
   const [editing, setEditing] = useState<"name" | "avatar" | null>(null);
   const stats = data?.player;
   return (
-    <main className={cn("mx-auto w-full max-w-md pb-8", page === "leaderboard" && "pt-5 sm:pt-8")}>
+    <main className="mx-auto w-full max-w-md pb-8">
       <PageHeading
         title={page === "profile" ? "Your profile" : "Leaderboard"}
         onBack={onBack}
         refresh={page === "leaderboard" ? refresh : undefined}
       />
-      {error && (
-        <p role="alert" className="mb-4 rounded-xl border p-4 text-sm">
-          {error}{" "}
-          <Button variant="link" onClick={refresh}>
-            Retry
-          </Button>
-        </p>
-      )}
       {page === "profile" ? (
         <>
           <div className="flex flex-col items-center">
@@ -264,11 +247,12 @@ export function PlayerPages({
               </dl>
             </>
           ) : (
-            !error && (
-              <p role="status" className="mt-6 text-center text-sm text-muted-foreground">
-                Loading stats…
-              </p>
-            )
+            <p
+              role="status"
+              className={cn("mt-6 text-center text-sm text-muted-foreground", error && "invisible")}
+            >
+              Loading stats…
+            </p>
           )}
           {editing && (
             <ProfileEditor
@@ -282,9 +266,10 @@ export function PlayerPages({
         </>
       ) : (
         <>
-          <p className="mb-5 text-sm text-muted-foreground">All time · Ranked by wins</p>
           {!data ? (
-            !error && <p role="status">Loading leaderboard…</p>
+            <p role="status" className={error ? "invisible" : undefined}>
+              Loading leaderboard…
+            </p>
           ) : data.leaders.length === 0 ? (
             <div className="rounded-xl border border-dashed p-8 text-center">
               <TrophyIcon className="mx-auto mb-3 size-8 text-primary" />

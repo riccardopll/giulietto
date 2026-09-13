@@ -307,7 +307,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             : "safe-area mx-auto min-h-svh max-w-6xl [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
         }
       >
-        {(game || page !== "profile") && (
+        {(game || page === "home") && (
           <PageHeader
             className={`site-header grid grid-cols-[auto_minmax(0,1fr)_auto] gap-1 ${!game ? "mx-auto w-full max-w-md" : ""}`}
           >
@@ -323,9 +323,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 }}
                 aria-label="Giulietto home"
               >
-                {!game && page !== "home" && (
-                  <img src="/logo.png" width={48} height={48} alt="" className="size-12" />
-                )}
                 Giulietto
               </a>
               {game && !waiting && game.spectatorCount > 1 && (

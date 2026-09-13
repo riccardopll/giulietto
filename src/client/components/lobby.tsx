@@ -5,7 +5,7 @@ import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type view } from "../../shared/
 import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 
 type State = ReturnType<typeof view>;
@@ -100,13 +100,14 @@ export function Lobby({
   onRename: (name: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draftName, setDraftName] = useState(game.viewerName);
+  const [draftName, setDraftName] = useState("");
   return (
     <section className="mx-auto w-full max-w-xl py-3 sm:py-5">
       <ActionDialog
         open={editing}
         onOpenChange={setEditing}
         title="Edit your name"
+        hideTitle
         actionLabel={busy ? "Saving…" : "Save name"}
         busy={busy}
         actionDisabled={!draftName.trim()}
@@ -114,15 +115,11 @@ export function Lobby({
           if (await onRename(draftName)) setEditing(false);
         }}
       >
-        <Input
-          id="lobby-name"
-          aria-label="Display name"
-          className="h-12 text-base md:text-base"
-          autoComplete="off"
-          maxLength={20}
+        <NameChangeInput
+          currentName={game.viewerName}
           value={draftName}
           disabled={busy}
-          onChange={(event) => setDraftName(event.target.value)}
+          onChange={setDraftName}
         />
       </ActionDialog>
       <div className="mb-4">
@@ -162,7 +159,7 @@ export function Lobby({
                       aria-label="Edit your name"
                       disabled={busy}
                       onClick={() => {
-                        setDraftName(game.viewerName);
+                        setDraftName("");
                         setEditing(true);
                       }}
                     >

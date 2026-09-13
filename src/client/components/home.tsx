@@ -1,4 +1,5 @@
 import { ChevronRight, Link, Loader2, Play } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { TrophyIcon } from "./ui/trophy-icon";
@@ -92,6 +93,10 @@ export function Home({
               data-form-type="other"
               placeholder="Enter lobby code"
               required
+              onInvalid={(event) => {
+                event.preventDefault();
+                toast.error("Enter an 8-character lobby code.", { id: "game-error" });
+              }}
               minLength={8}
               maxLength={8}
               value={code}
