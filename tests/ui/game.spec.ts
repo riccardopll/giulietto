@@ -88,6 +88,18 @@ test("three players complete a game, including round results and elimination", a
     players[0].page.getByRole("status", { name: "2 spectators", exact: true }),
   ).toBeVisible();
   await players[0].page.screenshot({ path: testInfo.outputPath("winner.png"), fullPage: true });
+  const otherTab = await players[0].page.context().newPage();
+  await otherTab.addInitScript(() => {
+    const NativeSocket = window.WebSocket;
+    window.WebSocket = class extends NativeSocket {
+      constructor(url: string | URL, protocols?: string | string[]) {
+        super(url, protocols);
+        Reflect.set(window, "testSocket", this);
+      }
+    };
+  });
+  await otherTab.goto(players[0].page.url());
+  await expect(otherTab.getByRole("heading", { name: "You win", exact: true })).toBeVisible();
   for (const { page, state } of players) {
     expect(state!.winner).toBe(winner);
     await expect(
@@ -98,7 +110,22 @@ test("three players complete a game, including round results and elimination", a
     ).toBeVisible();
     await page.getByRole("button", { name: "Back to tables", exact: true }).click();
     await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
+    await expect(page).toHaveURL("/");
+    expect(await page.evaluate(() => localStorage.getItem("giulietto-room"))).toBeNull();
   }
+
+  // Another open tab must not restore the saved table when its connection resumes.
+  const resumed = otherTab
+    .waitForEvent("websocket")
+    .then((socket) => socket.waitForEvent("framereceived"));
+  await otherTab.evaluate(() => {
+    Reflect.get(window, "testSocket").close(4000, "Test connection loss");
+  });
+  await resumed;
+  await players[0].page.reload();
+  await expect(players[0].page.getByLabel("Display name")).toHaveValue("bot_1");
+  expect(await otherTab.evaluate(() => localStorage.getItem("giulietto-room"))).toBeNull();
+  await otherTab.close();
 
   for (const [index, { action, expires }] of [
     { action: "create", expires: false },
