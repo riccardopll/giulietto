@@ -134,10 +134,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await expect(perso).toBeVisible();
   const persoImage = perso.locator(".emote-motion");
   await expect(persoImage).toBeVisible();
-  await expect(persoImage).toHaveAttribute("src", "/emotes/perso-picker.webp");
-  expect(await persoImage.evaluate((el) => getComputedStyle(el).animationName)).toBe(
-    "perso-lettering",
-  );
+  await expect(persoImage).toHaveAttribute("src", /^blob:/);
   await expect(perso.locator(".emote-artwork > svg")).toHaveCount(2);
   await expect
     .poll(() => persoImage.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))

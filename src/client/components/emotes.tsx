@@ -39,16 +39,16 @@ function Chicken({ animated = false }: { animated?: boolean }) {
 function Perso({ animated = false }: { animated?: boolean }) {
   return (
     <span className="absolute -left-6 -top-[32.55px] h-[90px] w-[108px]">
-      <img
-        src="/emotes/perso-picker.webp"
-        alt=""
-        className={
-          animated
-            ? "emote-motion size-full object-contain origin-[50%_65%] animate-[perso-lettering_1.5s_ease-out_both]"
-            : "size-full object-contain"
-        }
-        draggable={false}
-      />
+      {animated ? (
+        <AnimatedWebp src="/emotes/perso-lettering.webp" poster="/emotes/perso-picker.webp" />
+      ) : (
+        <img
+          src="/emotes/perso-picker.webp"
+          alt=""
+          className="size-full object-contain"
+          draggable={false}
+        />
+      )}
     </span>
   );
 }
@@ -88,6 +88,7 @@ export function EmotePicker({
 }) {
   useEffect(() => {
     void preloadWebp("/emotes/chicken.webp").catch(() => {});
+    void preloadWebp("/emotes/perso-lettering.webp").catch(() => {});
   }, []);
   const coolingDown = useRecent(emote?.sentAt, serverTime, EMOTE_COOLDOWN_MS);
   return (

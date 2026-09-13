@@ -137,25 +137,3 @@
     transform: translateY(3px) scale(0.9);
   }
 }
-
-@keyframes perso-lettering {
-  0% {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.85);
-  }
-  18% {
-    opacity: 1;
-    transform: translateY(1px) scale(1.05, 0.96) rotate(-3deg);
-  }
-  32% {
-    transform: translateY(-2px) scale(0.98, 1.02) rotate(2deg);
-  }
-  48% {
-    transform: translateY(0) scale(1) rotate(-1deg);
-  }
-  65%,
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1) rotate(0);
-  }
-}
