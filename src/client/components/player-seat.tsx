@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
 import { cn, toRoman } from "../utils";
-import { Lives } from "./lives";
+import { LifeCount } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
 
@@ -19,7 +19,6 @@ export function PlayerSeat({
   deadline,
   serverTime,
   round,
-  startingLives,
   status,
   side,
 }: {
@@ -32,7 +31,6 @@ export function PlayerSeat({
   deadline: number;
   serverTime: number;
   round: number;
-  startingLives: number;
   status: string;
   side: "top" | "bottom";
 }) {
@@ -139,19 +137,23 @@ export function PlayerSeat({
               aria-hidden={player.lives <= 0 || undefined}
               data-seat-stats
             >
-              <Lives n={player.lives} total={startingLives} compact />
+              <LifeCount n={player.lives} />
               <span
-                className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
+                className="player-score inline-flex shrink-0 items-center gap-0.5 border-l border-[#63414f]/20 pl-1 font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
                 aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
               >
                 <span
-                  className={
-                    player.bid != null && player.taken > player.bid ? "text-destructive" : undefined
-                  }
+                  className={cn(
+                    "inline-block min-w-[1ch]",
+                    player.bid != null && player.taken > player.bid && "text-destructive",
+                  )}
                 >
                   {player.taken}
-                </span>{" "}
-                / {player.bid ?? "–"}
+                </span>
+                <span className="font-normal text-muted-foreground" aria-hidden="true">
+                  /
+                </span>
+                <span className="inline-block min-w-[1ch]">{player.bid ?? "–"}</span>
               </span>
             </div>
           </div>

@@ -1,6 +1,7 @@
-import { Check, Clock3, Heart } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import type { view } from "../../shared/game";
 import { cn, toRoman } from "../utils";
+import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
@@ -66,31 +67,14 @@ export function ResultsPanel({
                     <span className="w-5 shrink-0 text-xs text-muted-foreground">
                       {toRoman(i + 1)}
                     </span>
-                    <span className="min-w-0">
-                      {player.name}
-                      {player.id === game.you && (
-                        <span className="ml-1.5 inline-block rounded-md bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-                          you
-                        </span>
-                      )}
-                    </span>
+                    <span className="min-w-0">{player.name}</span>
                   </div>
                 </TableCell>
                 <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
                 <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
                 <TableCell className={cellClass}>
                   <div className="flex flex-col items-center gap-1">
-                    <span
-                      className="inline-flex items-center gap-1.5 font-semibold tabular-nums"
-                      aria-label={`${player.lives} ${player.lives === 1 ? "life" : "lives"}`}
-                    >
-                      <Heart
-                        className="size-4 text-[#ca687c]"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      />
-                      {player.lives}
-                    </span>
+                    <LifeCount n={player.lives} className="gap-1.5" />
                     <span
                       className={cn(
                         "flex h-4 items-center text-xs",
@@ -98,15 +82,7 @@ export function ResultsPanel({
                       )}
                       aria-label={result ? `${result.lost} lives lost` : "No round result"}
                     >
-                      {result ? (
-                        result.lost ? (
-                          `−${result.lost}`
-                        ) : (
-                          <Check className="size-4" aria-hidden="true" />
-                        )
-                      ) : (
-                        "–"
-                      )}
+                      {result ? (result.lost ? `−${result.lost}` : null) : "–"}
                     </span>
                   </div>
                 </TableCell>

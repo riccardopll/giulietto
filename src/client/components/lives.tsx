@@ -32,3 +32,22 @@ export function Lives({
     </span>
   );
 }
+
+export function LifeCount({ n, className }: { n: number; className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center gap-1 font-semibold tabular-nums",
+        className,
+      )}
+      aria-label={`${n} ${n === 1 ? "life" : "lives"}`}
+    >
+      <Heart
+        className="size-[1em] shrink-0 text-[#ca687c]"
+        fill="currentColor"
+        aria-hidden="true"
+      />
+      <span className="inline-block min-w-[1ch]">{n}</span>
+    </span>
+  );
+}
