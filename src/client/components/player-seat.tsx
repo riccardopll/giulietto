@@ -101,7 +101,7 @@ export function PlayerSeat({
                   className="seat-elimination pointer-events-none absolute -inset-1 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
                 >
                   <img
-                    src="/skull-giulietto.png"
+                    src="/skull-giulietto.webp"
                     alt=""
                     className="size-full object-contain [filter:drop-shadow(0_1px_1px_#49152d40)_drop-shadow(0_3px_3px_#49152d26)]"
                     draggable={false}
