@@ -73,12 +73,14 @@ export function ResultsPanel({
                 <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
                 <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
                 <TableCell className={cellClass}>
-                  <div className="grid min-h-10 grid-cols-[1fr_auto_1fr] items-center gap-x-1">
+                  <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
                     <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
                     <span
                       className={cn(
                         "col-start-3 justify-self-start text-xs whitespace-nowrap tabular-nums",
-                        result?.lost ? "text-destructive" : "text-primary",
+                        result?.lost
+                          ? "rounded-md bg-destructive/10 px-0.5 py-0.5 font-semibold text-destructive sm:px-1"
+                          : "text-primary",
                       )}
                       aria-label={result ? `${result.lost} lives lost` : "No round result"}
                     >
