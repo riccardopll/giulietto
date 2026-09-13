@@ -12,8 +12,7 @@ test("homepage and room invites expose distinct link previews in HTML", async ({
   expect(home.headers.get("ETag")).toBe('"site-html"');
   expect(home.headers.has("X-Robots-Tag")).toBe(false);
 
-  const image = '<meta property="og:image" content="https://giulietto.online/logo.png"';
-  expect(html).toContain(image);
+  expect(html).not.toContain('property="og:image');
   for (const code of ["ABCD2345", "VWJ68J8G"]) {
     const url = `https://giulietto.online/?table=${code}`;
     const invite = await api.runtime.dispatchFetch(url);
@@ -24,7 +23,7 @@ test("homepage and room invites expose distinct link previews in HTML", async ({
       '<meta property="og:description" content="Open the link to join the room."',
     );
     expect(body).toContain(`<meta property="og:url" content="${url}"`);
-    expect(body).toContain(image);
+    expect(body).not.toContain('property="og:image');
     expect(body).not.toContain('<meta property="og:title" content="Giulietto"');
     expect(invite.headers.get("X-Robots-Tag")).toBe("noindex");
     expect(invite.headers.get("Cache-Control")).toBe("no-store");
