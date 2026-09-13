@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Coins, Pencil, Target, Timer } from "lucide-react";
+import { ArrowLeft, Check, Pencil, Target, Timer } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
@@ -9,6 +9,7 @@ import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 import { PageHeader } from "./ui/page-header";
 import { TrophyIcon } from "./ui/trophy-icon";
+import { AceOfCoinsIcon } from "./ui/ace-of-coins-icon";
 import { PlacementMedal } from "./ui/placement-medal";
 import { cn } from "../utils";
 
@@ -53,7 +54,7 @@ function ProfileEditor({
       }}
       title={mode === "name" ? "Edit your name" : "Choose your avatar"}
       hideTitle={mode === "name"}
-      actionLabel={saving ? "Saving…" : mode === "name" ? "Save" : "Save avatar"}
+      actionLabel={saving ? "Saving…" : "Save"}
       busy={saving}
       actionDisabled={mode === "name" && !name.trim()}
       onSubmit={async () => {
@@ -87,7 +88,6 @@ function ProfileEditor({
                 />
                 <span className="flex flex-col items-center gap-2 rounded-xl border-2 border-transparent p-2 text-center text-xs peer-checked:border-primary peer-checked:bg-accent/40 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-50">
                   <Avatar avatar={option.id} className="size-16" />
-                  <span>{option.name}</span>
                   {avatar === option.id && (
                     <Check className="absolute right-2 top-2 size-4 rounded-full bg-primary p-0.5 text-white" />
                   )}
@@ -192,7 +192,7 @@ export function PlayerPages({
                   {
                     label: "Aces of Coins played",
                     value: stats.acesOfCoinsPlayed ?? "—",
-                    icon: Coins,
+                    icon: AceOfCoinsIcon,
                   },
                   {
                     label: "Average prediction",

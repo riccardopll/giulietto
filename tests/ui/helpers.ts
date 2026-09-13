@@ -52,7 +52,7 @@ export const test = base.extend<{ players: Player[] }>({
           await page.getByRole("button", { name: "Edit your avatar", exact: true }).click();
           await expect(page.getByLabel("New name")).toHaveCount(0);
           await page.getByRole("radio", { name: "King of Cups", exact: true }).check();
-          await page.getByRole("button", { name: "Save avatar", exact: true }).click();
+          await page.getByRole("button", { name: "Save", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Choose your avatar" })).toBeHidden();
           await page.waitForLoadState("networkidle");
           const avatarBounds = await page
