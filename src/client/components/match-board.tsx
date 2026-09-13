@@ -225,8 +225,11 @@ export function MatchBoard({
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
           <div
-            className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-[.hand-card]:scale-[1.08]"
+            className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-[.hand-card]:scale-[1.08] transition-[filter] duration-300 ease-out data-[waiting]:brightness-[.8]"
             key={`hand-${game.round}`}
+            data-waiting={
+              ((game.phase === "playing" || game.phase === "trick") && !myTurn) || undefined
+            }
             data-active-turn={(canPlay && !!me?.hand.length) || undefined}
           >
             {game.spectating && (
@@ -249,7 +252,6 @@ export function MatchBoard({
                   >
                     <PlayingCard
                       card={card}
-                      className={canPlay ? "turn-glow" : undefined}
                       disabled={!canPlay}
                       pending={pendingCard === (card ?? -1)}
                       onClick={() => onPlay(card)}

@@ -3,7 +3,7 @@ import { Popover } from "radix-ui";
 import { Lock, Smile } from "lucide-react";
 import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, type Emote } from "@/shared/emotes";
 import { Button } from "./ui/button";
-import { Bubble, BubbleArtwork } from "./bubble";
+import { Bubble, MenuBubble } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
 
 function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
@@ -40,7 +40,7 @@ function Perso({ animated = false }: { animated?: boolean }) {
   return (
     <span className="absolute -left-6 -top-[32.55px] h-[90px] w-[108px]">
       {animated ? (
-        <AnimatedWebp src="/emotes/perso.webp" poster="/emotes/perso-still.webp" />
+        <AnimatedWebp src="/emotes/perso-lettering.webp" poster="/emotes/perso-picker.webp" />
       ) : (
         <img
           src="/emotes/perso-picker.webp"
@@ -65,11 +65,7 @@ export function EmoteBubble({
   const visible = useRecent(emote?.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!emote || !visible) return null;
   return (
-    <Bubble
-      key={emote.sentAt}
-      label={`${name} sent the ${emote.id} emote`}
-      complete={emote.id === "perso"}
-    >
+    <Bubble key={emote.sentAt} label={`${name} sent the ${emote.id} emote`}>
       {emote.id === "perso" ? <Perso animated /> : <Chicken animated />}
     </Bubble>
   );
@@ -92,7 +88,7 @@ export function EmotePicker({
 }) {
   useEffect(() => {
     void preloadWebp("/emotes/chicken.webp").catch(() => {});
-    void preloadWebp("/emotes/perso.webp").catch(() => {});
+    void preloadWebp("/emotes/perso-lettering.webp").catch(() => {});
   }, []);
   const coolingDown = useRecent(emote?.sentAt, serverTime, EMOTE_COOLDOWN_MS);
   return (
@@ -131,9 +127,9 @@ export function EmotePicker({
               onOpenChange(false);
             }}
           >
-            <BubbleArtwork>
+            <MenuBubble>
               <Chicken />
-            </BubbleArtwork>
+            </MenuBubble>
           </button>
           <button
             type="button"
@@ -145,9 +141,9 @@ export function EmotePicker({
               onOpenChange(false);
             }}
           >
-            <BubbleArtwork>
+            <MenuBubble>
               <Perso />
-            </BubbleArtwork>
+            </MenuBubble>
           </button>
           {[1].map((slot) => (
             <button
@@ -157,11 +153,11 @@ export function EmotePicker({
               aria-label={`Empty emote slot ${slot}`}
               className="block opacity-60"
             >
-              <BubbleArtwork>
+              <MenuBubble>
                 <span className="absolute inset-0 flex items-center justify-center text-gray-400">
                   <Lock className="size-5" aria-hidden="true" />
                 </span>
-              </BubbleArtwork>
+              </MenuBubble>
             </button>
           ))}
         </Popover.Content>
