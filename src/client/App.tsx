@@ -78,7 +78,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       history.pushState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
     }
     setGame(s);
-    storeRoom(s.code);
+    // Only entering a table saves it; updates in another tab must not undo an exit.
+    if (!previous || previous.code !== s.code) storeRoom(s.code);
   };
   useEffect(() => {
     if (isPreview) return;
@@ -233,6 +234,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       preview.reset();
       return;
     }
+    transport.current?.stop();
+    transport.current = null;
     gameRef.current = null;
     httpAttempt.current = null;
     setGame(null);
