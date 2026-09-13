@@ -29,70 +29,73 @@ export function ResultsPanel({
       {game.tie && (
         <p className="mb-5 text-sm text-muted-foreground">All players return with one life.</p>
       )}
-      <Table className="table-fixed text-sm sm:text-base">
-        <colgroup>
-          <col className="w-[48%]" />
-          <col />
-          <col />
-          <col className="w-[22%]" />
-        </colgroup>
-        <TableHeader>
-          <TableRow className="border-border">
-            {["Player", "Bid", "Won", "Lives"].map((label, i) => (
-              <TableHead
-                key={label}
-                className={cn(
-                  "h-10 px-1 text-center text-xs whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
-                  i === 0 && "text-left",
-                )}
-              >
-                {label}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {game.players.map((player, i) => {
-            const result = game.results.find((entry) => entry.id === player.id);
-            return (
-              <TableRow
-                key={player.id}
-                className={cn(
-                  "border-border",
-                  player.id === game.you && "bg-accent/60 hover:bg-accent/60",
-                )}
-              >
-                <TableCell className={cn(cellClass, "text-left")}>
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <span className="w-5 shrink-0 text-xs text-muted-foreground">
-                      {toRoman(i + 1)}
-                    </span>
-                    <span className="min-w-0">{player.name}</span>
-                  </div>
-                </TableCell>
-                <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
-                <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
-                <TableCell className={cellClass}>
-                  <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
-                    <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
-                    <span
-                      className={cn(
-                        "col-start-3 justify-self-start text-xs whitespace-nowrap tabular-nums",
-                        result?.lost
-                          ? "rounded-md bg-destructive/10 px-0.5 py-0.5 font-semibold text-destructive sm:px-1"
-                          : "text-primary",
-                      )}
-                      aria-label={result ? `${result.lost} lives lost` : "No round result"}
-                    >
-                      {result ? (result.lost ? `−${result.lost}` : null) : "–"}
-                    </span>
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+      <div className="-mx-3 sm:-mx-6">
+        <Table className="table-fixed text-sm sm:text-base">
+          <colgroup>
+            <col className="w-[38%]" />
+            <col />
+            <col />
+            <col className="w-[32%]" />
+          </colgroup>
+          <TableHeader>
+            <TableRow className="border-border">
+              {["Player", "Bid", "Won", "Lives"].map((label, i) => (
+                <TableHead
+                  key={label}
+                  className={cn(
+                    "h-10 px-1 text-center text-xs whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
+                    i === 0 && "pl-4 text-left sm:pl-8",
+                    i === 3 && "pr-4 sm:pr-8",
+                  )}
+                >
+                  {label}
+                </TableHead>
+              ))}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {game.players.map((player, i) => {
+              const result = game.results.find((entry) => entry.id === player.id);
+              return (
+                <TableRow
+                  key={player.id}
+                  className={cn(
+                    "border-border",
+                    player.id === game.you && "bg-accent/60 hover:bg-accent/60",
+                  )}
+                >
+                  <TableCell className={cn(cellClass, "pl-4 text-left sm:pl-8")}>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <span className="w-5 shrink-0 text-xs text-muted-foreground">
+                        {toRoman(i + 1)}
+                      </span>
+                      <span className="min-w-0">{player.name}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
+                  <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
+                  <TableCell className={cn(cellClass, "pr-4 sm:pr-8")}>
+                    <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
+                      <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
+                      <span
+                        className={cn(
+                          "col-start-3 justify-self-start text-xs whitespace-nowrap tabular-nums",
+                          result?.lost
+                            ? "rounded-md bg-destructive/10 px-0.5 py-0.5 font-semibold text-destructive sm:px-1"
+                            : "text-primary",
+                        )}
+                        aria-label={result ? `${result.lost} lives lost` : "No round result"}
+                      >
+                        {result ? (result.lost ? `−${result.lost}` : null) : "–"}
+                      </span>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
       {finished ? (
         <Button
           className="mt-6 h-auto min-h-12 w-full max-w-68 whitespace-normal rounded-xl px-4 py-3"
