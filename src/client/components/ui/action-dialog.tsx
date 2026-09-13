@@ -6,6 +6,8 @@ export function ActionDialog({
   open,
   onOpenChange,
   title,
+  hideTitle = false,
+  centerTitle = false,
   description,
   children,
   actionLabel,
@@ -18,6 +20,8 @@ export function ActionDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
+  hideTitle?: boolean;
+  centerTitle?: boolean;
   description?: ReactNode;
   children?: ReactNode;
   actionLabel: string;
@@ -43,8 +47,16 @@ export function ActionDialog({
           aria-describedby={confirmation || description ? descriptionId : undefined}
           className="fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 max-h-[calc(100dvh-2rem)] min-w-0 gap-4 overflow-y-auto rounded-xl border bg-card p-5 shadow-lg wrap-anywhere duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg"
         >
-          <div className="flex flex-col gap-2 text-center sm:text-left">
-            <Primitive.Title className="text-lg font-semibold">{title}</Primitive.Title>
+          <div
+            className={
+              hideTitle && !description && !confirmation
+                ? "sr-only"
+                : `flex flex-col gap-2 text-center ${centerTitle ? "" : "sm:text-left"}`
+            }
+          >
+            <Primitive.Title className={hideTitle ? "sr-only" : "text-lg font-semibold"}>
+              {title}
+            </Primitive.Title>
             {(confirmation || description) && (
               <Primitive.Description
                 id={descriptionId}

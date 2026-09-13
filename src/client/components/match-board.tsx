@@ -128,7 +128,6 @@ export function MatchBoard({
           deadline={game.deadline}
           serverTime={game.serverTime}
           round={game.round}
-          startingLives={game.startingLives}
           status={status}
           side={position.side}
         />

@@ -1,22 +1,14 @@
+import { Avatar } from "./avatar";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowRight, Check, Link, Pencil } from "lucide-react";
 import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type view } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 
 type State = ReturnType<typeof view>;
-
-const avatarColors = [
-  "bg-[#efcedc] text-[#923f60]",
-  "bg-[#e7dcf6] text-[#7850a1]",
-  "bg-[#fce2da] text-[#af6952]",
-  "bg-[#d7ecf2] text-[#427e91]",
-  "bg-[#f4e7c7] text-[#917139]",
-  "bg-[#e3e7ec] text-[#617086]",
-];
 
 function LobbyOptions({
   lives,
@@ -108,30 +100,22 @@ export function Lobby({
   onRename: (name: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draftName, setDraftName] = useState(game.viewerName);
+  const [draftName, setDraftName] = useState("");
   return (
     <section className="mx-auto w-full max-w-xl py-3 sm:py-5">
       <ActionDialog
         open={editing}
         onOpenChange={setEditing}
         title="Edit your name"
-        actionLabel={busy ? "Saving…" : "Save name"}
+        hideTitle
+        actionLabel={busy ? "Saving…" : "Save"}
         busy={busy}
         actionDisabled={!draftName.trim()}
         onSubmit={async () => {
           if (await onRename(draftName)) setEditing(false);
         }}
       >
-        <Input
-          id="lobby-name"
-          aria-label="Display name"
-          className="h-12 text-base md:text-base"
-          autoComplete="off"
-          maxLength={20}
-          value={draftName}
-          disabled={busy}
-          onChange={(event) => setDraftName(event.target.value)}
-        />
+        <NameChangeInput value={draftName} disabled={busy} onChange={setDraftName} />
       </ActionDialog>
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
@@ -154,15 +138,7 @@ export function Lobby({
             >
               {player ? (
                 <>
-                  <div
-                    className={cn(
-                      "grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold",
-                      avatarColors[i],
-                    )}
-                    aria-hidden="true"
-                  >
-                    {Array.from(player.name)[0]?.toLocaleUpperCase()}
-                  </div>
+                  <Avatar avatar={player.avatar} id={player.id} className="size-9" />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <strong className="text-sm wrap-anywhere text-foreground">
                       {player.name}
@@ -178,7 +154,7 @@ export function Lobby({
                       aria-label="Edit your name"
                       disabled={busy}
                       onClick={() => {
-                        setDraftName(game.viewerName);
+                        setDraftName("");
                         setEditing(true);
                       }}
                     >

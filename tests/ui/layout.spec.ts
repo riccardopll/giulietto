@@ -21,7 +21,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     )
       errors.push("Page overflows the viewport");
     for (const element of document.querySelectorAll<HTMLElement>(
-      ".seat-identity, .playing-card, header, button",
+      ".seat-identity, .seat-avatar, .playing-card, header, button",
     )) {
       const rect = element.getBoundingClientRect();
       const label = element.getAttribute("aria-label") ?? element.className;
@@ -45,6 +45,23 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     return errors;
   });
   expect(errors).toEqual([]);
+  const avatarSizes = await page.locator(".seat-avatar").evaluateAll((avatars) =>
+    avatars.map((avatar) => {
+      const { width, height } = avatar.getBoundingClientRect();
+      return { width, height };
+    }),
+  );
+  const overlappingProfiles = await page.locator(".seat-profile").evaluateAll(
+    (profiles) =>
+      profiles.filter((profile) => {
+        const avatar = profile.querySelector(".seat-avatar")!.getBoundingClientRect();
+        const details = profile.querySelector(".seat-details")!.getBoundingClientRect();
+        return avatar.right + 3 > details.left;
+      }).length,
+  );
+  expect(overlappingProfiles).toBe(0);
+  expect(avatarSizes).toHaveLength(6);
+  for (const size of avatarSizes) expect(size).toEqual({ width: 40, height: 40 });
   const emoteButton = await page.getByRole("button", { name: "Emotes", exact: true }).boundingBox();
   const table = await page.locator(".table-surface").boundingBox();
   expect(emoteButton!.x + emoteButton!.width).toBeCloseTo(table!.x + table!.width * 0.98, 0);

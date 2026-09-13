@@ -1,3 +1,5 @@
+import { ensureProfile, saveProfile } from "./player-profile";
+import { playerStats } from "./player-stats";
 import type { Env } from "./env";
 import { command, failure, roomCode } from "./protocol";
 import { GameError } from "../shared/game-error";
@@ -10,11 +12,20 @@ export default {
     try {
       const url = new URL(req.url);
       if (!url.pathname.startsWith("/api/")) return serveSite(req, env.ASSETS);
+      const profile = url.pathname === "/api/profile";
+      const stats = url.pathname === "/api/stats";
       const socket = url.pathname === "/api/game/socket";
-      if (url.pathname !== "/api/game" && !socket)
+      if (url.pathname !== "/api/game" && !socket && !stats && !profile)
         return Response.json({ error: "Not found." }, { status: 404 });
-      if (!["GET", "POST"].includes(req.method) || (socket && req.method !== "GET"))
-        return new Response(null, { status: 405, headers: { Allow: "GET, POST" } });
+      if (
+        !["GET", "POST"].includes(req.method) ||
+        ((socket || stats) && req.method !== "GET") ||
+        (profile && req.method !== "POST")
+      )
+        return new Response(null, {
+          status: 405,
+          headers: { Allow: profile ? "POST" : socket || stats ? "GET" : "GET, POST" },
+        });
       if (req.headers.has("origin") && req.headers.get("origin") !== url.origin)
         return Response.json({ error: "Invalid origin." }, { status: 403 });
       if (socket && req.headers.get("upgrade")?.toLowerCase() !== "websocket")
@@ -43,6 +54,10 @@ export default {
       const id = Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join(
         "",
       );
+      if (stats)
+        return Response.json(await playerStats(env.DB, id), {
+          headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+        });
       let body;
       if (req.method === "POST") {
         const raw = await req.text();
@@ -53,7 +68,13 @@ export default {
         } catch {
           throw new GameError("Invalid JSON.");
         }
+        if (profile)
+          return Response.json(await saveProfile(env.DB, id, value), {
+            headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+          });
         body = command(value);
+        if (["create", "match", "join"].includes(body.action))
+          Object.assign(body, await ensureProfile(env.DB, id, body.name));
       }
       const headers = new Headers({ "x-player-id": id });
       let response;

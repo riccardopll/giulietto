@@ -1,4 +1,4 @@
-import { legalBids, type Game } from "../shared/game.ts";
+import { legalBids, TURN_MS, type Game } from "../shared/game.ts";
 
 export type EventSource = { source: "player" | "timeout" | "system"; commandId?: string };
 export type GameEvent = {
@@ -18,6 +18,7 @@ export type GameEvent = {
 export function gameEvents(before: Game, after: Game, origin: EventSource, now: number) {
   const events: Omit<GameEvent, "sequence">[] = [];
   if (!after.matchId || before.phase === "finished") return events;
+  const elapsedMs = Math.max(0, Math.min(TURN_MS, TURN_MS - (before.deadline - now)));
   const add = (type: string, playerId: string | null, payload: object) => {
     events.push({
       match_id: after.matchId!,
@@ -53,6 +54,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
     const id = before.order[before.turn];
     add("bid", id, {
       bid: after.players.find((p) => p.id === id)!.bid,
+      elapsedMs,
       position: before.turn + 1,
       legalBids: legalBids(before),
     });
@@ -61,6 +63,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
     const trick = before.players.reduce((sum, p) => sum + p.taken, 0) + 1;
     add("play", move.player, {
       card: move.card,
+      elapsedMs,
       mode: move.mode ?? null,
       trick,
       position: after.trick.length,

@@ -1,8 +1,9 @@
+import { Avatar } from "./avatar";
 import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
-import { avatarHue, cn, toRoman } from "../utils";
-import { Lives } from "./lives";
+import { cn, toRoman } from "../utils";
+import { LifeCount } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
 
@@ -18,7 +19,6 @@ export function PlayerSeat({
   deadline,
   serverTime,
   round,
-  startingLives,
   status,
   side,
 }: {
@@ -31,7 +31,6 @@ export function PlayerSeat({
   deadline: number;
   serverTime: number;
   round: number;
-  startingLives: number;
   status: string;
   side: "top" | "bottom";
 }) {
@@ -54,12 +53,12 @@ export function PlayerSeat({
         )}
         data-seat-identity
       >
-        <div className="seat-profile relative flex min-w-0 max-w-full items-center gap-1.5">
+        <div className="seat-profile relative flex min-w-0 max-w-full items-center gap-2">
           <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.375rem)] left-0 z-30 flex w-full items-end justify-center gap-1">
             <EmoteBubble emote={player.emote} serverTime={serverTime} name={player.name} />
             <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
           </div>
-          <div className="seat-avatar-wrap relative shrink-0">
+          <div className="seat-avatar-wrap relative size-10 shrink-0 @min-2xl/board:size-13">
             {current && player.lives > 0 && (
               <svg
                 key={`${deadline}-${serverTime}`}
@@ -83,18 +82,16 @@ export function PlayerSeat({
             )}
             <div
               className={cn(
-                "seat-avatar relative grid place-items-center rounded-full border-2 font-semibold",
-                you
-                  ? "size-9 text-lg @min-2xl/board:size-12 @min-2xl/board:text-2xl"
-                  : "size-7 text-sm @min-2xl/board:size-10 @min-2xl/board:text-xl",
+                "seat-avatar relative grid size-full place-items-center rounded-full border-2 font-semibold",
                 player.lives <= 0
                   ? "border-transparent"
-                  : "border-background bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642] shadow-[0_0_0_1px_#6f4a5e12]",
+                  : "border-background bg-card shadow-[0_0_0_1px_#6f4a5e12]",
               )}
-              style={{ "--avatar-hue": avatarHue(player.id) } as CSSProperties}
               aria-hidden="true"
             >
-              {player.lives > 0 && <span>{Array.from(player.name)[0]?.toLocaleUpperCase()}</span>}
+              {player.lives > 0 && (
+                <Avatar avatar={player.avatar} id={player.id} className="size-full border-0" />
+              )}
               {player.lives <= 0 && (
                 <span
                   key={round}
@@ -111,7 +108,7 @@ export function PlayerSeat({
             </div>
             <span
               className={cn(
-                "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-5 sm:min-w-5 sm:text-[10px]",
+                "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-[18px] sm:min-w-[18px] sm:text-[10px]",
                 current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
               )}
               aria-label={`Seat ${toRoman(number)}`}
@@ -119,13 +116,13 @@ export function PlayerSeat({
               {toRoman(number)}
             </span>
           </div>
-          <div className="seat-details flex min-w-0 flex-col items-start justify-center gap-0.5">
+          <div className="seat-details flex min-w-0 flex-col items-start justify-center gap-1">
             <strong
               className={cn(
-                "seat-name block max-w-full font-semibold [overflow-wrap:anywhere]",
+                "seat-name line-clamp-3 max-w-full font-semibold [overflow-wrap:anywhere]",
                 you
                   ? "text-sm text-primary @min-2xl/board:text-lg"
-                  : "text-[10px] leading-[11px] @min-xs/board:text-[11px] @min-xs/board:leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4",
+                  : "text-[10px] leading-[11px] @min-xs/board:text-xs @min-xs/board:leading-[14px] @min-2xl/board:text-sm @min-2xl/board:leading-4",
               )}
               title={player.name}
               aria-label={you ? "You" : player.name}
@@ -134,25 +131,29 @@ export function PlayerSeat({
             </strong>
             <div
               className={cn(
-                "seat-stats flex shrink-0 items-center gap-1",
+                "seat-stats flex max-w-full flex-wrap items-center gap-x-1 gap-y-0.5 @min-xs/board:text-xs @min-xs/board:leading-[14px] @min-2xl/board:text-sm",
                 player.lives <= 0 && "invisible",
               )}
               aria-hidden={player.lives <= 0 || undefined}
               data-seat-stats
             >
-              <Lives n={player.lives} total={startingLives} compact />
+              <LifeCount n={player.lives} />
               <span
-                className="player-score font-semibold whitespace-nowrap text-[#63414f] tabular-nums"
+                className="player-score inline-flex shrink-0 items-center gap-0.5 border-l border-[#63414f]/10 pl-1 font-semibold whitespace-nowrap text-foreground tabular-nums"
                 aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
               >
                 <span
-                  className={
-                    player.bid != null && player.taken > player.bid ? "text-destructive" : undefined
-                  }
+                  className={cn(
+                    "inline-block min-w-[1ch]",
+                    player.bid != null && player.taken !== player.bid && "text-destructive",
+                  )}
                 >
                   {player.taken}
-                </span>{" "}
-                / {player.bid ?? "–"}
+                </span>
+                <span className="font-normal text-muted-foreground/70" aria-hidden="true">
+                  /
+                </span>
+                <span className="inline-block min-w-[1ch]">{player.bid ?? "–"}</span>
               </span>
             </div>
           </div>

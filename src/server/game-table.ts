@@ -1,3 +1,4 @@
+import { isAvatar } from "../shared/avatars";
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
@@ -180,6 +181,11 @@ export class GameTable extends DurableObject<Env> {
     if (!duplicate) {
       const g = structuredClone(r.game);
       apply(g, id, b, Date.now());
+      if (b.action === "rename") {
+        await this.env.DB.prepare("UPDATE players SET display_name=? WHERE id=?")
+          .bind(g.players.find((p) => p.id === id)!.name, id)
+          .run();
+      }
       r = await this.save(r, g, { id, commandId: b.commandId });
     }
     return {
@@ -204,6 +210,7 @@ export class GameTable extends DurableObject<Env> {
               player(id, displayName(b.name), Date.now()),
               b.action === "match",
             );
+            if (isAvatar(b.avatar)) g.players[0].avatar = b.avatar;
             r = { game: g, updated: Date.now(), deliveredSequence: 0 };
             this.ctx.storage.kv.put("room", r);
             await this.schedule(r);

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { gameEvents, type EventSource } from "../../src/server/game-events.ts";
-import { bid, play, score, type Game } from "../../src/shared/game.ts";
+import { bid, play, score, tick, TURN_MS, type Game } from "../../src/shared/game.ts";
 import { gameFixture } from "./helpers.ts";
 
-function record(game: Game, action: () => void, origin: EventSource) {
+function record(game: Game, action: () => void, origin: EventSource, now = 200) {
   const before = structuredClone(game);
   action();
   game.revision++;
-  return gameEvents(before, game, origin, 200);
+  return gameEvents(before, game, origin, now);
 }
 
 describe("match events", () => {
@@ -32,7 +32,12 @@ describe("match events", () => {
       command_id: "bid-1",
       occurred_at: 200,
     });
-    expect(JSON.parse(event.payload)).toEqual({ bid: 0, position: 2, legalBids: [0, 2] });
+    expect(JSON.parse(event.payload)).toEqual({
+      bid: 0,
+      elapsedMs: 100,
+      position: 2,
+      legalBids: [0, 2],
+    });
   });
 
   it("records played cards and private training context before the trick winner", () => {
@@ -41,6 +46,7 @@ describe("match events", () => {
     const [ace] = record(game, () => play(game, "p0", 31, "low", 200), { source: "player" });
     expect(JSON.parse(ace.payload)).toEqual({
       card: 31,
+      elapsedMs: 100,
       mode: "low",
       trick: 1,
       position: 1,
@@ -50,6 +56,37 @@ describe("match events", () => {
     expect(events.map((event) => event.type)).toEqual(["play", "trick_won"]);
     expect(events[1]).toMatchObject({ player_id: "p1", source: "timeout", command_id: null });
     expect(JSON.parse(events[1].payload)).toEqual({ trick: 1, plays: game.trick });
+  });
+
+  it.each([
+    [TURN_MS + 100, 0],
+    [TURN_MS - 1200, 1200],
+    [0, TURN_MS],
+    [-100, TURN_MS],
+  ])("records elapsed turn time with %i ms remaining", (remaining, elapsedMs) => {
+    const game = gameFixture();
+    game.deadline = 200 + remaining;
+    const [event] = record(game, () => bid(game, "p0", 0, 200), { source: "player" });
+    expect(JSON.parse(event.payload).elapsedMs).toBe(elapsedMs);
+  });
+
+  it("starts play timing after the between-trick pause, even when the alarm is late", () => {
+    const game = gameFixture([
+      [1, 2],
+      [11, 12],
+    ]);
+    bid(game, "p0", 0, 100);
+    bid(game, "p1", 0, 100);
+    play(game, "p0", 1, undefined, 200);
+    play(game, "p1", 11, undefined, 300);
+    tick(game, 5000);
+    const [event] = record(
+      game,
+      () => play(game, "p1", 12, undefined, 7000),
+      { source: "player" },
+      7000,
+    );
+    expect(JSON.parse(event.payload).elapsedMs).toBe(2000);
   });
 
   it("records the final round before closing the match", () => {

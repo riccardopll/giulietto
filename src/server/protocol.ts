@@ -1,3 +1,4 @@
+import { isAvatar } from "../shared/avatars";
 import { sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
@@ -58,6 +59,9 @@ export function join(g: Game, id: string, name: string, now: number, matchmaking
 export function apply(g: Game, id: string, b: Command, now: number) {
   if (b.action === "join") {
     join(g, id, displayName(b.name), now, b.matchmaking === true);
+    const seated = g.players.find((p) => p.id === id);
+    if (seated && isAvatar(b.avatar)) seated.avatar = b.avatar;
+    if (seated && g.phase === "lobby") seated.name = displayName(b.name);
     return;
   }
   const spectator = g.spectators?.find((p) => p.id === id);
