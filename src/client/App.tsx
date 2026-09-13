@@ -311,9 +311,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           <PageHeader
             className={`site-header grid grid-cols-[auto_minmax(0,1fr)_auto] gap-1 ${!game ? "mx-auto w-full max-w-md" : ""}`}
           >
-            <div
-              className={`row-start-1 flex items-center gap-1 sm:gap-3 col-start-1 justify-self-start`}
-            >
+            <div className="col-start-1 row-start-1 flex items-center justify-self-start gap-1 sm:gap-3">
               <a
                 href="/"
                 className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "flex items-center gap-2 text-4xl"}`}

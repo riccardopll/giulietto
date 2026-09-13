@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { StatsResponse } from "@/shared/player-stats";
-import type { AvatarId } from "@/shared/avatars";
-
-type Profile = { name: string; avatar: AvatarId };
+import type { Profile, StatsResponse } from "@/shared/player-stats";
 export function usePlayerStats(
   token: string,
   active: boolean,
@@ -46,7 +43,6 @@ export function usePlayerStats(
   }, [token, active, attempt, refresh]);
   async function save(profile: Profile) {
     setSaving(true);
-    ++version.current;
     try {
       const response = await fetch("/api/profile", {
         method: "POST",
@@ -55,6 +51,7 @@ export function usePlayerStats(
       });
       const next = (await response.json()) as Profile & { error?: string };
       if (!response.ok) throw Error(next.error || "Could not save your profile.");
+      ++version.current;
       setData((current) =>
         current
           ? {

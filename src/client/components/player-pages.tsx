@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Pencil, PlayingCard, Target, Timer } from "lucide-react";
-import type { StatsResponse } from "@/shared/player-stats";
+import type { Profile, StatsResponse } from "@/shared/player-stats";
 import { type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
 import { AvatarPicker } from "./avatar-picker";
@@ -12,8 +12,6 @@ import { PageHeader } from "./ui/page-header";
 import { TrophyIcon } from "./ui/trophy-icon";
 import { Leaderboard } from "./leaderboard";
 import { cn } from "../utils";
-
-type Profile = StatsResponse["profile"];
 
 function PageHeading({ title, onBack }: { title: string; onBack: () => void }) {
   return (
@@ -111,6 +109,7 @@ export function PlayerPages({
               variant="ghost"
               className="relative h-auto rounded-full p-1"
               aria-label="Edit your avatar"
+              disabled={!data || saving}
               onClick={() => setEditing("avatar")}
             >
               <Avatar avatar={profile.avatar} className="size-28" />
@@ -122,6 +121,7 @@ export function PlayerPages({
               variant="ghost"
               className="mt-2 h-auto max-w-full gap-2 whitespace-normal text-2xl font-semibold"
               aria-label="Edit your name"
+              disabled={!data || saving}
               onClick={() => setEditing("name")}
             >
               {profile.name || "Guest"}

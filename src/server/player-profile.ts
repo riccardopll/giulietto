@@ -1,9 +1,9 @@
-import { defaultAvatar, isAvatar, type AvatarId } from "../shared/avatars";
+import { defaultAvatar, isAvatar } from "../shared/avatars";
+import type { Profile } from "../shared/player-stats";
 import { GameError } from "../shared/game-error";
 import { displayName } from "./protocol";
 
-export type Profile = { name: string; avatar: AvatarId };
-export async function readProfile(db: D1Database, id: string): Promise<Profile | null> {
+async function readProfile(db: D1Database, id: string): Promise<Profile | null> {
   const row = await db
     .prepare("SELECT display_name AS name, avatar FROM players WHERE id=?")
     .bind(id)

@@ -28,12 +28,6 @@ test("stats use finalized history once, preserve identity, and rank players by w
   const db = await api.runtime.getD1Database("DB");
   const game = gameFixture();
   game.players[0].id = id;
-  game.players[0].stats = {
-    roundsPlayed: 2,
-    tricksWon: 3,
-    exactPredictions: 1,
-    predictionError: 2,
-  };
   const hostPlayer = game.players[0];
   const deliver = () =>
     db.batch(
@@ -52,10 +46,6 @@ test("stats use finalized history once, preserve identity, and rank players by w
   expect((await read()).player).toEqual({
     matches: 1,
     wins: 1,
-    rounds: 2,
-    tricks: 3,
-    exactPredictions: 1,
-    predictionError: 2,
     xp: 30,
     level: 1,
     acesOfCoinsPlayed: null,

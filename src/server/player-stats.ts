@@ -5,10 +5,6 @@ type Row = Omit<PlayerStats, "xp" | "level"> & { id: string; name: string; avata
 
 const totals = `SELECT p.id, p.display_name AS name, p.avatar, COUNT(r.match_id) AS matches,
   COALESCE(SUM(r.outcome='won'),0) AS wins,
-  COALESCE(SUM(r.rounds_played),0) AS rounds,
-  COALESCE(SUM(r.tricks_won),0) AS tricks,
-  COALESCE(SUM(r.exact_predictions),0) AS exactPredictions,
-  COALESCE(SUM(r.prediction_error),0) AS predictionError,
   CASE WHEN COUNT(r.match_id)=0 THEN 0 ELSE SUM(r.aces_of_coins_played) END AS acesOfCoinsPlayed,
   1.0*SUM(r.prediction_total)/NULLIF(SUM(r.prediction_count),0) AS averagePrediction,
   1.0*SUM(COALESCE(r.play_time_ms,0)+COALESCE(r.prediction_time_ms,0))
@@ -20,10 +16,6 @@ function stats(row?: Row): PlayerStats {
   const {
     matches = 0,
     wins = 0,
-    rounds = 0,
-    tricks = 0,
-    exactPredictions = 0,
-    predictionError = 0,
     acesOfCoinsPlayed = 0,
     averagePrediction = null,
     averageDecisionMs = null,
@@ -31,10 +23,6 @@ function stats(row?: Row): PlayerStats {
   return {
     matches,
     wins,
-    rounds,
-    tricks,
-    exactPredictions,
-    predictionError,
     acesOfCoinsPlayed,
     averagePrediction,
     averageDecisionMs,

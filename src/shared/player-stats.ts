@@ -1,11 +1,8 @@
 import type { AvatarId } from "./avatars";
+export type Profile = { name: string; avatar: AvatarId };
 export type PlayerStats = {
   matches: number;
   wins: number;
-  rounds: number;
-  tricks: number;
-  exactPredictions: number;
-  predictionError: number;
   acesOfCoinsPlayed: number | null;
   averagePrediction: number | null;
   averageDecisionMs: number | null;
@@ -18,9 +15,9 @@ export function progression(matches: number, wins: number) {
   return { xp, level: 1 + Math.floor(xp / 100) };
 }
 
-export type Leader = PlayerStats & { name: string; avatar: AvatarId; you: boolean };
+export type Leader = PlayerStats & Profile & { you: boolean };
 export type StatsResponse = {
   player: PlayerStats;
-  profile: { name: string; avatar: AvatarId };
+  profile: Profile;
   leaders: Leader[];
 };
