@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Pencil, PlayingCard, Target, Timer } from "lucide-react";
+import { ArrowLeft, Pencil, PlayingCard, Target, Timer } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
-import { avatars, type AvatarId } from "@/shared/avatars";
+import { type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
+import { AvatarPicker } from "./avatar-picker";
 import { Button } from "./ui/button";
 import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
@@ -53,6 +54,7 @@ function ProfileEditor({
       }}
       title={mode === "name" ? "Edit your name" : "Choose your avatar"}
       hideTitle={mode === "name"}
+      centerTitle={mode === "avatar"}
       actionLabel={saving ? "Saving…" : "Save"}
       busy={saving}
       actionDisabled={mode === "name" && !name.trim()}
@@ -71,30 +73,7 @@ function ProfileEditor({
       {mode === "name" ? (
         <NameChangeInput value={name} disabled={saving} onChange={setName} />
       ) : (
-        <fieldset disabled={saving}>
-          <legend className="sr-only">Player avatar</legend>
-          <div className="grid grid-cols-3 gap-3">
-            {avatars.map((option) => (
-              <label key={option.id} className="relative cursor-pointer">
-                <input
-                  className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0"
-                  type="radio"
-                  name="avatar"
-                  value={option.id}
-                  checked={avatar === option.id}
-                  onChange={() => setAvatar(option.id)}
-                  aria-label={option.name}
-                />
-                <span className="flex flex-col items-center gap-2 rounded-xl border-2 border-transparent p-2 text-center text-xs peer-checked:border-primary peer-checked:bg-accent/40 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-50">
-                  <Avatar avatar={option.id} className="size-16" />
-                  {avatar === option.id && (
-                    <Check className="absolute right-2 top-2 size-4 rounded-full bg-primary p-0.5 text-white" />
-                  )}
-                </span>
-              </label>
-            ))}
-          </div>
-        </fieldset>
+        <AvatarPicker value={avatar} disabled={saving} onChange={setAvatar} />
       )}
     </ActionDialog>
   );

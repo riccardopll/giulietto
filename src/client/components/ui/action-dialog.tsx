@@ -7,6 +7,7 @@ export function ActionDialog({
   onOpenChange,
   title,
   hideTitle = false,
+  centerTitle = false,
   description,
   children,
   actionLabel,
@@ -20,6 +21,7 @@ export function ActionDialog({
   onOpenChange: (open: boolean) => void;
   title: string;
   hideTitle?: boolean;
+  centerTitle?: boolean;
   description?: ReactNode;
   children?: ReactNode;
   actionLabel: string;
@@ -49,7 +51,7 @@ export function ActionDialog({
             className={
               hideTitle && !description && !confirmation
                 ? "sr-only"
-                : "flex flex-col gap-2 text-center sm:text-left"
+                : `flex flex-col gap-2 text-center ${centerTitle ? "" : "sm:text-left"}`
             }
           >
             <Primitive.Title className={hideTitle ? "sr-only" : "text-lg font-semibold"}>
