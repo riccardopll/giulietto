@@ -9,6 +9,7 @@ import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 import { PageHeader } from "./ui/page-header";
 import { TrophyIcon } from "./ui/trophy-icon";
+import { PlacementMedal } from "./ui/placement-medal";
 import { cn } from "../utils";
 
 type Profile = StatsResponse["profile"];
@@ -256,19 +257,15 @@ export function PlayerPages({
                     player.you && "bg-accent/60 text-primary",
                   )}
                 >
-                  <span
-                    className={cn(
-                      "grid size-7 shrink-0 place-items-center rounded-full text-sm font-semibold tabular-nums",
-                      index === 0
-                        ? "bg-[#c9a43e] text-white"
-                        : index === 1
-                          ? "bg-[#a5a1a3] text-white"
-                          : index === 2
-                            ? "bg-[#aa7350] text-white"
-                            : "text-muted-foreground",
+                  <span className="grid w-7 shrink-0 place-items-center text-sm font-semibold text-muted-foreground tabular-nums">
+                    {index < 3 ? (
+                      <>
+                        <PlacementMedal place={index + 1} className="h-9 w-7" />
+                        <span className="sr-only">{index + 1}</span>
+                      </>
+                    ) : (
+                      index + 1
                     )}
-                  >
-                    {index + 1}
                   </span>
                   <Avatar avatar={player.avatar} className="size-10" />
                   <div className="min-w-0 flex-1">
