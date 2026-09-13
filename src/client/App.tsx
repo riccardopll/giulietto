@@ -342,14 +342,14 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             {!game && (
               <Button
                 variant="ghost"
-                className="relative col-start-3 row-start-1 h-auto rounded-full p-1"
+                className="col-start-3 row-start-1 h-auto gap-2 rounded-full p-1 pr-2"
                 aria-label="Open your profile"
                 title={profile.name}
                 onClick={() => navigate("profile")}
               >
                 <Avatar avatar={profile.avatar} />
-                <span className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-background bg-primary text-[10px] font-semibold text-white">
-                  {account.data?.player.level ?? 1}
+                <span className="text-sm font-medium tabular-nums text-muted-foreground">
+                  Lv. {account.data?.player.level ?? 1}
                 </span>
               </Button>
             )}
