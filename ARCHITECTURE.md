@@ -9,17 +9,6 @@ Only notification bubbles may clip.
 Use Tailwind for layout and component styles. Reserve shared CSS for theme tokens,
 reusable utilities, paint, and animations.
 
-Player stats aggregate finalized won/lost match results in D1 for the existing
-hashed guest identity. Active and abandoned matches and spectators do not count.
-Public and private matches count equally. XP = 10 × matches + 20 × wins;
-level = 1 + floor(XP / 100), with no maximum. The all-time leaderboard shows the top
-20 by wins, then XP, then player ID for stable ties. History
-outbox delivery can briefly delay stats; no separate counters or backfill are needed.
-
-Names and avatar choices live in D1 players and load when joining a table. Profile
-edits apply to future joins; lobby renames also update D1. History delivery only
-updates last-seen time for existing players, so old matches cannot undo edits.
-
 Always play animations regardless of the system's reduced-motion preference.
 Do not add reduced-motion overrides or gate animations behind `motion-safe`.
 
