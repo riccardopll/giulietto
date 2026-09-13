@@ -60,75 +60,68 @@ export function PlayerSeat({
             <EmoteBubble emote={player.emote} serverTime={serverTime} name={player.name} />
             <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
           </div>
-          <div
-            className={cn(
-              "seat-avatar-slot relative shrink-0",
-              you ? "size-9 @min-2xl/board:size-12" : "size-7 @min-2xl/board:size-10",
-            )}
-          >
-            <div className="seat-avatar-wrap absolute top-1/2 left-1/2 size-10 -translate-x-1/2 -translate-y-1/2 @min-2xl/board:size-13">
-              {current && player.lives > 0 && (
-                <svg
-                  key={`${deadline}-${serverTime}`}
-                  className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 -scale-y-100 overflow-visible"
-                  aria-hidden="true"
-                  style={
-                    {
-                      "--timer-remaining": 100 * (remaining / TURN_MS),
-                      "--timer-duration": `${remaining}ms`,
-                    } as CSSProperties
-                  }
-                >
-                  <circle
-                    className="fill-none stroke-primary stroke-[5]"
-                    cx="50%"
-                    cy="50%"
-                    r="calc(50% - 2.5px)"
-                    pathLength="100"
-                  />
-                </svg>
-              )}
-              <div
-                className={cn(
-                  "seat-avatar relative grid size-full place-items-center rounded-full border-2 font-semibold",
-                  player.lives <= 0
-                    ? "border-transparent"
-                    : "border-background bg-card shadow-[0_0_0_1px_#6f4a5e12]",
-                )}
+          <div className="seat-avatar-wrap relative size-10 shrink-0 @min-2xl/board:size-13">
+            {current && player.lives > 0 && (
+              <svg
+                key={`${deadline}-${serverTime}`}
+                className="seat-timer pointer-events-none absolute -inset-[3px] size-[calc(100%+6px)] -rotate-90 -scale-y-100 overflow-visible"
                 aria-hidden="true"
+                style={
+                  {
+                    "--timer-remaining": 100 * (remaining / TURN_MS),
+                    "--timer-duration": `${remaining}ms`,
+                  } as CSSProperties
+                }
               >
-                {player.lives > 0 && (
-                  <Avatar avatar={player.avatar} id={player.id} className="size-full border-0" />
-                )}
-                {player.lives <= 0 && (
-                  <span
-                    key={round}
-                    className="seat-elimination pointer-events-none absolute -inset-1 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
-                  >
-                    <img
-                      src="/skull-giulietto.webp"
-                      alt=""
-                      className="size-full object-contain [filter:drop-shadow(0_1px_1px_#49152d40)_drop-shadow(0_3px_3px_#49152d26)]"
-                      draggable={false}
-                    />
-                  </span>
-                )}
-              </div>
-              <span
-                className={cn(
-                  "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-5 sm:min-w-5 sm:text-[10px]",
-                  current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
-                )}
-                aria-label={`Seat ${toRoman(number)}`}
-              >
-                {toRoman(number)}
-              </span>
+                <circle
+                  className="fill-none stroke-primary stroke-[5]"
+                  cx="50%"
+                  cy="50%"
+                  r="calc(50% - 2.5px)"
+                  pathLength="100"
+                />
+              </svg>
+            )}
+            <div
+              className={cn(
+                "seat-avatar relative grid size-full place-items-center rounded-full border-2 font-semibold",
+                player.lives <= 0
+                  ? "border-transparent"
+                  : "border-background bg-card shadow-[0_0_0_1px_#6f4a5e12]",
+              )}
+              aria-hidden="true"
+            >
+              {player.lives > 0 && (
+                <Avatar avatar={player.avatar} id={player.id} className="size-full border-0" />
+              )}
+              {player.lives <= 0 && (
+                <span
+                  key={round}
+                  className="seat-elimination pointer-events-none absolute -inset-1 z-10 grid place-items-center animate-[seat-elimination_.8s_cubic-bezier(.2,.8,.2,1)_both]"
+                >
+                  <img
+                    src="/skull-giulietto.webp"
+                    alt=""
+                    className="size-full object-contain [filter:drop-shadow(0_1px_1px_#49152d40)_drop-shadow(0_3px_3px_#49152d26)]"
+                    draggable={false}
+                  />
+                </span>
+              )}
             </div>
+            <span
+              className={cn(
+                "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-5 sm:min-w-5 sm:text-[10px]",
+                current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
+              )}
+              aria-label={`Seat ${toRoman(number)}`}
+            >
+              {toRoman(number)}
+            </span>
           </div>
           <div className="seat-details flex min-w-0 flex-col items-start justify-center gap-0.5">
             <strong
               className={cn(
-                "seat-name block max-w-full font-semibold [overflow-wrap:anywhere]",
+                "seat-name line-clamp-3 max-w-full font-semibold [overflow-wrap:anywhere]",
                 you
                   ? "text-sm text-primary @min-2xl/board:text-lg"
                   : "text-[10px] leading-[11px] @min-xs/board:text-[11px] @min-xs/board:leading-3 @min-2xl/board:text-sm @min-2xl/board:leading-4",
@@ -140,7 +133,7 @@ export function PlayerSeat({
             </strong>
             <div
               className={cn(
-                "seat-stats flex shrink-0 items-center gap-1",
+                "seat-stats flex max-w-full flex-wrap items-center gap-x-1 gap-y-0.5",
                 player.lives <= 0 && "invisible",
               )}
               aria-hidden={player.lives <= 0 || undefined}

@@ -51,6 +51,15 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
       return { width, height };
     }),
   );
+  const overlappingProfiles = await page.locator(".seat-profile").evaluateAll(
+    (profiles) =>
+      profiles.filter((profile) => {
+        const avatar = profile.querySelector(".seat-avatar")!.getBoundingClientRect();
+        const details = profile.querySelector(".seat-details")!.getBoundingClientRect();
+        return avatar.right + 3 > details.left;
+      }).length,
+  );
+  expect(overlappingProfiles).toBe(0);
   expect(avatarSizes).toHaveLength(6);
   for (const size of avatarSizes) expect(size).toEqual({ width: 40, height: 40 });
   const emoteButton = await page.getByRole("button", { name: "Emotes", exact: true }).boundingBox();
