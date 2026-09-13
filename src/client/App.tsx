@@ -321,7 +321,9 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               }}
               aria-label="Giulietto home"
             >
-              {!game && <img src="/logo.png" width={48} height={48} alt="" className="size-12" />}
+              {!game && page !== "home" && (
+                <img src="/logo.png" width={48} height={48} alt="" className="size-12" />
+              )}
               Giulietto
             </a>
             {game && !waiting && game.spectatorCount > 1 && (
