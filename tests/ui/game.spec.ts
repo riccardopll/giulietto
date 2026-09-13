@@ -117,7 +117,7 @@ test("three players complete a game, including round results and elimination", a
     expect(await page.evaluate(() => localStorage.getItem("giulietto-room"))).toBeNull();
     await page.getByRole("button", { name: "Open your profile" }).click();
     await expect(async () => {
-      await page.getByRole("button", { name: "Refresh stats" }).click();
+      await page.reload();
       await expect(
         page.getByText(state!.you === winner ? "30 / 100 XP" : "10 / 100 XP", { exact: true }),
       ).toBeVisible();

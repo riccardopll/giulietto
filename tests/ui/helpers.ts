@@ -32,10 +32,7 @@ export const test = base.extend<{ players: Player[] }>({
           await page.getByRole("button", { name: "Save profile", exact: true }).click();
           await expect(page.getByRole("dialog", { name: "Edit profile" })).toBeHidden();
           await page.reload();
-          await expect(page.getByRole("button", { name: "Open your profile" })).toHaveAttribute(
-            "title",
-            "bot_1",
-          );
+          await expect(page.getByRole("button", { name: "Edit your name" })).toHaveText("bot_1");
           await expect(
             page.getByRole("button", { name: "Edit profile", exact: true }).locator("img"),
           ).toHaveAttribute("src", "/avatars/king-cups.webp");

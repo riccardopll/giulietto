@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import { ArrowLeft, Check, Pencil, RefreshCw, Trophy } from "lucide-react";
+import { ArrowLeft, Check, Pencil, RefreshCw, Spade, Trophy } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
@@ -17,7 +17,7 @@ function PageHeading({
 }: {
   title: string;
   onBack: () => void;
-  refresh: () => void;
+  refresh?: () => void;
 }) {
   return (
     <div className="mb-6 flex items-center gap-2">
@@ -30,24 +30,44 @@ function PageHeading({
         <ArrowLeft />
       </Button>
       <h1 className="min-w-0 flex-1 text-2xl font-semibold">{title}</h1>
-      <Button
-        variant="ghost"
-        className="size-11 shrink-0 p-0"
-        aria-label="Refresh stats"
-        onClick={refresh}
-      >
-        <RefreshCw className="size-4" />
-      </Button>
+      {refresh && (
+        <Button
+          variant="ghost"
+          className="size-11 shrink-0 p-0"
+          aria-label="Refresh stats"
+          onClick={refresh}
+        >
+          <RefreshCw className="size-4" />
+        </Button>
+      )}
     </div>
   );
 }
 
-function StatRows({ entries }: { entries: [string, ReactNode][] }) {
+function CardsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+      <path d="m9 4-5 1a1 1 0 0 0-.8 1.2l2.7 13a1 1 0 0 0 1.2.8l3-.6" />
+      <rect x="9" y="3" width="11" height="17" rx="1" transform="rotate(10 14.5 11.5)" />
+    </svg>
+  );
+}
+
+function StatRows({
+  entries,
+}: {
+  entries: { label: string; value: ReactNode; icon: ReactNode }[];
+}) {
   return (
     <dl className="divide-y">
-      {entries.map(([label, value]) => (
+      {entries.map(({ label, value, icon }) => (
         <div key={label} className="flex items-center justify-between gap-4 py-4 text-sm">
-          <dt className="text-muted-foreground">{label}</dt>
+          <dt className="flex items-center gap-3 text-muted-foreground">
+            <span aria-hidden="true" className="shrink-0 [&_svg]:size-5">
+              {icon}
+            </span>
+            {label}
+          </dt>
           <dd className="font-medium tabular-nums">{value}</dd>
         </div>
       ))}
@@ -160,7 +180,7 @@ export function PlayerPages({
       <PageHeading
         title={page === "profile" ? "Your profile" : "Leaderboard"}
         onBack={onBack}
-        refresh={refresh}
+        refresh={page === "leaderboard" ? refresh : undefined}
       />
       {error && (
         <p role="alert" className="mb-4 rounded-xl border p-4 text-sm">
@@ -236,18 +256,15 @@ export function PlayerPages({
               </dl>
               <StatRows
                 entries={[
-                  ["Rounds", stats.rounds],
-                  ["Tricks won", stats.tricks],
-                  ["Exact predictions", stats.exactPredictions],
+                  { label: "Rounds", value: stats.rounds, icon: <CardsIcon /> },
+                  { label: "Tricks won", value: stats.tricks, icon: <Trophy /> },
+                  {
+                    label: "Exact predictions",
+                    value: stats.exactPredictions,
+                    icon: <Spade className="fill-current" />,
+                  },
                 ]}
               />
-              <details className="mt-4 border-t text-sm text-muted-foreground">
-                <summary className="min-h-11 cursor-pointer py-4">How levels work</summary>
-                <p className="pb-4">
-                  10 XP per completed match, plus 20 XP for a win. Every 100 XP adds a level. No
-                  maximum level.
-                </p>
-              </details>
             </>
           ) : (
             !error && (
