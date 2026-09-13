@@ -30,7 +30,7 @@ export function AvatarPicker({
               onChange={() => onChange(option.id)}
               aria-label={option.name}
             />
-            <span className="block size-full rounded-full border-2 border-transparent p-1 peer-checked:border-primary peer-focus-visible:outline-2 peer-focus-visible:outline-dashed peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-50">
+            <span className="block size-full rounded-full border-2 border-transparent p-px peer-checked:border-primary peer-focus-visible:outline-2 peer-focus-visible:outline-dashed peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-50">
               <Avatar avatar={option.id} className="size-full" />
               {value === option.id && (
                 <span
