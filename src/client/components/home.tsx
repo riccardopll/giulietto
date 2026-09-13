@@ -1,90 +1,73 @@
-import { Globe2, Loader2, Users } from "lucide-react";
-import { Button } from "@/client/components/ui/button";
-import { Input } from "@/client/components/ui/input";
-
-import { PlayerStats } from "./player-stats";
-
-type HomeProps = {
-  token: string;
-  name: string;
-  code: string;
-  ready: boolean;
-  busy: boolean;
-  onNameChange: (name: string) => void;
-  onCodeChange: (code: string) => void;
-  onAction: (action: "match" | "create" | "join") => void | Promise<void>;
-};
-
-const inputClass = "h-13 rounded-lg bg-card px-4 text-base md:text-base";
-const actionClass = "h-auto min-h-12 w-full rounded-lg px-4 py-3 text-sm whitespace-normal";
+import { ChevronRight, Globe2, Loader2, Trophy, Users } from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { PlayingCard } from "./playing-card";
 
 export function Home({
-  token,
-  name,
   code,
   ready,
   busy,
-  onNameChange,
   onCodeChange,
   onAction,
-}: HomeProps) {
+  onLeaderboard,
+}: {
+  code: string;
+  ready: boolean;
+  busy: boolean;
+  onCodeChange: (code: string) => void;
+  onAction: (action: "match" | "create" | "join") => void | Promise<void>;
+  onLeaderboard: () => void;
+}) {
   return (
-    <main className="mx-auto w-full max-w-sm py-6 sm:py-8">
-      <div className="grid gap-2.5">
-        <label htmlFor="name" className="text-sm font-medium">
-          Display name
-        </label>
-        <Input
-          className={inputClass}
-          id="name"
-          maxLength={20}
-          value={name}
-          onChange={(event) => onNameChange(event.target.value)}
-          placeholder="Your name"
-          autoComplete="nickname"
-        />
+    <main className="mx-auto flex w-full max-w-sm flex-col pb-8 pt-7 sm:pt-10">
+      <div
+        className="relative mx-auto mb-9 h-52 w-64 sm:mb-12 sm:h-64 sm:w-80"
+        aria-label="Neapolitan cards"
+      >
+        <div className="absolute left-3 top-4 w-[37%] -rotate-15">
+          <PlayingCard card={1} />
+        </div>
+        <div className="absolute right-3 top-4 w-[37%] rotate-15">
+          <PlayingCard card={31} />
+        </div>
+        <div className="absolute left-1/2 top-0 z-10 w-[37%] -translate-x-1/2">
+          <PlayingCard card={30} />
+        </div>
       </div>
-      <div className="mt-3.5 grid gap-3.5">
-        <Button
-          className={actionClass}
-          disabled={!ready || busy || !name.trim()}
-          onClick={() => void onAction("match")}
-        >
-          {busy ? <Loader2 className="size-5 animate-spin" /> : <Globe2 className="size-5" />}
-          Find matchmaking
+      <div className="grid gap-3">
+        <Button size="large" disabled={!ready || busy} onClick={() => void onAction("match")}>
+          {busy ? <Loader2 className="animate-spin" /> : <Globe2 />} Find a game
         </Button>
         <Button
+          size="large"
           variant="outline"
-          className={actionClass}
-          disabled={!ready || busy || !name.trim()}
+          disabled={!ready || busy}
           onClick={() => void onAction("create")}
         >
-          <Users className="size-5" />
-          Create private lobby
+          <Users /> Create private lobby
         </Button>
       </div>
       <form
-        className="mt-7 grid gap-2.5 border-t pt-6"
+        className="mt-7 grid gap-3 border-t pt-6"
         autoComplete="off"
         onSubmit={(event) => {
           event.preventDefault();
           void onAction("join");
         }}
       >
-        <label htmlFor="lobby-code" className="text-sm font-medium">
+        <label htmlFor="lobby-code" className="sr-only">
           Lobby code
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
           <Input
-            className={`${inputClass} tracking-wider uppercase placeholder:tracking-normal placeholder:normal-case`}
+            className="h-13 bg-card px-4 text-base tracking-wider uppercase placeholder:normal-case placeholder:tracking-normal md:text-base"
             id="lobby-code"
             name="table-invite"
-            type="text"
             autoComplete="off"
             data-1p-ignore="true"
             data-lpignore="true"
             data-form-type="other"
-            placeholder="Enter code"
+            placeholder="Enter lobby code"
             maxLength={8}
             value={code}
             autoCapitalize="characters"
@@ -95,16 +78,20 @@ export function Home({
             }
           />
           <Button
-            className="h-13 rounded-lg px-5"
+            size="large"
             type="submit"
             variant="secondary"
-            disabled={!ready || busy || !name.trim() || code.length !== 8}
+            disabled={!ready || busy || code.length !== 8}
           >
             Join
           </Button>
         </div>
       </form>
-      {ready && <PlayerStats token={token} />}
+      <Button variant="link" className="mx-auto mt-6 gap-3" onClick={onLeaderboard}>
+        <Trophy className="fill-current" />
+        Leaderboard
+        <ChevronRight />
+      </Button>
     </main>
   );
 }

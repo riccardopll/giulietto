@@ -1,26 +1,12 @@
+import { Avatar } from "./avatar";
 import { Crown } from "lucide-react";
 import type { view } from "../../shared/game";
 import { standings } from "../standings";
-import { avatarHue, cn } from "../utils";
+import { cn } from "../utils";
 import { Button } from "./ui/button";
 
 type State = ReturnType<typeof view>;
 type Player = State["players"][number];
-
-function Avatar({ player, winner = false }: { player: Player; winner?: boolean }) {
-  return (
-    <span
-      aria-hidden="true"
-      style={{ backgroundColor: `hsl(${avatarHue(player.id)} 45% 84%)` }}
-      className={cn(
-        "mx-auto flex size-12 items-center justify-center rounded-full border-2 border-background text-2xl font-semibold text-[#493642] shadow-[0_0_0_1px_#6f4a5e12] sm:size-16 sm:text-3xl",
-        winner && "size-16 sm:size-20",
-      )}
-    >
-      {Array.from(player.name)[0]?.toLocaleUpperCase()}
-    </span>
-  );
-}
 
 export function WinnerPodium({
   game,
@@ -56,7 +42,14 @@ export function WinnerPodium({
                   />
                 )}
                 {group.players.length === 1 && (
-                  <Avatar player={group.players[0]} winner={place === 1} />
+                  <Avatar
+                    avatar={group.players[0].avatar}
+                    id={group.players[0].id}
+                    className={cn(
+                      "mx-auto size-12 sm:size-16",
+                      place === 1 && "size-16 sm:size-20",
+                    )}
+                  />
                 )}
                 {group.players.map((player) => (
                   <p key={player.id} className="text-sm font-bold wrap-anywhere sm:text-base">
@@ -130,7 +123,13 @@ export function WinnerPodium({
                 aria-label={`Place ${group.place}`}
                 className="min-w-0 max-w-24 space-y-1"
               >
-                {group.players.length === 1 && <Avatar player={group.players[0]} />}
+                {group.players.length === 1 && (
+                  <Avatar
+                    avatar={group.players[0].avatar}
+                    id={group.players[0].id}
+                    className="mx-auto size-12 sm:size-16"
+                  />
+                )}
                 {group.players.map((player) => (
                   <p key={player.id} className="text-xs font-semibold wrap-anywhere">
                     {player.name}

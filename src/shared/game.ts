@@ -1,3 +1,4 @@
+import { defaultAvatar, type AvatarId } from "./avatars";
 import { GameError } from "./game-error.ts";
 import type { Emote } from "./emotes";
 export type PlayerStats = {
@@ -7,6 +8,7 @@ export type PlayerStats = {
   predictionError: number;
 };
 export type Player = {
+  avatar: AvatarId;
   id: string;
   name: string;
   lives: number;
@@ -82,6 +84,7 @@ export function player(id: string, name: string, now: number): Player {
   return {
     id,
     name,
+    avatar: defaultAvatar(id),
     lives: DEFAULT_STARTING_LIVES,
     hand: [],
     bid: null,

@@ -109,27 +109,32 @@ test("three players complete a game, including round results and elimination", a
       }),
     ).toBeVisible();
     await page.getByRole("button", { name: "Back to tables", exact: true }).click();
-    await expect(page.getByLabel("Display name")).toHaveValue(state!.viewerName);
+    await expect(page.getByRole("button", { name: "Open your profile" })).toHaveAttribute(
+      "title",
+      state!.viewerName,
+    );
     await expect(page).toHaveURL("/");
     expect(await page.evaluate(() => localStorage.getItem("giulietto-room"))).toBeNull();
-    const stats = page.getByRole("region", { name: "Player stats and leaderboards" });
+    await page.getByRole("button", { name: "Open your profile" }).click();
     await expect(async () => {
-      await stats.getByRole("button", { name: "Refresh stats" }).click();
+      await page.getByRole("button", { name: "Refresh stats" }).click();
       await expect(
-        stats.getByText(state!.you === winner ? "Level 1 · 30 XP" : "Level 1 · 10 XP", {
-          exact: true,
-        }),
+        page.getByText(state!.you === winner ? "30 / 100 XP" : "10 / 100 XP", { exact: true }),
       ).toBeVisible();
     }).toPass();
-    await stats.getByRole("button", { name: "Wins", exact: true }).click();
-    await expect(stats.getByRole("button", { name: "Wins", exact: true })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
     await page.screenshot({
       path: testInfo.outputPath(`stats-${state!.viewerName}.png`),
       fullPage: true,
     });
+    await page.getByRole("button", { name: "Back to home" }).click();
+    await page.getByRole("button", { name: "Leaderboard", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Leaderboard" })).toBeVisible();
+    await expect(page.getByRole("list", { name: "Leaderboard" })).toBeVisible();
+    await page.screenshot({
+      path: testInfo.outputPath(`leaderboard-${state!.viewerName}.png`),
+      fullPage: true,
+    });
+    await page.getByRole("button", { name: "Back to home" }).click();
   }
 
   // Another open tab must not restore the saved table when its connection resumes.
@@ -141,7 +146,10 @@ test("three players complete a game, including round results and elimination", a
   });
   await resumed;
   await players[0].page.reload();
-  await expect(players[0].page.getByLabel("Display name")).toHaveValue("bot_1");
+  await expect(players[0].page.getByRole("button", { name: "Open your profile" })).toHaveAttribute(
+    "title",
+    "bot_1",
+  );
   expect(await otherTab.evaluate(() => localStorage.getItem("giulietto-room"))).toBeNull();
   await otherTab.close();
 
@@ -228,7 +236,7 @@ test("three players complete a game, including round results and elimination", a
     .getByRole("alertdialog")
     .getByRole("button", { name: "Leave table", exact: true })
     .click();
-  await expect(page.getByLabel("Display name")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open your profile" })).toBeVisible();
   expect(left).toBe(true);
   await expect
     .poll(() => players[1].state?.players.map((p) => p.id))

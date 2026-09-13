@@ -1,3 +1,7 @@
+import { usePlayerStats } from "./use-player-stats";
+import { PlayerPages } from "./components/player-pages";
+import { Avatar } from "./components/avatar";
+import { defaultAvatar } from "@/shared/avatars";
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { toast, Toaster } from "sonner";
 import { toRoman } from "@/client/utils";
@@ -36,9 +40,34 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       : restoreSession(),
   );
   const [name, setName] = useState(session.name);
+  const [page, setPage] = useState<"home" | "profile" | "leaderboard">(() => {
+    const value = new URLSearchParams(location.search).get("page");
+    return value === "profile" || value === "leaderboard" ? value : "home";
+  });
   const [code, setCode] = useState(session.code);
   const [liveGame, setGame] = useState<State | null>(null);
   const game = preview?.state ?? liveGame;
+  const account = usePlayerStats(session.token, !game && !isPreview, (profile) => {
+    setName(profile.name);
+    try {
+      savePlayerName(profile.name);
+    } catch {
+      setError(cookieError);
+    }
+  });
+  const profile = {
+    name: name || "Guest",
+    avatar: account.data?.profile.avatar ?? defaultAvatar(session.token),
+  };
+  function navigate(next: "home" | "profile" | "leaderboard") {
+    history.pushState(
+      { ...history.state, giuliettoTable: null },
+      "",
+      next === "home" ? "/" : `/?page=${next}`,
+    );
+    setPage(next);
+    window.scrollTo(0, 0);
+  }
   const [busy, setBusy] = useState(!!session.joinCode);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [connection, setConnection] = useState("");
@@ -138,7 +167,11 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     if (isPreview) return;
     const onBack = () => {
       const current = gameRef.current;
-      if (!current) return;
+      if (!current) {
+        const value = new URLSearchParams(location.search).get("page");
+        setPage(value === "profile" || value === "leaderboard" ? value : "home");
+        return;
+      }
       // popstate cannot be cancelled. Restore the table entry before asking.
       history.pushState(
         { ...history.state, giuliettoTable: current.code },
@@ -199,7 +232,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       } else {
         const command = {
           action,
-          name,
+          name: name || "Guest",
           code: gameRef.current?.code || code,
           ...extra,
         };
@@ -239,6 +272,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     gameRef.current = null;
     httpAttempt.current = null;
     setGame(null);
+    setPage("home");
     setCode("");
     setError("");
     setConnection("");
@@ -272,15 +306,18 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             : "safe-area mx-auto min-h-svh max-w-6xl [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
         }
       >
-        <header className="site-header grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-20">
+        <header
+          className={`site-header grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-20 ${!game ? "mx-auto w-full max-w-md" : ""}`}
+        >
           <div
-            className={`row-start-1 flex items-center gap-1 sm:gap-3 ${game ? "col-start-1 justify-self-start" : "col-span-3 justify-self-center"}`}
+            className={`row-start-1 flex items-center gap-1 sm:gap-3 col-start-1 justify-self-start`}
           >
             <a
               href="/"
               className={`wordmark text-primary ${game ? "text-2xl sm:text-4xl" : "flex items-center gap-2 text-4xl"}`}
               onClick={(e) => {
-                if (game) e.preventDefault();
+                e.preventDefault();
+                if (!game) navigate("home");
               }}
               aria-label="Giulietto home"
             >
@@ -299,6 +336,20 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               </span>
             )}
           </div>
+          {!game && (
+            <Button
+              variant="ghost"
+              className="relative col-start-3 row-start-1 h-auto rounded-full p-1"
+              aria-label="Open your profile"
+              title={profile.name}
+              onClick={() => navigate("profile")}
+            >
+              <Avatar avatar={profile.avatar} />
+              <span className="absolute -bottom-0.5 -right-0.5 grid size-5 place-items-center rounded-full border-2 border-background bg-primary text-[10px] font-semibold text-white">
+                {account.data?.player.level ?? 1}
+              </span>
+            </Button>
+          )}
           {game && !waiting && (
             <h2 className="col-start-2 row-start-1 max-w-18 text-center text-base leading-tight font-semibold min-[360px]:max-w-none sm:text-2xl">
               Round {toRoman(game.round)}
@@ -347,16 +398,27 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           onSubmit={() => act("leave")}
         />
         {!game ? (
-          <Home
-            token={session.token}
-            name={name}
-            code={code}
-            ready={ready}
-            busy={busy}
-            onNameChange={setName}
-            onCodeChange={setCode}
-            onAction={act}
-          />
+          page === "home" ? (
+            <Home
+              code={code}
+              ready={ready}
+              busy={busy}
+              onCodeChange={setCode}
+              onAction={act}
+              onLeaderboard={() => navigate("leaderboard")}
+            />
+          ) : (
+            <PlayerPages
+              page={page}
+              data={account.data}
+              profile={profile}
+              error={account.error}
+              saving={account.saving}
+              refresh={account.refresh}
+              onSave={account.save}
+              onBack={() => navigate("home")}
+            />
+          )
         ) : (
           <main
             className={

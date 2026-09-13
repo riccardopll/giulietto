@@ -1,7 +1,8 @@
+import { Avatar } from "./avatar";
 import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
 import { TURN_MS, type view } from "../../shared/game.ts";
-import { avatarHue, cn, toRoman } from "../utils";
+import { cn, toRoman } from "../utils";
 import { Lives } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
@@ -89,12 +90,13 @@ export function PlayerSeat({
                   : "size-7 text-sm @min-2xl/board:size-10 @min-2xl/board:text-xl",
                 player.lives <= 0
                   ? "border-transparent"
-                  : "border-background bg-[hsl(var(--avatar-hue)_45%_84%)] text-[#493642] shadow-[0_0_0_1px_#6f4a5e12]",
+                  : "border-background bg-card shadow-[0_0_0_1px_#6f4a5e12]",
               )}
-              style={{ "--avatar-hue": avatarHue(player.id) } as CSSProperties}
               aria-hidden="true"
             >
-              {player.lives > 0 && <span>{Array.from(player.name)[0]?.toLocaleUpperCase()}</span>}
+              {player.lives > 0 && (
+                <Avatar avatar={player.avatar} id={player.id} className="size-full border-0" />
+              )}
               {player.lives <= 0 && (
                 <span
                   key={round}

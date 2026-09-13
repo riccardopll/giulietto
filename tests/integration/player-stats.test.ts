@@ -4,7 +4,7 @@ import { gameFixture } from "../unit/helpers";
 import { historyStatements } from "../../src/server/match-history";
 import type { StatsResponse } from "../../src/shared/player-stats";
 
-test("stats use finalized history once, preserve identity, and order both leaderboards", async ({
+test("stats use finalized history once, preserve identity, and rank players by wins", async ({
   api,
 }) => {
   const host = guest(1);
@@ -20,8 +20,7 @@ test("stats use finalized history once, preserve identity, and order both leader
   };
   expect(await read()).toMatchObject({
     player: { matches: 0, wins: 0, level: 1, xp: 0 },
-    experience: [],
-    wins: [],
+    leaders: [],
   });
   const db = await api.runtime.getD1Database("DB");
   const game = gameFixture();
@@ -77,9 +76,8 @@ test("stats use finalized history once, preserve identity, and order both leader
     await deliver();
   }
   const result = await read();
-  expect(result.experience[0]).toMatchObject({ xp: 100, wins: 2, level: 2 });
-  expect(result.wins[0]).toMatchObject({ wins: 3, xp: 90, you: true });
-  expect(result.experience.find((p) => p.you)).toMatchObject({ name: "bot_1", matches: 3 });
+  expect(result.leaders[0]).toMatchObject({ wins: 3, xp: 90, you: true });
+  expect(result.leaders.find((p) => p.you)).toMatchObject({ name: "bot_1", matches: 3 });
   expect((await read(guest(4).token)).player.matches).toBe(0);
   expect(JSON.stringify(result)).not.toContain(id);
   expect(JSON.stringify(result)).not.toContain(host.token);
@@ -95,4 +93,52 @@ test("stats API requires a guest token and rejects writes and foreign origins", 
       status,
     );
   }
+});
+
+test("profile edits persist, reach tables, and survive older match history", async ({ api }) => {
+  const host = guest(1);
+  const save = (value: unknown) =>
+    api.runtime.dispatchFetch("http://game.test/api/profile", {
+      method: "POST",
+      headers: { "x-player-token": host.token },
+      body: JSON.stringify(value),
+    });
+  for (const value of [
+    null,
+    { name: "", avatar: "king-cups" },
+    { name: "x".repeat(21), avatar: "king-cups" },
+    { name: "bot_1", avatar: "../../secret" },
+  ])
+    expect((await save(value)).status).toBe(400);
+  const profile = { name: "bot_1", avatar: "queen-coins" };
+  expect(await (await save(profile)).json()).toEqual(profile);
+  const created = await api.state(host, { action: "create", name: "stale cookie" });
+  expect(created.players[0]).toMatchObject({ name: "bot_1", avatar: "queen-coins" });
+  const renamed = { name: "bot_2", avatar: "knight-swords" };
+  expect((await save(renamed)).status).toBe(200);
+  const db = await api.runtime.getD1Database("DB");
+  const old = gameFixture();
+  old.players[0].id = created.you;
+  await db.batch(
+    historyStatements(db as unknown as D1Database, old, { eventCount: 0 }) as unknown as Parameters<
+      typeof db.batch
+    >[0],
+  );
+  const read = await api.runtime.dispatchFetch("http://game.test/api/stats", {
+    headers: { "x-player-token": host.token },
+  });
+  expect(await read.json()).toMatchObject({ profile: renamed });
+  const rejoined = await api.state(host, {
+    action: "join",
+    code: created.code,
+    name: "stale cookie",
+  });
+  expect(rejoined.players[0]).toMatchObject(renamed);
+  await api.state(host, { action: "rename", code: created.code, name: "bot_1" });
+  const updated = await api.runtime.dispatchFetch("http://game.test/api/stats", {
+    headers: { "x-player-token": host.token },
+  });
+  expect(await updated.json()).toMatchObject({
+    profile: { name: "bot_1", avatar: "knight-swords" },
+  });
 });

@@ -1,3 +1,4 @@
+import type { AvatarId } from "./avatars";
 export type PlayerStats = {
   matches: number;
   wins: number;
@@ -14,9 +15,9 @@ export function progression(matches: number, wins: number) {
   return { xp, level: 1 + Math.floor(xp / 100) };
 }
 
-export type Leader = PlayerStats & { name: string; you: boolean };
+export type Leader = PlayerStats & { name: string; avatar: AvatarId; you: boolean };
 export type StatsResponse = {
   player: PlayerStats;
-  experience: Leader[];
-  wins: Leader[];
+  profile: { name: string; avatar: AvatarId };
+  leaders: Leader[];
 };

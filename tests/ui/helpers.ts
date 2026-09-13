@@ -25,7 +25,21 @@ export const test = base.extend<{ players: Player[] }>({
         });
         if (i === 0) {
           await page.goto("/");
+          await page.getByRole("button", { name: "Open your profile" }).click();
+          await page.getByRole("button", { name: "Edit profile", exact: true }).click();
           await page.getByLabel("Display name").fill("bot_1");
+          await page.getByRole("radio", { name: "King of Cups", exact: true }).check();
+          await page.getByRole("button", { name: "Save profile", exact: true }).click();
+          await expect(page.getByRole("dialog", { name: "Edit profile" })).toBeHidden();
+          await page.reload();
+          await expect(page.getByRole("button", { name: "Open your profile" })).toHaveAttribute(
+            "title",
+            "bot_1",
+          );
+          await expect(
+            page.getByRole("button", { name: "Edit profile", exact: true }).locator("img"),
+          ).toHaveAttribute("src", "/avatars/king-cups.webp");
+          await page.getByRole("button", { name: "Back to home" }).click();
           await page.getByRole("button", { name: "Create private lobby", exact: true }).click();
         } else {
           await page.goto(`/?table=${players[0].state!.code.toLowerCase()}`);

@@ -1,3 +1,4 @@
+import { Avatar } from "./avatar";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowRight, Check, Link, Pencil } from "lucide-react";
 import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type view } from "../../shared/game";
@@ -8,15 +9,6 @@ import { Input } from "./ui/input";
 import { ActionDialog } from "./ui/action-dialog";
 
 type State = ReturnType<typeof view>;
-
-const avatarColors = [
-  "bg-[#efcedc] text-[#923f60]",
-  "bg-[#e7dcf6] text-[#7850a1]",
-  "bg-[#fce2da] text-[#af6952]",
-  "bg-[#d7ecf2] text-[#427e91]",
-  "bg-[#f4e7c7] text-[#917139]",
-  "bg-[#e3e7ec] text-[#617086]",
-];
 
 function LobbyOptions({
   lives,
@@ -154,15 +146,7 @@ export function Lobby({
             >
               {player ? (
                 <>
-                  <div
-                    className={cn(
-                      "grid size-9 shrink-0 place-items-center rounded-full text-sm font-semibold",
-                      avatarColors[i],
-                    )}
-                    aria-hidden="true"
-                  >
-                    {Array.from(player.name)[0]?.toLocaleUpperCase()}
-                  </div>
+                  <Avatar avatar={player.avatar} id={player.id} className="size-9" />
                   <div className="flex min-w-0 flex-1 flex-col">
                     <strong className="text-sm wrap-anywhere text-foreground">
                       {player.name}

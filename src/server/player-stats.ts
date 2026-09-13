@@ -1,8 +1,9 @@
+import { defaultAvatar, isAvatar } from "../shared/avatars";
 import { progression, type PlayerStats, type StatsResponse } from "../shared/player-stats";
 
-type Row = Omit<PlayerStats, "xp" | "level"> & { id: string; name: string };
+type Row = Omit<PlayerStats, "xp" | "level"> & { id: string; name: string; avatar: string | null };
 
-const totals = `SELECT p.id, p.display_name AS name, COUNT(r.match_id) AS matches,
+const totals = `SELECT p.id, p.display_name AS name, p.avatar, COUNT(r.match_id) AS matches,
   COALESCE(SUM(r.outcome='won'),0) AS wins,
   COALESCE(SUM(r.rounds_played),0) AS rounds,
   COALESCE(SUM(r.tricks_won),0) AS tricks,
@@ -35,15 +36,23 @@ export async function playerStats(db: D1Database, id: string): Promise<StatsResp
   const results = await db.batch<Row>([
     db.prepare(`${totals} WHERE p.id=? GROUP BY p.id`).bind(id),
     db.prepare(`${totals} GROUP BY p.id HAVING matches>0
-      ORDER BY (matches*10+wins*20) DESC, wins DESC, p.id ASC LIMIT 20`),
-    db.prepare(`${totals} GROUP BY p.id HAVING matches>0
       ORDER BY wins DESC, (matches*10+wins*20) DESC, p.id ASC LIMIT 20`),
   ]);
   const leaders = (rows: Row[]) =>
-    rows.map((row) => ({ ...stats(row), name: row.name, you: row.id === id }));
+    rows.map((row) => ({
+      ...stats(row),
+      name: row.name,
+      avatar: isAvatar(row.avatar) ? row.avatar : defaultAvatar(row.id),
+      you: row.id === id,
+    }));
   return {
     player: stats(results[0].results[0]),
-    experience: leaders(results[1].results),
-    wins: leaders(results[2].results),
+    profile: {
+      name: results[0].results[0]?.name ?? "",
+      avatar: isAvatar(results[0].results[0]?.avatar)
+        ? results[0].results[0].avatar
+        : defaultAvatar(id),
+    },
+    leaders: leaders(results[1].results),
   };
 }

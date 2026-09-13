@@ -12,7 +12,7 @@ export function historyStatements(db: D1Database, g: Game, recording: { eventCou
     db
       .prepare(`INSERT INTO players(id,display_name,created_at,last_seen_at)
       SELECT json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),?,json_extract(p.value,'$.seen')
-      FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET display_name=excluded.display_name,last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
+      FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
       .bind(g.startedAt!, participants),
     db
       .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,event_count)
