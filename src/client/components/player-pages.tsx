@@ -10,7 +10,7 @@ import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 import { PageHeader } from "./ui/page-header";
 import { TrophyIcon } from "./ui/trophy-icon";
-import { PlacementMedal } from "./ui/placement-medal";
+import { Leaderboard } from "./leaderboard";
 import { cn } from "../utils";
 
 type Profile = StatsResponse["profile"];
@@ -229,39 +229,7 @@ export function PlayerPages({
               <p>Finish a match to join the leaderboard.</p>
             </div>
           ) : (
-            <ol aria-label="Leaderboard" className="grid gap-1">
-              {data.leaders.map((player, index) => (
-                <li
-                  key={index}
-                  className={cn(
-                    "flex min-w-0 items-center gap-3 rounded-xl px-3 py-3",
-                    player.you && "bg-accent/60 text-primary",
-                  )}
-                >
-                  <span className="grid w-7 shrink-0 place-items-center text-sm font-semibold text-muted-foreground tabular-nums">
-                    {index < 3 ? (
-                      <>
-                        <PlacementMedal place={index + 1} className="h-9 w-7" />
-                        <span className="sr-only">{index + 1}</span>
-                      </>
-                    ) : (
-                      index + 1
-                    )}
-                  </span>
-                  <Avatar avatar={player.avatar} className="size-10" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">
-                      {player.name}
-                      {player.you ? " (you)" : ""}
-                    </p>
-                    <p className="mt-0.5 text-xs text-muted-foreground">Level {player.level}</p>
-                  </div>
-                  <span className="shrink-0 text-sm font-semibold tabular-nums">
-                    {player.wins} {player.wins === 1 ? "win" : "wins"}
-                  </span>
-                </li>
-              ))}
-            </ol>
+            <Leaderboard players={data.leaders} />
           )}
         </>
       )}
