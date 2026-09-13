@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Coins, Pencil, RefreshCw, Target, Timer } from "lucide-react";
+import { ArrowLeft, Check, Coins, Pencil, Target, Timer } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
@@ -13,15 +13,7 @@ import { cn } from "../utils";
 
 type Profile = StatsResponse["profile"];
 
-function PageHeading({
-  title,
-  onBack,
-  refresh,
-}: {
-  title: string;
-  onBack: () => void;
-  refresh?: () => void;
-}) {
+function PageHeading({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <PageHeader className="mb-6 flex gap-2">
       <Button
@@ -33,16 +25,6 @@ function PageHeading({
         <ArrowLeft />
       </Button>
       <h1 className="min-w-0 flex-1 text-2xl font-semibold">{title}</h1>
-      {refresh && (
-        <Button
-          variant="ghost"
-          className="size-11 shrink-0 p-0"
-          aria-label="Refresh stats"
-          onClick={refresh}
-        >
-          <RefreshCw className="size-4" />
-        </Button>
-      )}
     </PageHeader>
   );
 }
@@ -124,7 +106,6 @@ export function PlayerPages({
   profile,
   error,
   saving,
-  refresh,
   onSave,
   onBack,
 }: {
@@ -133,7 +114,6 @@ export function PlayerPages({
   profile: Profile;
   error: string;
   saving: boolean;
-  refresh: () => void;
   onSave: (profile: Profile) => Promise<void>;
   onBack: () => void;
 }) {
@@ -141,11 +121,7 @@ export function PlayerPages({
   const stats = data?.player;
   return (
     <main className="mx-auto w-full max-w-md pb-8">
-      <PageHeading
-        title={page === "profile" ? "Your profile" : "Leaderboard"}
-        onBack={onBack}
-        refresh={page === "leaderboard" ? refresh : undefined}
-      />
+      <PageHeading title={page === "profile" ? "Your profile" : "Leaderboard"} onBack={onBack} />
       {page === "profile" ? (
         <>
           <div className="flex flex-col items-center">

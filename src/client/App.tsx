@@ -416,7 +416,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               profile={profile}
               error={account.error}
               saving={account.saving}
-              refresh={account.refresh}
               onSave={account.save}
               onBack={() => navigate("home")}
             />
