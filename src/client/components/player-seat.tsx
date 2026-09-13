@@ -145,7 +145,7 @@ export function PlayerSeat({
                 <span
                   className={cn(
                     "inline-block min-w-[1ch]",
-                    player.bid != null && player.taken > player.bid && "text-destructive",
+                    player.bid != null && player.taken !== player.bid && "text-destructive",
                   )}
                 >
                   {player.taken}
