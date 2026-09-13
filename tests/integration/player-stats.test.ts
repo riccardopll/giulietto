@@ -233,3 +233,77 @@ test("profile edits persist, reach tables, and survive older match history", asy
     profile: { name: "bot_1", avatar: "knight-swords" },
   });
 });
+
+test("aggregate migration preserves historical samples and retries count each completed match once", async ({
+  api,
+}) => {
+  const db = (await api.runtime.getD1Database("DB")) as unknown as D1Database;
+  const games = ["completed", "completed", "active", "abandoned"].map((status, i) => {
+    const game = gameFixture();
+    game.matchId = `backfill-${i}`;
+    game.revision = 10;
+    if (status !== "active") {
+      game.phase = "finished";
+      game.finishedAt = 200;
+      game.winner = status === "completed" ? `p${i}` : null;
+    }
+    return game;
+  });
+  for (const game of games) await db.batch(historyStatements(db, game, { eventCount: 0 }));
+  await db
+    .prepare(`UPDATE match_results SET aces_of_coins_played=2,
+    prediction_total=6,prediction_count=3,play_time_ms=4000,timed_plays=2,
+    prediction_time_ms=2000,timed_predictions=1
+    WHERE match_id='backfill-0' AND player_id='p0'`)
+    .run();
+  // Recreate the pre-migration schema in this isolated test database.
+  await db.batch([
+    db.prepare("DROP TABLE player_stats"),
+    db.prepare("ALTER TABLE matches DROP COLUMN stats_counted"),
+  ]);
+  const migration = await readFile("migrations/0008_player_stats.sql", "utf8");
+  await db.batch(
+    migration
+      .split(";")
+      .filter((sql) => sql.trim())
+      .map((sql) => db.prepare(sql)),
+  );
+  const read = async () => (await playerStats(db, "p0")).player;
+  const expected = {
+    matches: 2,
+    wins: 1,
+    xp: 40,
+    level: 1,
+    acesOfCoinsPlayed: 2,
+    averagePrediction: 2,
+    averageDecisionMs: 2000,
+  };
+  expect(await read()).toEqual(expected);
+  for (const game of games) await db.batch(historyStatements(db, game, { eventCount: 0 }));
+  expect(await read()).toEqual(expected);
+
+  const next = structuredClone(games[0]);
+  next.matchId = "atomic-finalization";
+  await expect(
+    db.batch([
+      ...historyStatements(db, next, { eventCount: 0 }),
+      db.prepare("INSERT INTO player_stats(player_id) VALUES('p0')"),
+    ]),
+  ).rejects.toThrow();
+  expect(await read()).toEqual(expected);
+  expect(
+    await db.prepare("SELECT id FROM matches WHERE id=?").bind(next.matchId).first(),
+  ).toBeNull();
+  await Promise.all([
+    db.batch(historyStatements(db, next, { eventCount: 0 })),
+    db.batch(historyStatements(db, next, { eventCount: 0 })),
+  ]);
+  expect(await read()).toEqual({ ...expected, matches: 3, wins: 2, xp: 70 });
+  const plan = await db
+    .prepare(`EXPLAIN QUERY PLAN SELECT p.id FROM player_stats s
+    JOIN players p ON p.id=s.player_id
+    ORDER BY s.wins DESC,s.xp DESC,s.player_id ASC LIMIT 20`)
+    .all<{ detail: string }>();
+  expect(plan.results.some((row) => row.detail.includes("player_stats_ranking"))).toBe(true);
+  expect(plan.results.some((row) => row.detail.includes("TEMP B-TREE"))).toBe(false);
+});

@@ -3,14 +3,12 @@ import { progression, type PlayerStats, type StatsResponse } from "../shared/pla
 
 type Row = Omit<PlayerStats, "xp" | "level"> & { id: string; name: string; avatar: string | null };
 
-const totals = `SELECT p.id, p.display_name AS name, p.avatar, COUNT(r.match_id) AS matches,
-  COALESCE(SUM(r.outcome='won'),0) AS wins,
-  CASE WHEN COUNT(r.match_id)=0 THEN 0 ELSE SUM(r.aces_of_coins_played) END AS acesOfCoinsPlayed,
-  1.0*SUM(r.prediction_total)/NULLIF(SUM(r.prediction_count),0) AS averagePrediction,
-  1.0*SUM(COALESCE(r.play_time_ms,0)+COALESCE(r.prediction_time_ms,0))
-    /NULLIF(SUM(COALESCE(r.timed_plays,0)+COALESCE(r.timed_predictions,0)),0) AS averageDecisionMs
-  FROM players p LEFT JOIN match_results r ON r.player_id=p.id
-    AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL`;
+const columns = `p.id, p.display_name AS name, p.avatar,
+  COALESCE(s.matches,0) AS matches, COALESCE(s.wins,0) AS wins,
+  CASE WHEN s.player_id IS NULL THEN 0 ELSE s.aces_of_coins_played END AS acesOfCoinsPlayed,
+  1.0*s.prediction_total/NULLIF(s.prediction_count,0) AS averagePrediction,
+  1.0*(s.play_time_ms+s.prediction_time_ms)
+    /NULLIF(s.timed_plays+s.timed_predictions,0) AS averageDecisionMs`;
 
 function stats(row?: Row): PlayerStats {
   const {
@@ -32,9 +30,13 @@ function stats(row?: Row): PlayerStats {
 
 export async function playerStats(db: D1Database, id: string): Promise<StatsResponse> {
   const results = await db.batch<Row>([
-    db.prepare(`${totals} WHERE p.id=? GROUP BY p.id`).bind(id),
-    db.prepare(`${totals} GROUP BY p.id HAVING matches>0
-      ORDER BY wins DESC, (matches*10+wins*20) DESC, p.id ASC LIMIT 20`),
+    db
+      .prepare(`SELECT ${columns} FROM players p
+      LEFT JOIN player_stats s ON s.player_id=p.id WHERE p.id=?`)
+      .bind(id),
+    db.prepare(`SELECT ${columns} FROM player_stats s
+      JOIN players p ON p.id=s.player_id
+      ORDER BY s.wins DESC, s.xp DESC, s.player_id ASC LIMIT 20`),
   ]);
   const leaders = (rows: Row[]) =>
     rows.map((row) => ({

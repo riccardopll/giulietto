@@ -3,6 +3,8 @@ import type { Game } from "../shared/game";
 /** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
 export function historyStatements(db: D1Database, g: Game, recording: { eventCount: number }) {
   const guard = "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=?)";
+  const uncounted =
+    "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=? AND stats_counted=0)";
   const guardValues = [g.matchId!, g.revision];
   const participants = JSON.stringify(g.players);
   const finished = g.phase === "finished";
@@ -78,8 +80,35 @@ export function historyStatements(db: D1Database, g: Game, recording: { eventCou
             GROUP BY player_id
           ) AS totals
           WHERE r.match_id=? AND r.player_id=totals.player_id
-            AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL AND ${guard}`)
+            AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL AND ${uncounted}`)
             .bind(g.matchId!, g.matchId!, ...guardValues),
+          db
+            .prepare(`INSERT INTO player_stats(player_id,matches,wins,aces_of_coins_played,
+            prediction_total,prediction_count,play_time_ms,timed_plays,prediction_time_ms,timed_predictions)
+            SELECT player_id,1,outcome='won',aces_of_coins_played,
+              COALESCE(prediction_total,0),COALESCE(prediction_count,0),
+              COALESCE(play_time_ms,0),COALESCE(timed_plays,0),
+              COALESCE(prediction_time_ms,0),COALESCE(timed_predictions,0)
+            FROM match_results WHERE match_id=? AND outcome IN ('won','lost')
+              AND finalized_at IS NOT NULL AND ${uncounted}
+            ON CONFLICT(player_id) DO UPDATE SET
+              matches=player_stats.matches+excluded.matches,
+              wins=player_stats.wins+excluded.wins,
+              aces_of_coins_played=CASE
+                WHEN player_stats.aces_of_coins_played IS NULL AND excluded.aces_of_coins_played IS NULL THEN NULL
+                ELSE COALESCE(player_stats.aces_of_coins_played,0)+COALESCE(excluded.aces_of_coins_played,0) END,
+              prediction_total=player_stats.prediction_total+excluded.prediction_total,
+              prediction_count=player_stats.prediction_count+excluded.prediction_count,
+              play_time_ms=player_stats.play_time_ms+excluded.play_time_ms,
+              timed_plays=player_stats.timed_plays+excluded.timed_plays,
+              prediction_time_ms=player_stats.prediction_time_ms+excluded.prediction_time_ms,
+              timed_predictions=player_stats.timed_predictions+excluded.timed_predictions`)
+            .bind(g.matchId!, ...guardValues),
+          db
+            .prepare(
+              "UPDATE matches SET stats_counted=1 WHERE id=? AND history_revision=? AND status='completed' AND stats_counted=0",
+            )
+            .bind(...guardValues),
         ]
       : []),
   ];

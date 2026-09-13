@@ -15,6 +15,10 @@ page or dialog layout; keep retry actions in the notification, not inline banner
 Always play animations regardless of the system's reduced-motion preference.
 Do not add reduced-motion overrides or gate animations behind `motion-safe`.
 
+Read player statistics and rankings from `player_stats`, not lifetime history scans.
+Update totals and `matches.stats_counted` in the same finalization batch so retries
+cannot count a completed match twice. Keep timing totals and sample counts separate.
+
 ## Emotes
 
 Match the cartoon style of `public/emotes/chicken.webp` and
