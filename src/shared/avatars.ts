@@ -4,7 +4,6 @@ export const avatars = [
   { id: "king-clubs", name: "King of Clubs" },
   { id: "queen-cups", name: "Queen of Cups" },
   { id: "knight-swords", name: "Knight of Swords" },
-  { id: "queen-clubs", name: "Queen of Clubs" },
 ] as const;
 export type AvatarId = (typeof avatars)[number]["id"];
 export function isAvatar(value: unknown): value is AvatarId {

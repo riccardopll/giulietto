@@ -10,17 +10,26 @@ export function Avatar({
   id?: string;
   className?: string;
 }) {
+  const src = avatarPath(avatar, id);
   return (
-    <img
-      src={avatarPath(avatar, id)}
-      alt=""
-      draggable={false}
-      width={128}
-      height={128}
+    <span
       className={cn(
-        "size-11 shrink-0 rounded-full border border-[#d6c9b9] bg-[#f6ecd7] object-cover",
+        "inline-flex size-11 shrink-0 overflow-hidden rounded-full border border-[#d6c9b9] bg-[#f6ecd7]",
         className,
       )}
-    />
+    >
+      <img
+        src={src}
+        alt=""
+        draggable={false}
+        width={128}
+        height={128}
+        className={cn(
+          "size-full object-cover",
+          (src === "/avatars/king-clubs.webp" || src === "/avatars/knight-swords.webp") &&
+            "origin-top scale-[1.06]",
+        )}
+      />
+    </span>
   );
 }

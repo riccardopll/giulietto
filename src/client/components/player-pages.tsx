@@ -1,11 +1,13 @@
-import { useState, type ReactNode } from "react";
-import { ArrowLeft, Check, Pencil, RefreshCw, Spade, Trophy } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Check, Pencil, RefreshCw } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ActionDialog } from "./ui/action-dialog";
+import { PageHeader } from "./ui/page-header";
+import { TrophyIcon } from "./ui/trophy-icon";
 import { cn } from "../utils";
 
 type Profile = StatsResponse["profile"];
@@ -20,7 +22,7 @@ function PageHeading({
   refresh?: () => void;
 }) {
   return (
-    <div className="mb-6 flex items-center gap-2">
+    <PageHeader className="mb-6 flex gap-2">
       <Button
         variant="ghost"
         className="size-11 shrink-0 p-0"
@@ -40,47 +42,18 @@ function PageHeading({
           <RefreshCw className="size-4" />
         </Button>
       )}
-    </div>
-  );
-}
-
-function CardsIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-      <path d="m9 4-5 1a1 1 0 0 0-.8 1.2l2.7 13a1 1 0 0 0 1.2.8l3-.6" />
-      <rect x="9" y="3" width="11" height="17" rx="1" transform="rotate(10 14.5 11.5)" />
-    </svg>
-  );
-}
-
-function StatRows({
-  entries,
-}: {
-  entries: { label: string; value: ReactNode; icon: ReactNode }[];
-}) {
-  return (
-    <dl className="divide-y">
-      {entries.map(({ label, value, icon }) => (
-        <div key={label} className="flex items-center justify-between gap-4 py-4 text-sm">
-          <dt className="flex items-center gap-3 text-muted-foreground">
-            <span aria-hidden="true" className="shrink-0 [&_svg]:size-5">
-              {icon}
-            </span>
-            {label}
-          </dt>
-          <dd className="font-medium tabular-nums">{value}</dd>
-        </div>
-      ))}
-    </dl>
+    </PageHeader>
   );
 }
 
 function ProfileEditor({
+  mode,
   profile,
   saving,
   onSave,
   onClose,
 }: {
+  mode: "name" | "avatar";
   profile: Profile;
   saving: boolean;
   onSave: (profile: Profile) => Promise<void>;
@@ -95,56 +68,61 @@ function ProfileEditor({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title="Edit profile"
-      actionLabel={saving ? "Saving…" : "Save profile"}
+      title={mode === "name" ? "Edit your name" : "Choose your avatar"}
+      actionLabel={saving ? "Saving…" : mode === "name" ? "Save name" : "Save avatar"}
       busy={saving}
-      actionDisabled={!name.trim()}
+      actionDisabled={mode === "name" && !name.trim()}
       onSubmit={async () => {
         setError("");
         try {
-          await onSave({ name: name.trim(), avatar });
+          await onSave(
+            mode === "name" ? { ...profile, name: name.trim() } : { ...profile, avatar },
+          );
           onClose();
         } catch (e) {
           setError((e as Error).message);
         }
       }}
     >
-      <label className="grid gap-2 text-sm font-medium">
-        Display name
-        <Input
-          className="h-12 text-base md:text-base"
-          autoComplete="nickname"
-          maxLength={20}
-          value={name}
-          disabled={saving}
-          onChange={(event) => setName(event.target.value)}
-        />
-      </label>
-      <fieldset disabled={saving}>
-        <legend className="mb-3 text-sm font-medium">Player avatar</legend>
-        <div className="grid grid-cols-3 gap-3">
-          {avatars.map((option) => (
-            <label key={option.id} className="relative cursor-pointer">
-              <input
-                className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0"
-                type="radio"
-                name="avatar"
-                value={option.id}
-                checked={avatar === option.id}
-                onChange={() => setAvatar(option.id)}
-                aria-label={option.name}
-              />
-              <span className="flex flex-col items-center gap-2 rounded-xl border-2 border-transparent p-2 text-center text-xs peer-checked:border-primary peer-checked:bg-accent/40 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-50">
-                <Avatar avatar={option.id} className="size-16" />
-                <span>{option.name}</span>
-                {avatar === option.id && (
-                  <Check className="absolute right-2 top-2 size-4 rounded-full bg-primary p-0.5 text-white" />
-                )}
-              </span>
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      {mode === "name" ? (
+        <label className="grid gap-2 text-sm font-medium">
+          Display name
+          <Input
+            className="h-12 text-base md:text-base"
+            autoComplete="nickname"
+            maxLength={20}
+            value={name}
+            disabled={saving}
+            onChange={(event) => setName(event.target.value)}
+          />
+        </label>
+      ) : (
+        <fieldset disabled={saving}>
+          <legend className="mb-3 text-sm font-medium">Player avatar</legend>
+          <div className="grid grid-cols-3 gap-3">
+            {avatars.map((option) => (
+              <label key={option.id} className="relative cursor-pointer">
+                <input
+                  className="peer absolute inset-0 z-10 size-full cursor-pointer opacity-0"
+                  type="radio"
+                  name="avatar"
+                  value={option.id}
+                  checked={avatar === option.id}
+                  onChange={() => setAvatar(option.id)}
+                  aria-label={option.name}
+                />
+                <span className="flex flex-col items-center gap-2 rounded-xl border-2 border-transparent p-2 text-center text-xs peer-checked:border-primary peer-checked:bg-accent/40 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ring peer-disabled:opacity-50">
+                  <Avatar avatar={option.id} className="size-16" />
+                  <span>{option.name}</span>
+                  {avatar === option.id && (
+                    <Check className="absolute right-2 top-2 size-4 rounded-full bg-primary p-0.5 text-white" />
+                  )}
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {error && (
         <p role="alert" className="text-sm text-destructive">
           {error}
@@ -173,10 +151,10 @@ export function PlayerPages({
   onSave: (profile: Profile) => Promise<void>;
   onBack: () => void;
 }) {
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<"name" | "avatar" | null>(null);
   const stats = data?.player;
   return (
-    <main className="mx-auto w-full max-w-md pb-8 pt-5 sm:pt-8">
+    <main className={cn("mx-auto w-full max-w-md pb-8", page === "leaderboard" && "pt-5 sm:pt-8")}>
       <PageHeading
         title={page === "profile" ? "Your profile" : "Leaderboard"}
         onBack={onBack}
@@ -196,8 +174,8 @@ export function PlayerPages({
             <Button
               variant="ghost"
               className="relative h-auto rounded-full p-1"
-              aria-label="Edit profile"
-              onClick={() => setEditing(true)}
+              aria-label="Edit your avatar"
+              onClick={() => setEditing("avatar")}
             >
               <Avatar avatar={profile.avatar} className="size-28" />
               <span className="absolute bottom-1 right-1 grid size-8 place-items-center rounded-full border bg-card">
@@ -208,7 +186,7 @@ export function PlayerPages({
               variant="ghost"
               className="mt-2 h-auto max-w-full gap-2 whitespace-normal text-2xl font-semibold"
               aria-label="Edit your name"
-              onClick={() => setEditing(true)}
+              onClick={() => setEditing("name")}
             >
               {profile.name || "Guest"}
               <Pencil className="size-4 shrink-0 text-muted-foreground" />
@@ -254,17 +232,18 @@ export function PlayerPages({
                   </div>
                 ))}
               </dl>
-              <StatRows
-                entries={[
-                  { label: "Rounds", value: stats.rounds, icon: <CardsIcon /> },
-                  { label: "Tricks won", value: stats.tricks, icon: <Trophy /> },
-                  {
-                    label: "Exact predictions",
-                    value: stats.exactPredictions,
-                    icon: <Spade className="fill-current" />,
-                  },
-                ]}
-              />
+              <ul aria-label="Locked stats" className="divide-y">
+                {[0, 1, 2].map((slot) => (
+                  <li
+                    key={slot}
+                    aria-label="Locked"
+                    className="flex items-center justify-between gap-4 py-4"
+                  >
+                    <span aria-hidden="true" className="h-3 w-32 rounded-full bg-muted" />
+                    <span aria-hidden="true">🔒</span>
+                  </li>
+                ))}
+              </ul>
             </>
           ) : (
             !error && (
@@ -275,10 +254,11 @@ export function PlayerPages({
           )}
           {editing && (
             <ProfileEditor
+              mode={editing}
               profile={profile}
               saving={saving}
               onSave={onSave}
-              onClose={() => setEditing(false)}
+              onClose={() => setEditing(null)}
             />
           )}
         </>
@@ -289,7 +269,7 @@ export function PlayerPages({
             !error && <p role="status">Loading leaderboard…</p>
           ) : data.leaders.length === 0 ? (
             <div className="rounded-xl border border-dashed p-8 text-center">
-              <Trophy className="mx-auto mb-3 size-8 text-primary" />
+              <TrophyIcon className="mx-auto mb-3 size-8 text-primary" />
               <p>Finish a match to join the leaderboard.</p>
             </div>
           ) : (

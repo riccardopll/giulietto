@@ -1,4 +1,5 @@
 import { usePlayerStats } from "./use-player-stats";
+import { PageHeader } from "./components/ui/page-header";
 import { PlayerPages } from "./components/player-pages";
 import { Avatar } from "./components/avatar";
 import { defaultAvatar } from "@/shared/avatars";
@@ -307,8 +308,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         }
       >
         {(game || page !== "profile") && (
-          <header
-            className={`site-header grid min-h-16 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1 py-1 sm:min-h-20 ${!game ? "mx-auto w-full max-w-md" : ""}`}
+          <PageHeader
+            className={`site-header grid grid-cols-[auto_minmax(0,1fr)_auto] gap-1 ${!game ? "mx-auto w-full max-w-md" : ""}`}
           >
             <div
               className={`row-start-1 flex items-center gap-1 sm:gap-3 col-start-1 justify-self-start`}
@@ -384,7 +385,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 )}
               </div>
             )}
-          </header>
+          </PageHeader>
         )}
         <ActionDialog
           confirmation

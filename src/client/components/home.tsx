@@ -1,6 +1,7 @@
-import { ChevronRight, Link, Loader2, Play, Trophy } from "lucide-react";
+import { ChevronRight, Link, Loader2, Play } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { TrophyIcon } from "./ui/trophy-icon";
 import { PlayingCard } from "./playing-card";
 
 function PlayersIcon() {
@@ -108,7 +109,7 @@ export function Home({
         </div>
       </form>
       <Button variant="link" className="mx-auto mt-6 gap-3" onClick={onLeaderboard}>
-        <Trophy className="fill-current" />
+        <TrophyIcon className="size-5" />
         Leaderboard
         <ChevronRight />
       </Button>
