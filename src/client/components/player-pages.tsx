@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
-import { ArrowLeft, Check, Pencil, Target, Timer } from "lucide-react";
+import { ArrowLeft, Check, Pencil, PlayingCard, Target, Timer } from "lucide-react";
 import type { StatsResponse } from "@/shared/player-stats";
 import { avatars, type AvatarId } from "@/shared/avatars";
 import { Avatar } from "./avatar";
@@ -9,7 +9,6 @@ import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 import { PageHeader } from "./ui/page-header";
 import { TrophyIcon } from "./ui/trophy-icon";
-import { AceOfCoinsIcon } from "./ui/ace-of-coins-icon";
 import { PlacementMedal } from "./ui/placement-medal";
 import { cn } from "../utils";
 
@@ -192,7 +191,7 @@ export function PlayerPages({
                   {
                     label: "Aces of Coins played",
                     value: stats.acesOfCoinsPlayed ?? "—",
-                    icon: AceOfCoinsIcon,
+                    icon: PlayingCard,
                   },
                   {
                     label: "Average prediction",
