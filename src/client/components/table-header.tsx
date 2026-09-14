@@ -26,13 +26,13 @@ function SpectatorCount({ count }: { count: number }) {
       >
         <path
           d="M1 9Q12-6 23 9Q12 24 1 9Z"
-          fill="white"
+          className="fill-card"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinejoin="round"
         />
         <circle cx="12" cy="9" r="4" fill="currentColor" />
-        <circle cx="11" cy="8" r="1" fill="white" />
+        <circle cx="11" cy="8" r="1" className="fill-card" />
       </svg>
     </span>
   );

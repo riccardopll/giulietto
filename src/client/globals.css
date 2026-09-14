@@ -24,18 +24,7 @@
   --gold: #dfb64d;
   --silver: #c6cbd1;
   --bronze: #c68c65;
-  --heart: #ca687c;
-  --ink: #111;
-  --plum: #49152d;
-  --glow: #edabc8;
-  --parchment: #fff8e7;
-  --parchment-deep: #f6ecd7;
-  --parchment-edge: #d6c9b9;
   --felt: #b16b80;
-  --felt-highlight: #f8dce3;
-  --felt-shadow: #71354a;
-  --felt-edge: #8a5364;
-  --felt-rim: #b7798c;
   --radius: 0.75rem;
 }
 @theme inline {
@@ -60,18 +49,7 @@
   --color-gold: var(--gold);
   --color-silver: var(--silver);
   --color-bronze: var(--bronze);
-  --color-heart: var(--heart);
-  --color-ink: var(--ink);
-  --color-plum: var(--plum);
-  --color-glow: var(--glow);
-  --color-parchment: var(--parchment);
-  --color-parchment-deep: var(--parchment-deep);
-  --color-parchment-edge: var(--parchment-edge);
   --color-felt: var(--felt);
-  --color-felt-highlight: var(--felt-highlight);
-  --color-felt-shadow: var(--felt-shadow);
-  --color-felt-edge: var(--felt-edge);
-  --color-felt-rim: var(--felt-rim);
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;

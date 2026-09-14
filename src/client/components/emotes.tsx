@@ -106,7 +106,7 @@ export function EmotePicker({
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
-          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center rounded-l-2xl bg-parchment shadow-sm">
+          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center rounded-l-2xl bg-background shadow-sm">
             <Smile className="size-6" aria-hidden="true" />
           </span>
         </Button>
@@ -146,7 +146,7 @@ export function EmotePicker({
             className="block opacity-60"
           >
             <MenuBubble>
-              <span className="absolute inset-0 flex items-center justify-center text-gray-400">
+              <span className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                 <Lock className="size-5" aria-hidden="true" />
               </span>
             </MenuBubble>

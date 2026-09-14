@@ -87,7 +87,7 @@ export function PlayerSeat({
                 "seat-avatar relative grid size-full place-items-center rounded-full border-2 font-semibold",
                 player.lives <= 0
                   ? "border-transparent"
-                  : "border-background bg-card shadow-[0_0_0_1px] shadow-plum/7",
+                  : "border-background bg-card shadow-[0_0_0_1px] shadow-foreground/7",
               )}
               aria-hidden="true"
             >
@@ -102,7 +102,7 @@ export function PlayerSeat({
                   <img
                     src="/skull-giulietto.webp"
                     alt=""
-                    className="size-full object-contain drop-shadow-[0_1px_1px,0_3px_3px] drop-shadow-plum/20"
+                    className="size-full object-contain drop-shadow-[0_1px_1px,0_3px_3px] drop-shadow-foreground/20"
                     draggable={false}
                   />
                 </span>
@@ -197,7 +197,7 @@ export function PlayerSeat({
                   <PlayingCard
                     card={card}
                     className={cn(
-                      "border border-parchment",
+                      "border border-card",
                       card === null && "rounded-[.2rem]",
                       activeTurn && "turn-glow",
                     )}

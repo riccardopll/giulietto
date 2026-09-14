@@ -179,7 +179,7 @@ export function MatchBoard({
                           <Button
                             key={n}
                             variant="outline"
-                            className="size-14 rounded-lg bg-white p-0 text-xl font-semibold short-trick:size-11"
+                            className="size-14 rounded-lg bg-card p-0 text-xl font-semibold short-trick:size-11"
                             disabled={!myTurn || busy || !game.legalBids.includes(n)}
                             aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
                             onClick={() => onBid(n)}

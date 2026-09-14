@@ -19,7 +19,7 @@
       --alpha(var(--color-ring) / 12%),
       --alpha(var(--color-ring) / 19%) 90deg,
       --alpha(var(--color-ring) / 56%) 160deg,
-      --alpha(var(--color-glow) / 69%) 200deg,
+      --alpha(var(--color-accent) / 69%) 200deg,
       --alpha(var(--color-ring) / 12%) 280deg
     );
     mask:
@@ -56,8 +56,8 @@
   background:
     radial-gradient(
       ellipse at 45% 30%,
-      --alpha(var(--color-felt-highlight) / 4%) 15%,
-      --alpha(var(--color-felt-shadow) / 27%) 100%
+      --alpha(var(--color-accent) / 4%) 15%,
+      --alpha(var(--color-secondary-foreground) / 27%) 100%
     ),
     url("/textures/rose-felt.webp") center / 320px 320px repeat;
   background-color: var(--color-felt);
