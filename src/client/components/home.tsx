@@ -1,20 +1,8 @@
-import { ChevronRight, Link, Loader2, Play } from "lucide-react";
+import { ChevronRight, Link, Loader2, Play, Trophy, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { TrophyIcon } from "./ui/trophy-icon";
 import { PlayingCard } from "./playing-card";
-
-function PlayersIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className="size-5" aria-hidden="true">
-      <circle cx="12" cy="6.5" r="3.5" />
-      <circle cx="4.5" cy="9" r="2.5" />
-      <circle cx="19.5" cy="9" r="2.5" />
-      <path d="M4.5 13A4.5 4.5 0 0 0 0 17.5V20h4v-2a8 8 0 0 1 1.6-4.8A4.5 4.5 0 0 0 4.5 13ZM19.5 13a4.5 4.5 0 0 0-1.1.2A8 8 0 0 1 20 18v2h4v-2.5a4.5 4.5 0 0 0-4.5-4.5ZM12 12a6 6 0 0 0-6 6v3h12v-3a6 6 0 0 0-6-6Z" />
-    </svg>
-  );
-}
 
 export function Home({
   code,
@@ -58,7 +46,7 @@ export function Home({
           disabled={!ready || busy}
           onClick={() => void onAction("create")}
         >
-          <PlayersIcon /> Create private lobby
+          <Users className="size-5" /> Create private lobby
         </Button>
       </div>
       <form
@@ -114,7 +102,7 @@ export function Home({
         </div>
       </form>
       <Button variant="link" className="mx-auto mt-6 gap-3" onClick={onLeaderboard}>
-        <TrophyIcon className="size-5" />
+        <Trophy className="size-5" />
         Leaderboard
         <ChevronRight />
       </Button>

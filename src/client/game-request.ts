@@ -1,4 +1,4 @@
-import type { view } from "../shared/game";
+import type { GameView } from "../shared/game";
 
 export class GameRequestError extends Error {
   constructor(
@@ -16,7 +16,7 @@ export async function requestGame(
   token: string,
   command: { action: string; [key: string]: unknown },
   controller = new AbortController(),
-): Promise<ReturnType<typeof view>> {
+): Promise<GameView> {
   const timeout = setTimeout(
     () => controller.abort(new Error("The request timed out. Please try again.")),
     10000,
@@ -29,7 +29,7 @@ export async function requestGame(
       body: JSON.stringify({ ...command, commandId: command.commandId ?? crypto.randomUUID() }),
     });
     const data = (await response.json().catch(() => null)) as
-      | (ReturnType<typeof view> & { error?: string })
+      | (GameView & { error?: string })
       | null;
     controller.signal.throwIfAborted();
     if (!response.ok)

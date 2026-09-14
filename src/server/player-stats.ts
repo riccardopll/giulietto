@@ -29,7 +29,7 @@ function stats(row?: Row): PlayerStats {
 }
 
 export async function playerStats(db: D1Database, id: string): Promise<StatsResponse> {
-  const results = await db.batch<Row>([
+  const [own, ranking] = await db.batch<Row>([
     db
       .prepare(`SELECT ${columns} FROM players p
       LEFT JOIN player_stats s ON s.player_id=p.id WHERE p.id=?`)
@@ -45,14 +45,13 @@ export async function playerStats(db: D1Database, id: string): Promise<StatsResp
       avatar: isAvatar(row.avatar) ? row.avatar : defaultAvatar(row.id),
       you: row.id === id,
     }));
+  const row = own.results[0];
   return {
-    player: stats(results[0].results[0]),
+    player: stats(row),
     profile: {
-      name: results[0].results[0]?.name ?? "",
-      avatar: isAvatar(results[0].results[0]?.avatar)
-        ? results[0].results[0].avatar
-        : defaultAvatar(id),
+      name: row?.name ?? "",
+      avatar: isAvatar(row?.avatar) ? row.avatar : defaultAvatar(id),
     },
-    leaders: leaders(results[1].results),
+    leaders: leaders(ranking.results),
   };
 }

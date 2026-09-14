@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { gameEvents, type EventSource } from "../../src/server/game-events.ts";
-import { bid, play, score, tick, TURN_MS, type Game } from "../../src/shared/game.ts";
-import { gameFixture } from "./helpers.ts";
+import { gameEvents, type EventSource } from "../../src/server/game-events";
+import { bid, play, score, tick, TURN_MS, type Game } from "../../src/shared/game";
+import { gameFixture } from "./helpers";
 
 function record(game: Game, action: () => void, origin: EventSource, now = 200) {
   const before = structuredClone(game);

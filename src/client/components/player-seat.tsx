@@ -1,13 +1,13 @@
 import { Avatar } from "./avatar";
 import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
-import { TURN_MS, type view } from "../../shared/game.ts";
+import { TURN_MS, type GameView } from "../../shared/game";
 import { cn, toRoman } from "../utils";
 import { LifeCount } from "./lives";
 import { PlayingCard } from "./playing-card";
 import { PredictionEmote } from "./prediction-emote";
 
-type SeatPlayer = ReturnType<typeof view>["players"][number];
+type SeatPlayer = GameView["players"][number];
 
 export function PlayerSeat({
   emoteMenuOpen,

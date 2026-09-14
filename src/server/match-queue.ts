@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
+import { TABLE_RETENTION_MS } from "../shared/game";
 import { command, displayName, failure } from "./protocol";
 export class MatchQueue extends DurableObject<Env> {
   async fetch(req: Request) {
@@ -55,7 +56,8 @@ export class MatchQueue extends DurableObject<Env> {
           candidates.filter((r) => !unavailable.has(r.code)),
         );
         this.ctx.storage.kv.put(key, { code, at: Date.now() });
-        if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + DAY);
+        if (!(await this.ctx.storage.getAlarm()))
+          await this.ctx.storage.setAlarm(Date.now() + TABLE_RETENTION_MS);
         return res;
       } catch (error) {
         return failure(error);
@@ -65,11 +67,11 @@ export class MatchQueue extends DurableObject<Env> {
   async alarm() {
     await this.ctx.blockConcurrencyWhile(async () => {
       for (const [key, value] of this.ctx.storage.kv.list<{ at: number }>({ prefix: "request:" })) {
-        if (Date.now() - value.at >= DAY) this.ctx.storage.kv.delete(key);
+        if (Date.now() - value.at >= TABLE_RETENTION_MS) this.ctx.storage.kv.delete(key);
       }
       if (Array.from(this.ctx.storage.kv.list({ prefix: "request:", limit: 1 })).length)
-        if (!(await this.ctx.storage.getAlarm())) await this.ctx.storage.setAlarm(Date.now() + DAY);
+        if (!(await this.ctx.storage.getAlarm()))
+          await this.ctx.storage.setAlarm(Date.now() + TABLE_RETENTION_MS);
     });
   }
 }
-const DAY = 86400000;

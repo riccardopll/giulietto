@@ -1,4 +1,4 @@
-import { avatarPath } from "@/shared/avatars";
+import { avatarPath } from "../../shared/avatars";
 import { cn } from "../utils";
 
 export function Avatar({
@@ -24,11 +24,7 @@ export function Avatar({
         draggable={false}
         width={128}
         height={128}
-        className={cn(
-          "size-full object-cover",
-          (src === "/avatars/king-clubs.webp" || src === "/avatars/knight-swords.webp") &&
-            "origin-top scale-[1.06]",
-        )}
+        className="size-full object-cover"
       />
     </span>
   );

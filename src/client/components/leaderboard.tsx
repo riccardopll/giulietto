@@ -1,4 +1,4 @@
-import type { Leader } from "@/shared/player-stats";
+import type { Leader } from "../../shared/player-stats";
 import { Avatar } from "./avatar";
 import { PlacementMedal } from "./ui/placement-medal";
 import { cn } from "../utils";

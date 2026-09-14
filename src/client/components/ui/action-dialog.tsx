@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { AlertDialog as AlertPrimitive, Dialog as DialogPrimitive } from "radix-ui";
 import { Button } from "./button";
+import { contentClass, overlayClass } from "./dialog";
 
 export function ActionDialog({
   open,
@@ -42,10 +43,10 @@ export function ActionDialog({
       }}
     >
       <Primitive.Portal>
-        <Primitive.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <Primitive.Overlay className={overlayClass} />
         <Primitive.Content
           aria-describedby={confirmation || description ? descriptionId : undefined}
-          className="fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 max-h-[calc(100dvh-2rem)] min-w-0 gap-4 overflow-y-auto rounded-xl border bg-card p-5 shadow-lg wrap-anywhere duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg"
+          className={contentClass}
         >
           <div
             className={

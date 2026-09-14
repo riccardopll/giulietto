@@ -1,3 +1,4 @@
+import { findPlayer } from "./game";
 import { GameError } from "./game-error";
 import type { Game } from "./game";
 
@@ -6,7 +7,7 @@ export const EMOTE_COOLDOWN_MS = 3000;
 export type Emote = { id: "chicken" | "perso"; sentAt: number };
 
 export function sendEmote(game: Game, playerId: string, emote: unknown, now: number) {
-  const player = game.players.find((p) => p.id === playerId);
+  const player = findPlayer(game, playerId);
   if (!player || player.lives <= 0) throw new GameError("Only players can send emotes.");
   if (!["bidding", "playing", "trick"].includes(game.phase))
     throw new GameError("Emotes are available during play.");

@@ -3,14 +3,13 @@ import { readFile, readdir } from "node:fs/promises";
 import { Miniflare, Log, LogLevel, type WebSocket } from "miniflare";
 import { build } from "rolldown";
 import { beforeAll, expect, test as base } from "vitest";
-import type { view } from "../../src/shared/game";
+import type { GameView } from "../../src/shared/game";
 
-export type State = ReturnType<typeof view>;
 type Input = { action: string; [field: string]: unknown };
 type Reply =
-  | { type: "ack"; commandId: string; state: State | { ok: true } }
+  | { type: "ack"; commandId: string; state: GameView | { ok: true } }
   | { type: "error"; commandId?: string; error: string };
-type Message = Reply | { type: "state"; state: State };
+type Message = Reply | { type: "state"; state: GameView };
 type Guest = { name: string; token: string };
 
 export const guest = (number: number): Guest => ({
@@ -98,7 +97,7 @@ async function createWorker() {
     async state(player: Guest, input: Input) {
       const response = await post(player, input);
       expect(response.status).toBe(200);
-      return (await response.json()) as State;
+      return (await response.json()) as GameView;
     },
     async connect(player: Guest, code: string) {
       const response = await runtime.dispatchFetch(

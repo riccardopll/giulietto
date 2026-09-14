@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
-import type { Emote } from "@/shared/emotes";
-import type { view } from "@/shared/game";
+import type { Emote } from "../../shared/emotes";
+import { findPlayer, type GameView } from "../../shared/game";
 import { tableOrder } from "../table-order";
 import { EmotePicker } from "./emotes";
 import { PlayerSeat } from "./player-seat";
@@ -8,8 +8,6 @@ import { PlayingCard } from "./playing-card";
 import { TableSurface } from "./table-surface";
 import { Button } from "./ui/button";
 import { MatchEventFeed } from "./match-event-feed";
-
-type State = ReturnType<typeof view>;
 
 export function MatchBoard({
   game,
@@ -20,7 +18,7 @@ export function MatchBoard({
   onBid,
   onPlay,
 }: {
-  game: State;
+  game: GameView;
   busy: boolean;
   pendingCard: number | null;
   preview: boolean;
@@ -31,8 +29,8 @@ export function MatchBoard({
   const board = useRef<HTMLDivElement>(null);
   const [emoteMenuOpen, setEmoteMenuOpen] = useState(false);
   const seating = tableOrder(game);
-  const me = game.players.find((p) => p.id === game.you);
-  const handPlayer = game.players.find((p) => p.id === seating.seats[0]);
+  const me = findPlayer(game, game.you);
+  const handPlayer = findPlayer(game, seating.seats[0]);
   const active = !!me && me.lives > 0;
   const myTurn = seating.current === game.you && active;
   const canPlay = myTurn && game.phase === "playing" && !busy;
@@ -54,7 +52,7 @@ export function MatchBoard({
   ]);
   const trickNumber =
     game.count -
-    (game.players.find((p) => p.id === game.order[0])?.hand.length ?? 0) +
+    (findPlayer(game, game.order[0])?.hand.length ?? 0) +
     (game.trick.some((p) => p.player === game.order[0]) ? 0 : 1);
 
   const animateTrick = useEffectEvent(() => {

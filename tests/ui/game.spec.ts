@@ -1,3 +1,4 @@
+import { findPlayer } from "../../src/shared/game";
 import { expect, type Route } from "@playwright/test";
 import { playCard, predict, start, synced, test, type Player } from "./helpers";
 
@@ -5,7 +6,7 @@ function predictions(players: Player[], eliminated: string) {
   const state = players[0].state!;
   const hands = state.order.map((id) => {
     const own = players.find((player) => player.state!.you === id)!.state!;
-    return { id, cards: own.players.find((player) => player.id === id)!.hand as number[] };
+    return { id, cards: findPlayer(own, id)!.hand as number[] };
   });
   const bids = new Map(hands.map(({ id }) => [id, 0]));
   // Plan against the dealt hands, playing each in order with Aces high. One wrong
@@ -253,7 +254,7 @@ test("reloading and reconnecting during play restore the player and hand and all
   const state = players[0].state!;
   const returning = players.find((player) => player.state!.you === state.order[state.turn])!;
   const before = returning.state!;
-  const own = before.players.find((player) => player.id === before.you)!;
+  const own = findPlayer(before, before.you)!;
   const labels = await returning.page
     .getByRole("region", { name: "Your hand", exact: true })
     .getByRole("button")

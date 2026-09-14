@@ -2,15 +2,16 @@ import { usePlayerStats } from "./use-player-stats";
 import { PageHeader } from "./components/ui/page-header";
 import { PlayerPages } from "./components/player-pages";
 import { Avatar } from "./components/avatar";
-import { defaultAvatar } from "@/shared/avatars";
+import { TABLE_ACTIONS } from "../shared/actions";
+import { defaultAvatar } from "../shared/avatars";
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { toast, Toaster } from "sonner";
-import { toRoman } from "@/client/utils";
+import { toRoman } from "./utils";
 import { Check, Copy, LogOut } from "lucide-react";
 import { AceSelection } from "./components/ace-selection";
-import { Button } from "@/client/components/ui/button";
+import { Button } from "./components/ui/button";
 import { ActionDialog } from "./components/ui/action-dialog";
-import type { view } from "@/shared/game";
+import type { GameView } from "../shared/game";
 import { GameConnection } from "./game-connection";
 import { GameRequestError, requestGame } from "./game-request";
 import {
@@ -24,10 +25,9 @@ import { MatchBoard } from "./components/match-board";
 import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { ResultsPanel } from "./components/results-panel";
-type State = ReturnType<typeof view>;
 
 export type PreviewSession = {
-  state: State;
+  state: GameView;
   exitControl?: ReactNode;
   command: (action: string, extra: Record<string, unknown>) => void;
   reset: () => void;
@@ -46,7 +46,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     return value === "profile" || value === "leaderboard" ? value : "home";
   });
   const [code, setCode] = useState(session.code);
-  const [liveGame, setGame] = useState<State | null>(null);
+  const [liveGame, setGame] = useState<GameView | null>(null);
   const game = preview?.state ?? liveGame;
   const account = usePlayerStats(session.token, !game && !isPreview, (profile) => {
     setName(profile.name);
@@ -73,25 +73,21 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [connection, setConnection] = useState("");
   const [copied, setCopied] = useState(false);
-  const [liveNow, setNow] = useState(Date.now());
-  const now = preview?.state.serverTime ?? liveNow;
   const [ace, setAce] = useState<number | null>(null);
   const ready = !session.error;
   const [pendingCard, setPendingCard] = useState<number | null>(null);
   const token = useRef(session.token);
   const transport = useRef<GameConnection | null>(null);
   const httpAttempt = useRef<{ payload: string; commandId: string } | null>(null);
-  const gameRef = useRef<State | null>(null);
+  const gameRef = useRef<GameView | null>(null);
   const busyRef = useRef(!!session.joinCode);
-  const clockOffset = useRef(0);
   function setError(message: string) {
     if (message) toast.error(message, { id: "game-error", duration: 4500 });
     else toast.dismiss("game-error");
   }
-  const accept = (s: State) => {
+  const accept = (s: GameView) => {
     const previous = gameRef.current;
     if (previous && previous.code === s.code && s.revision < previous.revision) return;
-    clockOffset.current = s.serverTime - Date.now();
     if (!previous || previous.code !== s.code || previous.viewerName !== s.viewerName) {
       const playerName = s.viewerName;
       setName(playerName);
@@ -137,14 +133,12 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           busyRef.current = false;
         });
     }
-    const timer = setInterval(() => setNow(Date.now() + clockOffset.current), 500);
     return () => {
       disposed = true;
       controller.abort();
-      clearInterval(timer);
     };
   }, [session, isPreview]);
-  const receiveState = useEffectEvent((s: State) => accept(s));
+  const receiveState = useEffectEvent((s: GameView) => accept(s));
   useEffect(() => {
     if (isPreview || !game?.code) return;
     const connection = new GameConnection(
@@ -223,11 +217,12 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     if (action === "play") setPendingCard(Number(extra.card));
     try {
       if (action === "leave") transport.current?.stop();
-      let s: State;
+      let s: GameView;
       if (
         gameRef.current &&
         transport.current &&
-        ["rename", "settings", "start", "bid", "play", "emote"].includes(action)
+        action !== "leave" &&
+        TABLE_ACTIONS.includes(action)
       ) {
         s = await transport.current.command(action, extra);
       } else {
@@ -293,7 +288,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
       setError(`Copy this invite link: ${location.origin}/?table=${game!.code}`);
     }
   }
-  const seconds = Math.max(0, Math.ceil(((game?.deadline || 0) - now) / 1000));
   const phase = game?.phase;
   const waiting = phase === "lobby";
   const result = phase === "results" || phase === "finished";
@@ -471,7 +465,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 }}
               />
             ) : result ? (
-              <ResultsPanel game={game} seconds={seconds} onReset={reset} />
+              <ResultsPanel game={game} preview={isPreview} onReset={reset} />
             ) : (
               <MatchBoard
                 game={game}

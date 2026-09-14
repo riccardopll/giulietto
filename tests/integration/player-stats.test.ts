@@ -31,9 +31,9 @@ test("stats use finalized history once, preserve identity, and rank players by w
   const hostPlayer = game.players[0];
   const deliver = () =>
     db.batch(
-      historyStatements(db as unknown as D1Database, game, {
-        eventCount: 0,
-      }) as unknown as Parameters<typeof db.batch>[0],
+      historyStatements(db as unknown as D1Database, game, 0) as unknown as Parameters<
+        typeof db.batch
+      >[0],
     );
   await deliver();
   expect((await read()).player.matches).toBe(0);
@@ -114,7 +114,7 @@ test("decision stats combine completed-match samples, omit missing timing, and s
     }));
     await db.batch([
       ...eventStatements(db, game, events),
-      ...historyStatements(db, game, { eventCount: events.length }),
+      ...historyStatements(db, game, events.length),
     ]);
   };
   const first = make("timed-1");
@@ -165,7 +165,7 @@ test("decision stats combine completed-match samples, omit missing timing, and s
   }
   await deliver(first, moves);
   first.revision--;
-  await db.batch(historyStatements(db, first, { eventCount: 0 }));
+  await db.batch(historyStatements(db, first, 0));
   expect(await read()).toMatchObject(expected);
   expect((await playerStats(db, "unknown")).player).toMatchObject({
     acesOfCoinsPlayed: 0,
@@ -211,7 +211,7 @@ test("profile edits persist, reach tables, and survive older match history", asy
   const old = gameFixture();
   old.players[0].id = created.you;
   await db.batch(
-    historyStatements(db as unknown as D1Database, old, { eventCount: 0 }) as unknown as Parameters<
+    historyStatements(db as unknown as D1Database, old, 0) as unknown as Parameters<
       typeof db.batch
     >[0],
   );
@@ -249,7 +249,7 @@ test("aggregate migration preserves historical samples and retries count each co
     }
     return game;
   });
-  for (const game of games) await db.batch(historyStatements(db, game, { eventCount: 0 }));
+  for (const game of games) await db.batch(historyStatements(db, game, 0));
   await db
     .prepare(`UPDATE match_results SET aces_of_coins_played=2,
     prediction_total=6,prediction_count=3,play_time_ms=4000,timed_plays=2,
@@ -279,14 +279,14 @@ test("aggregate migration preserves historical samples and retries count each co
     averageDecisionMs: 2000,
   };
   expect(await read()).toEqual(expected);
-  for (const game of games) await db.batch(historyStatements(db, game, { eventCount: 0 }));
+  for (const game of games) await db.batch(historyStatements(db, game, 0));
   expect(await read()).toEqual(expected);
 
   const next = structuredClone(games[0]);
   next.matchId = "atomic-finalization";
   await expect(
     db.batch([
-      ...historyStatements(db, next, { eventCount: 0 }),
+      ...historyStatements(db, next, 0),
       db.prepare("INSERT INTO player_stats(player_id) VALUES('p0')"),
     ]),
   ).rejects.toThrow();
@@ -295,8 +295,8 @@ test("aggregate migration preserves historical samples and retries count each co
     await db.prepare("SELECT id FROM matches WHERE id=?").bind(next.matchId).first(),
   ).toBeNull();
   await Promise.all([
-    db.batch(historyStatements(db, next, { eventCount: 0 })),
-    db.batch(historyStatements(db, next, { eventCount: 0 })),
+    db.batch(historyStatements(db, next, 0)),
+    db.batch(historyStatements(db, next, 0)),
   ]);
   expect(await read()).toEqual({ ...expected, matches: 3, wins: 2, xp: 70 });
   const plan = await db

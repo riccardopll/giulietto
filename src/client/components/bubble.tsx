@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { EMOTE_DURATION_MS } from "@/shared/emotes";
+import { EMOTE_DURATION_MS } from "../../shared/emotes";
 
 function bubbleArtwork(children: ReactNode, tail: boolean) {
   const base = tail

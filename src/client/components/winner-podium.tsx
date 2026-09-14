@@ -1,20 +1,19 @@
 import { Avatar } from "./avatar";
 import { Crown } from "lucide-react";
-import type { view } from "../../shared/game";
+import type { GameView } from "../../shared/game";
 import { standings } from "../standings";
 import { cn } from "../utils";
 import { Button } from "./ui/button";
 import { PlacementMedal } from "./ui/placement-medal";
 
-type State = ReturnType<typeof view>;
-type Player = State["players"][number];
+type Player = GameView["players"][number];
 
 export function WinnerPodium({
   game,
   winner,
   onReset,
 }: {
-  game: State;
+  game: GameView;
   winner: Player;
   onReset: () => void;
 }) {

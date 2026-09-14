@@ -9,8 +9,9 @@ import {
   strength,
   tick,
   view,
-} from "../../src/shared/game.ts";
-import { gameFixture, lobbyFixture } from "./helpers.ts";
+  findPlayer,
+} from "../../src/shared/game";
+import { gameFixture, lobbyFixture } from "./helpers";
 
 describe("rounds", () => {
   it("deals six unique cards per player using the selected starting lives", () => {
@@ -69,7 +70,7 @@ describe("turns and tricks", () => {
     for (let trick = 0; trick < cards; trick++) {
       for (let turn = 0; turn < people; turn++) {
         const id = game.order[game.turn];
-        const card = game.players.find((p) => p.id === id)!.hand[0];
+        const card = findPlayer(game, id)!.hand[0];
         play(game, id, card, "high", 100);
       }
       expect(game.phase).toBe("trick");

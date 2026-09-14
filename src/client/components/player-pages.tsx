@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Pencil, PlayingCard, Target, Timer } from "lucide-react";
-import type { Profile, StatsResponse } from "@/shared/player-stats";
-import { type AvatarId } from "@/shared/avatars";
+import type { Profile, StatsResponse } from "../../shared/player-stats";
+import { type AvatarId } from "../../shared/avatars";
 import { Avatar } from "./avatar";
 import { AvatarPicker } from "./avatar-picker";
 import { Button } from "./ui/button";
@@ -96,10 +96,7 @@ export function PlayerPages({
   const [editing, setEditing] = useState<"name" | "avatar" | null>(null);
   const stats = data?.player;
   return (
-    <main
-      key={page}
-      className="mx-auto w-full max-w-md animate-in fade-in slide-in-from-bottom-1 pb-8 duration-200 ease-out"
-    >
+    <main key={page} className="mx-auto w-full max-w-md animate-[page-in_.2s_ease-out] pb-8">
       <PageHeading title={page === "profile" ? "Your profile" : "Leaderboard"} onBack={onBack} />
       {page === "profile" ? (
         <>

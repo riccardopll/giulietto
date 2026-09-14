@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { matchEvents } from "../../src/client/match-events.ts";
-import { bid, play, view, type Game } from "../../src/shared/game.ts";
-import { gameFixture } from "./helpers.ts";
+import { matchEvents } from "../../src/client/match-events";
+import { bid, play, view, type Game } from "../../src/shared/game";
+import { gameFixture } from "./helpers";
 
 function observe(game: Game, action: () => void, you = "p0") {
   const before = view(structuredClone(game), you);

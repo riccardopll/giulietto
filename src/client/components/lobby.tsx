@@ -1,14 +1,12 @@
 import { Avatar } from "./avatar";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { ArrowRight, Check, Link, Pencil } from "lucide-react";
-import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type view } from "../../shared/game";
+import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type GameView } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
 import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
-
-type State = ReturnType<typeof view>;
 
 function LobbyOptions({
   lives,
@@ -91,7 +89,7 @@ export function Lobby({
   onSettings,
   onRename,
 }: {
-  game: State;
+  game: GameView;
   busy: boolean;
   copied: boolean;
   onCopy: () => void;

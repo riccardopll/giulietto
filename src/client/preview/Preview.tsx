@@ -3,7 +3,7 @@ import { Settings2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import App from "../App";
 import { AceSelection } from "../components/ace-selection";
-import { sendEmote } from "@/shared/emotes";
+import { sendEmote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
 import { bid, deal, play, view, type Game } from "../../shared/game";
 import {
@@ -126,9 +126,7 @@ export function Preview() {
       if (
         target instanceof HTMLElement &&
         (target.isContentEditable ||
-          target.closest(
-            "input, textarea, select, [data-slot='dialog-content'], [data-slot='alert-dialog-content']",
-          ))
+          target.closest("input, textarea, select, [role='dialog'], [role='alertdialog']"))
       )
         return;
       event.preventDefault();
