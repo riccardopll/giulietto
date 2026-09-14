@@ -1,10 +1,10 @@
-import { expect, it } from "vitest";
+import { expect, test } from "vitest";
 import { apply, join } from "../../src/server/protocol";
 import { deal, score, tick, view } from "../../src/shared/game";
 import { tableOrder } from "../../src/client/table-order";
 import { gameFixture, lobbyFixture } from "./helpers";
 
-it("lets a timed-out lobby player join again", () => {
+test("lets a timed-out lobby player join again", () => {
   const game = lobbyFixture();
   tick(game, 120_100);
   join(game, "p0", "bot_1", 120_200);
@@ -12,7 +12,7 @@ it("lets a timed-out lobby player join again", () => {
   expect(game.host).toBe("p0");
 });
 
-it("preserves a reconnecting player's seat, hand, and progress", () => {
+test("preserves a reconnecting player's seat, hand, and progress", () => {
   const game = gameFixture();
   game.players[0].bid = 1;
   const before = structuredClone(game.players[0]);
@@ -22,7 +22,7 @@ it("preserves a reconnecting player's seat, hand, and progress", () => {
   expect(view(game, "p0").spectating).toBe(false);
 });
 
-it("keeps a quitting player's seat active and lets them resume after an automatic turn", () => {
+test("keeps a quitting player's seat active and lets them resume after an automatic turn", () => {
   const game = gameFixture();
   const before = structuredClone(game.players[0]);
   apply(game, "p0", { action: "leave", commandId: crypto.randomUUID() }, 200);
@@ -45,7 +45,7 @@ it("keeps a quitting player's seat active and lets them resume after an automati
   expect(game.trick[0]).toEqual({ player: "p0", card: before.hand[0] });
 });
 
-it("does not revive a player eliminated while away", () => {
+test("does not revive a player eliminated while away", () => {
   const game = gameFixture();
   apply(game, "p0", { action: "leave", commandId: crypto.randomUUID() }, 200);
   game.players[0].lives = 1;
@@ -59,7 +59,7 @@ it("does not revive a player eliminated while away", () => {
   expect(view(game, "p0").spectating).toBe(true);
 });
 
-it.each(["bidding", "playing", "trick", "results", "finished"] as const)(
+test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
   "allows spectators during %s without revealing hands or adding seats",
   (phase) => {
     const game = gameFixture([[31], [2], [3], [4], [5], [6]]);
@@ -87,7 +87,7 @@ it.each(["bidding", "playing", "trick", "results", "finished"] as const)(
   },
 );
 
-it("keeps spectators out of tie revival and subsequent rounds", () => {
+test("keeps spectators out of tie revival and subsequent rounds", () => {
   const game = gameFixture();
   join(game, "watcher", "Observer", 200);
   for (const p of game.players) {
@@ -103,7 +103,7 @@ it("keeps spectators out of tie revival and subsequent rounds", () => {
   expect(view(game, "watcher").spectating).toBe(true);
 });
 
-it("counts only connected spectators and eliminated players", () => {
+test("counts only connected spectators and eliminated players", () => {
   const game = gameFixture();
   game.players[1].lives = 0;
   game.order = ["p0", "p2"];
@@ -113,7 +113,7 @@ it("counts only connected spectators and eliminated players", () => {
   expect(view(game, "p0", new Set(["p0", "p2"])).spectatorCount).toBe(0);
 });
 
-it("resumes an owned seat on a matchmaking retry but rejects new spectators", () => {
+test("resumes an owned seat on a matchmaking retry but rejects new spectators", () => {
   const game = gameFixture();
   join(game, "p0", "bot_1", 200, true);
   expect(game.players[0].seen).toBe(200);
@@ -121,15 +121,18 @@ it("resumes an owned seat on a matchmaking retry but rejects new spectators", ()
   expect(game.spectators).toBeUndefined();
 });
 
-it.each(["playing", "finished"] as const)("expires disconnected spectators during %s", (phase) => {
-  const game = gameFixture();
-  game.phase = phase;
-  game.deadline = 0;
-  join(game, "watcher", "Observer", 100);
-  join(game, "connected", "Observer", 100);
-  tick(game, 120_100, new Set(["connected"]));
-  expect(game.spectators?.map((p) => p.id)).toEqual(["connected"]);
-  expect(game.players).toHaveLength(3);
-  join(game, "watcher", "Observer", 120_200);
-  expect(view(game, "watcher").spectating).toBe(true);
-});
+test.each(["playing", "finished"] as const)(
+  "expires disconnected spectators during %s",
+  (phase) => {
+    const game = gameFixture();
+    game.phase = phase;
+    game.deadline = 0;
+    join(game, "watcher", "Observer", 100);
+    join(game, "connected", "Observer", 100);
+    tick(game, 120_100, new Set(["connected"]));
+    expect(game.spectators?.map((p) => p.id)).toEqual(["connected"]);
+    expect(game.players).toHaveLength(3);
+    join(game, "watcher", "Observer", 120_200);
+    expect(view(game, "watcher").spectating).toBe(true);
+  },
+);

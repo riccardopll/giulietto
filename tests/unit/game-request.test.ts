@@ -1,4 +1,4 @@
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import { requestGame } from "../../src/client/game-request";
 
 afterEach(() => {
@@ -6,7 +6,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it.each([
+test.each([
   {
     response: Response.json({ error: "Table expired." }, { status: 400 }),
     error: { message: "Table expired.", status: 400, retryable: false },
@@ -28,7 +28,7 @@ it.each([
   await expect(requestGame("guest-token", { action: "create" })).rejects.toMatchObject(error);
 });
 
-it("bounds response body reads as well as the initial request", async () => {
+test("bounds response body reads as well as the initial request", async () => {
   vi.useFakeTimers();
   vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
     const response = Response.json({});

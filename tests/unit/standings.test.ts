@@ -1,7 +1,7 @@
-import { expect, it } from "vitest";
+import { expect, test } from "vitest";
 import { standings } from "../../src/client/standings";
 
-it("ranks by elimination round and shares places without breaking ties", () => {
+test("ranks by elimination round and shares places without breaking ties", () => {
   const players = [
     { id: "early", eliminatedRound: 2 },
     { id: "second-a", eliminatedRound: 8 },

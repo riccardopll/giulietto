@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { GameConnection } from "../../src/client/game-connection";
 import { view } from "../../src/shared/game";
 import { gameFixture } from "./helpers";
@@ -55,7 +55,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("rejoins with the current name and replays an unacknowledged command only after a socket snapshot", async () => {
+test("rejoins with the current name and replays an unacknowledged command only after a socket snapshot", async () => {
   const first = Socket.sockets[0];
   first.open();
   first.receive({ type: "state", state: { ...state(), viewerName: "bot_2" } });
@@ -88,7 +88,7 @@ it("rejoins with the current name and replays an unacknowledged command only aft
   expect(status).toHaveBeenLastCalledWith("");
 });
 
-it("retries network failures, throttling, and unavailable servers before opening a socket", async () => {
+test("retries network failures, throttling, and unavailable servers before opening a socket", async () => {
   request
     .mockRejectedValueOnce(new TypeError("Offline"))
     .mockResolvedValueOnce(Response.json({ error: "Wait" }, { status: 429 }))
@@ -103,7 +103,7 @@ it("retries network failures, throttling, and unavailable servers before opening
   expect(request).toHaveBeenCalledTimes(4);
 });
 
-it.each([
+test.each([
   {
     response: Response.json({ error: "Table not found or expired." }, { status: 400 }),
     error: "Table not found or expired.",
@@ -123,7 +123,7 @@ it.each([
   expect(Socket.sockets).toHaveLength(1);
 });
 
-it("aborts a pending rejoin when leaving and ignores a late response", async () => {
+test("aborts a pending rejoin when leaving and ignores a late response", async () => {
   let resolve!: (response: Response) => void;
   request.mockReturnValue(
     new Promise((done) => {
@@ -141,7 +141,7 @@ it("aborts a pending rejoin when leaving and ignores a late response", async () 
   expect(accept).not.toHaveBeenCalled();
 });
 
-it("times out a stalled rejoin and tries again", async () => {
+test("times out a stalled rejoin and tries again", async () => {
   request.mockImplementationOnce(
     (_url, init) =>
       new Promise((_resolve, reject) => {

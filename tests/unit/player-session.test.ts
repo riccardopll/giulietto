@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { cookieError, restorePlayer, restoreSession } from "../../src/client/player-session";
 
 let cookies: Map<string, string>;
@@ -25,7 +25,7 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllGlobals());
 
-it("restores the cookie identity when local storage is unavailable", () => {
+test("restores the cookie identity when local storage is unavailable", () => {
   const token = crypto.randomUUID();
   cookies.set("giulietto-token", token);
   cookies.set("giulietto-name", "bot%5F1");
@@ -40,7 +40,7 @@ it("restores the cookie identity when local storage is unavailable", () => {
   expect(restorePlayer()).toEqual({ token, name: "bot_1" });
 });
 
-it("replaces invalid credentials and recovers from malformed names", () => {
+test("replaces invalid credentials and recovers from malformed names", () => {
   cookies.set("giulietto-token", "invalid");
   cookies.set("giulietto-name", "%invalid");
   const identity = restorePlayer();
@@ -50,12 +50,12 @@ it("replaces invalid credentials and recovers from malformed names", () => {
   expect(restorePlayer()).toEqual(identity);
 });
 
-it("rejects a session when its credential cannot be saved", () => {
+test("rejects a session when its credential cannot be saved", () => {
   writable = false;
   expect(() => restorePlayer()).toThrow(cookieError);
 });
 
-it("joins an invite with a new guest identity when no name is saved", () => {
+test("joins an invite with a new guest identity when no name is saved", () => {
   vi.stubGlobal("location", { protocol: "https:", search: "?table=abcdefgh" });
   const session = restoreSession();
   expect(session).toMatchObject({
@@ -68,7 +68,7 @@ it("joins an invite with a new guest identity when no name is saved", () => {
   expect(restorePlayer().token).toBe(session.token);
 });
 
-it("prefers the invite over a saved table and keeps the player identity", () => {
+test("prefers the invite over a saved table and keeps the player identity", () => {
   const token = crypto.randomUUID();
   cookies.set("giulietto-token", token);
   cookies.set("giulietto-name", "bot_1");
@@ -82,11 +82,11 @@ it("prefers the invite over a saved table and keeps the player identity", () => 
   expect(restoreSession()).toMatchObject({ token, name: "bot_1", joinCode: "JKLMNPQR" });
 });
 
-it("keeps new visitors on the home screen without an invite", () => {
+test("keeps new visitors on the home screen without an invite", () => {
   expect(restoreSession()).toMatchObject({ name: "", code: "", joinCode: null, error: "" });
 });
 
-it("does not join an invite when the identity cannot be saved", () => {
+test("does not join an invite when the identity cannot be saved", () => {
   writable = false;
   vi.stubGlobal("location", { protocol: "https:", search: "?table=abcdefgh" });
   expect(restoreSession()).toMatchObject({ joinCode: null, error: cookieError });

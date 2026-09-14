@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
 import {
   bid,
   deal,
@@ -14,7 +14,7 @@ import {
 import { gameFixture, lobbyFixture } from "./helpers";
 
 describe("rounds", () => {
-  it("deals six unique cards per player using the selected starting lives", () => {
+  test("deals six unique cards per player using the selected starting lives", () => {
     const game = lobbyFixture(6);
     expect(game.startingLives).toBe(3);
     game.startingLives = MAX_STARTING_LIVES;
@@ -27,7 +27,7 @@ describe("rounds", () => {
     expect(new Set(game.players.flatMap((p) => p.hand)).size).toBe(36);
   });
 
-  it("cycles from six cards to one while rotating the first bidder", () => {
+  test("cycles from six cards to one while rotating the first bidder", () => {
     const game = lobbyFixture();
     deal(game, 100);
     const seats = game.players.map((p) => p.id);
@@ -42,7 +42,7 @@ describe("rounds", () => {
     expect(game.players.map((p) => p.id)).toEqual(seats);
   });
 
-  it("preserves remaining lives and skips inactive players on later deals", () => {
+  test("preserves remaining lives and skips inactive players on later deals", () => {
     const game = gameFixture([[1], [2], [3], [4]]);
     game.players[0].lives = 2;
     game.players[1].lives = 0;
@@ -57,7 +57,7 @@ describe("rounds", () => {
 });
 
 describe("turns and tricks", () => {
-  it.each([
+  test.each([
     { people: 2, cards: 1 },
     { people: 3, cards: 3 },
     { people: 6, cards: 6 },
@@ -85,7 +85,7 @@ describe("turns and tricks", () => {
     expect(game.results.reduce((total, result) => total + result.lost, 0)).toBe(cards);
   });
 
-  it("accepts predictions in turn and excludes a final total equal to the trick count", () => {
+  test("accepts predictions in turn and excludes a final total equal to the trick count", () => {
     const game = gameFixture();
     expect(() => bid(game, "p1", 0, 100)).toThrow("Wait for your bidding turn");
     expect(() => bid(game, "p0", 0.5, 100)).toThrow();
@@ -98,7 +98,7 @@ describe("turns and tricks", () => {
     expect(game.order[game.turn]).toBe("p0");
   });
 
-  it("requires an owned card in turn and lets the highest card lead the next trick", () => {
+  test("requires an owned card in turn and lets the highest card lead the next trick", () => {
     const game = gameFixture([
       [2, 3],
       [40, 39],
@@ -120,7 +120,7 @@ describe("turns and tricks", () => {
     expect(game.trick).toEqual([]);
   });
 
-  it.each(["low", "high"] as const)("requires an explicit %s choice for a blind Ace", (mode) => {
+  test.each(["low", "high"] as const)("requires an explicit %s choice for a blind Ace", (mode) => {
     const game = gameFixture([[31], [40]]);
     expect(view(game, "p0").canChooseAce).toBe(false);
     for (const id of game.order) bid(game, id, 0, 100);
@@ -136,7 +136,7 @@ describe("turns and tricks", () => {
     expect(view(game, "p0").canChooseAce).toBe(false);
   });
 
-  it("uses a legal prediction and card when a turn expires", () => {
+  test("uses a legal prediction and card when a turn expires", () => {
     const game = gameFixture([[31], [40]]);
     tick(game, game.deadline - 1);
     expect(game.players[0].bid).toBeNull();
@@ -150,7 +150,7 @@ describe("turns and tricks", () => {
 });
 
 describe("scoring", () => {
-  it("subtracts the absolute prediction error and records round statistics", () => {
+  test("subtracts the absolute prediction error and records round statistics", () => {
     const game = gameFixture([
       [1, 2, 3],
       [11, 12, 13],
@@ -174,7 +174,7 @@ describe("scoring", () => {
     expect(game.phase).toBe("results");
   });
 
-  it("finishes with the last surviving player", () => {
+  test("finishes with the last surviving player", () => {
     const game = gameFixture([[1], [2]]);
     Object.assign(game.players[0], { lives: 1, bid: 0, taken: 1 });
     Object.assign(game.players[1], { lives: 1, bid: 0, taken: 0 });
@@ -182,7 +182,7 @@ describe("scoring", () => {
     expect(game).toMatchObject({ phase: "finished", winner: "p1", finishedAt: 200, deadline: 0 });
   });
 
-  it("revives every participant to one life when everyone is eliminated", () => {
+  test("revives every participant to one life when everyone is eliminated", () => {
     const game = gameFixture([[1, 2], [3, 4], [], []]);
     game.order = ["p0", "p1"];
     Object.assign(game.players[0], { lives: 1, bid: 0, taken: 1 });
@@ -202,7 +202,7 @@ describe("scoring", () => {
 });
 
 describe("hand privacy", () => {
-  it.each([
+  test.each([
     { name: "normal", hands: [[31, 2], [40, 3], []], visible: [[31, 2], [null, null], []] },
     { name: "blind", hands: [[31], [40], []], visible: [[null], [40], []] },
   ])("exposes only allowed cards in a $name round", ({ hands, visible }) => {
