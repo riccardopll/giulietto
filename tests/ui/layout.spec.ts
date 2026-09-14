@@ -72,6 +72,8 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const spectatorBounds = await spectators.boundingBox();
   expect(title!.x + title!.width / 2).toBeCloseTo(160, 0);
   expect(spectatorBounds!.x).toBeGreaterThan(title!.x + title!.width);
+  const copyBounds = await page.getByRole("button", { name: "Copy lobby invite" }).boundingBox();
+  expect(spectatorBounds!.x + spectatorBounds!.width).toBeLessThanOrEqual(copyBounds!.x);
   expect(spectatorBounds!.y + spectatorBounds!.height / 2).toBeCloseTo(
     title!.y + title!.height / 2,
     0,
