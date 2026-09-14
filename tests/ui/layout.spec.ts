@@ -66,7 +66,18 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const table = await page.locator(".table-surface").boundingBox();
   expect(emoteButton!.x + emoteButton!.width).toBeCloseTo(table!.x + table!.width * 0.98, 0);
   expect(emoteButton!.y + emoteButton!.height / 2).toBeCloseTo(table!.y + table!.height / 2, 0);
-  await expect(page.getByRole("status", { name: "1 spectator", exact: true })).toHaveCount(0);
+  const spectators = page.getByRole("status", { name: "1 spectator", exact: true });
+  await expect(spectators).toBeVisible();
+  const title = await page.getByRole("heading", { name: "Round I", exact: true }).boundingBox();
+  const spectatorBounds = await spectators.boundingBox();
+  expect(title!.x + title!.width / 2).toBeCloseTo(160, 0);
+  expect(spectatorBounds!.x).toBeGreaterThan(title!.x + title!.width);
+  const copyBounds = await page.getByRole("button", { name: "Copy lobby invite" }).boundingBox();
+  expect(spectatorBounds!.x + spectatorBounds!.width).toBeLessThanOrEqual(copyBounds!.x);
+  expect(spectatorBounds!.y + spectatorBounds!.height / 2).toBeCloseTo(
+    title!.y + title!.height / 2,
+    0,
+  );
   const handCenter = await page.locator(".hand-card").evaluateAll((cards) => {
     const bounds = cards.map((card) => card.getBoundingClientRect());
     return (
@@ -217,4 +228,13 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   });
   await page.keyboard.press("Escape");
   await expect(aceDialog).toBeHidden();
+  await page.setViewportSize({ width: 393, height: 852 });
+  await page.goto("/preview?people=6&cards=6&phase=bidding&viewer=-1");
+  const spectatorHand = page.getByRole("region", { name: "Spectator mode" });
+  await expect(spectatorHand.getByRole("img", { name: "Hidden card", exact: true })).toHaveCount(6);
+  await expect(spectatorHand.getByRole("button")).toHaveCount(0);
+  await expect(page.locator('.seat-slot[data-center] [data-side="bottom"] .seat-hand')).toHaveCount(
+    0,
+  );
+  await page.screenshot({ path: testInfo.outputPath("spectator-hand.png") });
 });

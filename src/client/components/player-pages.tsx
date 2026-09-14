@@ -9,7 +9,6 @@ import { Button } from "./ui/button";
 import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 import { PageHeader } from "./ui/page-header";
-import { TrophyIcon } from "./ui/trophy-icon";
 import { Leaderboard } from "./leaderboard";
 import { cn } from "../utils";
 
@@ -223,11 +222,6 @@ export function PlayerPages({
             <p role="status" className={error ? "invisible" : undefined}>
               Loading leaderboard…
             </p>
-          ) : data.leaders.length === 0 ? (
-            <div className="rounded-xl border border-dashed p-8 text-center">
-              <TrophyIcon className="mx-auto mb-3 size-8 text-primary" />
-              <p>Finish a match to join the leaderboard.</p>
-            </div>
           ) : (
             <Leaderboard players={data.leaders} />
           )}

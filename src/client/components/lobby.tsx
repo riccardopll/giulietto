@@ -119,11 +119,6 @@ export function Lobby({
       </ActionDialog>
       <div className="mb-4">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
-        {game.host !== game.you && (
-          <p className="mt-2 text-sm text-muted-foreground">
-            Waiting for the host to start the game.
-          </p>
-        )}
       </div>
       <ul className="grid gap-2" aria-label="Players">
         {Array.from({ length: 6 }, (_, i) => {

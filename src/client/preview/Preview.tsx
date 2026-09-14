@@ -239,9 +239,13 @@ export function Preview() {
           className="fixed inset-y-0 right-0 z-50 h-dvh w-80 max-w-[calc(100vw-1rem)] space-y-4 overflow-y-auto overscroll-contain border-l bg-background pl-4 pr-[max(1rem,env(safe-area-inset-right))] pb-[max(1rem,env(safe-area-inset-bottom))] pt-[env(safe-area-inset-top)] text-foreground shadow-xl outline-none"
         >
           <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-background py-2">
-            <Dialog.Title className="text-sm font-semibold">Local preview</Dialog.Title>
+            <Dialog.Title className="text-sm font-semibold">Settings</Dialog.Title>
             <Dialog.Close asChild>
-              <Button variant="ghost" className="size-11 p-0" aria-label="Close preview settings">
+              <Button
+                variant="ghost"
+                className="ml-auto size-11 p-0"
+                aria-label="Close preview settings"
+              >
                 <X />
               </Button>
             </Dialog.Close>
