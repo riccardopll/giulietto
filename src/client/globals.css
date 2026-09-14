@@ -56,6 +56,40 @@
   --radius-xl: 1rem;
   --font-sans: Arial, Helvetica, sans-serif;
 }
+@utility range-slider {
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+  &::-webkit-slider-runnable-track {
+    height: 0.75rem;
+    border-radius: 9999px;
+    background: var(--color-border);
+  }
+  &::-webkit-slider-thumb {
+    appearance: none;
+    margin-top: -0.625rem;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 9999px;
+    background: var(--color-primary);
+  }
+  &::-moz-range-track {
+    height: 0.75rem;
+    border-radius: 9999px;
+    background: var(--color-border);
+  }
+  &::-moz-range-thumb {
+    width: 2rem;
+    height: 2rem;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--color-primary);
+  }
+}
 @utility safe-area {
   padding: env(safe-area-inset-top) max(var(--page-gutter, 0.5rem), env(safe-area-inset-right))
     max(var(--page-bottom, 0.5rem), env(safe-area-inset-bottom))
