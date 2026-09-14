@@ -34,7 +34,7 @@ export function AvatarPicker({
               <Avatar avatar={option.id} className="size-full" />
               {value === option.id && (
                 <span
-                  className="absolute bottom-0 right-0 grid size-6 place-items-center rounded-full border-2 border-card bg-primary text-white sm:size-7"
+                  className="absolute bottom-0 right-0 grid size-6 place-items-center rounded-full border-2 border-card bg-primary text-primary-foreground sm:size-7"
                   aria-hidden="true"
                 >
                   <Check className="size-3.5 sm:size-4" />

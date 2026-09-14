@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EMOTE_DURATION_MS } from "../../shared/emotes";
 import { Bubble } from "./bubble";
 
@@ -13,7 +13,6 @@ const digits = [
 ];
 
 export function PredictionEmote({ bid, name }: { bid: number | null; name: string }) {
-  const gradient = useId();
   const previous = useRef(bid);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -32,23 +31,15 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
         preserveAspectRatio="none"
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id={gradient} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="#fff6b0" />
-            <stop offset="0.45" stopColor="#ffd34d" />
-            <stop offset="1" stopColor="#f59818" />
-          </linearGradient>
-        </defs>
-        <g transform="translate(7 4) rotate(-7 17 22)" fillRule="evenodd" strokeLinejoin="round">
-          <path
-            d={digits[bid]}
-            transform="translate(1.5 4)"
-            fill="#ad531a"
-            stroke="#291b24"
-            strokeWidth="4"
-          />
-          <path d={digits[bid]} fill={`url(#${gradient})`} stroke="#291b24" strokeWidth="4" />
-          <path d={digits[bid]} fill="none" stroke="#fff0a2" strokeWidth="1" />
+        <g
+          className="stroke-foreground"
+          transform="translate(7 4) rotate(-7 17 22)"
+          fillRule="evenodd"
+          strokeWidth="4"
+          strokeLinejoin="round"
+        >
+          <path d={digits[bid]} transform="translate(1.5 4)" className="fill-bronze" />
+          <path d={digits[bid]} className="fill-gold" />
         </g>
       </svg>
     </Bubble>

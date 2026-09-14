@@ -9,7 +9,7 @@ export function TableSurface() {
   const clip = `${id}-felt`;
   return (
     <div
-      className="table-surface pointer-events-none relative -z-1 col-span-full row-start-2 row-end-5 drop-shadow-[0_4px_6px_#75404b50]"
+      className="table-surface pointer-events-none relative -z-1 col-span-full row-start-2 row-end-5 drop-shadow-[0_4px_6px] drop-shadow-foreground/30"
       aria-hidden="true"
     >
       <div
@@ -27,17 +27,13 @@ export function TableSurface() {
           </clipPath>
         </defs>
         <path
-          className="stroke-[#8a5364] stroke-[6]"
+          className="stroke-secondary-foreground stroke-[6]"
           d={contour}
           vectorEffect="non-scaling-stroke"
         />
+        <path className="stroke-felt stroke-[4]" d={contour} vectorEffect="non-scaling-stroke" />
         <path
-          className="stroke-[#b7798c] stroke-[4]"
-          d={contour}
-          vectorEffect="non-scaling-stroke"
-        />
-        <path
-          className="stroke-[#f8dae080] stroke-[1.5]"
+          className="stroke-accent/50 stroke-[1.5]"
           d={contour}
           vectorEffect="non-scaling-stroke"
         />

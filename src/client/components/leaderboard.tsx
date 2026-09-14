@@ -53,7 +53,7 @@ export function Leaderboard({ players }: { players: Leader[] }) {
                 avatar={player.avatar}
                 className={cn(
                   index === 0
-                    ? "size-20 ring-2 ring-[#dfb64d]/60 ring-offset-2 ring-offset-background shadow-[0_0_20px_#dfb64d30] sm:size-24"
+                    ? "size-20 ring-2 ring-gold/60 ring-offset-2 ring-offset-background shadow-[0_0_20px] shadow-gold/20 sm:size-24"
                     : "size-16 sm:size-20",
                 )}
               />

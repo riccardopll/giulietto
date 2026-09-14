@@ -8,7 +8,7 @@ import { PageHeader, Wordmark } from "./ui/page-header";
 function SpectatorCount({ count }: { count: number }) {
   return (
     <span
-      className="col-start-1 row-start-1 ml-1 min-[360px]:ml-2 inline-flex min-w-0 overflow-hidden items-center gap-1 text-xs font-black min-[360px]:text-sm tabular-nums drop-shadow-[0_1px_1px_#30253340]"
+      className="col-start-1 row-start-1 ml-1 min-[360px]:ml-2 inline-flex min-w-0 overflow-hidden items-center gap-1 text-xs font-black min-[360px]:text-sm tabular-nums drop-shadow-[0_1px_1px] drop-shadow-foreground/25"
       role="status"
       title={`${count} spectators`}
       aria-label={`${count} ${count === 1 ? "spectator" : "spectators"}`}
@@ -26,13 +26,13 @@ function SpectatorCount({ count }: { count: number }) {
       >
         <path
           d="M1 9Q12-6 23 9Q12 24 1 9Z"
-          fill="white"
+          className="fill-card"
           stroke="currentColor"
           strokeWidth="1.8"
           strokeLinejoin="round"
         />
         <circle cx="12" cy="9" r="4" fill="currentColor" />
-        <circle cx="11" cy="8" r="1" fill="white" />
+        <circle cx="11" cy="8" r="1" className="fill-card" />
       </svg>
     </span>
   );

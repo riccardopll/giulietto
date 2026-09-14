@@ -15,13 +15,17 @@ function bubbleArtwork(children: ReactNode, tail: boolean) {
       >
         <path
           d={outline}
-          fill="#111111"
-          stroke="#111111"
+          className="fill-foreground stroke-foreground"
           strokeWidth="2.5"
           strokeLinejoin="round"
           transform="translate(0 2.5)"
         />
-        <path d={outline} fill="white" stroke="#111111" strokeWidth="2.5" strokeLinejoin="round" />
+        <path
+          d={outline}
+          className="fill-card stroke-foreground"
+          strokeWidth="2.5"
+          strokeLinejoin="round"
+        />
       </svg>
       {children}
       <svg
@@ -30,7 +34,7 @@ function bubbleArtwork(children: ReactNode, tail: boolean) {
         fill="none"
         aria-hidden="true"
       >
-        <path d={base} stroke="#111111" strokeWidth="2.5" strokeLinejoin="round" />
+        <path d={base} className="stroke-foreground" strokeWidth="2.5" strokeLinejoin="round" />
       </svg>
     </span>
   );

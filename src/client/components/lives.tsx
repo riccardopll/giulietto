@@ -4,7 +4,7 @@ import { cn } from "../utils";
 export function Lives({ n }: { n: number }) {
   return (
     <span
-      className="inline-flex min-h-[27px] w-[42px] shrink-0 flex-col items-center justify-center gap-[3px] align-middle text-[#ca687c]"
+      className="inline-flex min-h-[27px] w-[42px] shrink-0 flex-col items-center justify-center gap-[3px] align-middle text-destructive"
       aria-label={`${n} ${n === 1 ? "life" : "lives"}`}
     >
       {Array.from({ length: Math.ceil(n / 3) }, (_, row) => (
@@ -28,7 +28,7 @@ export function LifeCount({ n, className }: { n: number; className?: string }) {
       aria-label={`${n} ${n === 1 ? "life" : "lives"}`}
     >
       <Heart
-        className="size-[1em] shrink-0 text-[#ca687c]"
+        className="size-[1em] shrink-0 text-destructive"
         fill="currentColor"
         aria-hidden="true"
       />

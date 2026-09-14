@@ -21,6 +21,10 @@
   --border: #e4dce0;
   --input: #d6c9d0;
   --ring: #b74375;
+  --gold: #dfb64d;
+  --silver: #c6cbd1;
+  --bronze: #c68c65;
+  --felt: #b16b80;
   --radius: 0.75rem;
 }
 @theme inline {
@@ -42,6 +46,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-gold: var(--gold);
+  --color-silver: var(--silver);
+  --color-bronze: var(--bronze);
+  --color-felt: var(--felt);
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;

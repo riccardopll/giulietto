@@ -1,36 +1,35 @@
 # Architecture
 
-Design for mobile first. Only portrait layouts are supported. During play, keep
-the table, hand, and controls within the viewport.
+Mobile first, portrait only. During play, keep the table, hand, and controls
+within the viewport.
 
-Keep table and seat geometry fixed across rounds, hand sizes, and player statuses.
-Only notification bubbles may clip.
+Keep table and seat geometry fixed across rounds, hand sizes, and player
+statuses. Only notification bubbles may clip.
 
-Use Tailwind for layout and component styles. Reserve shared CSS for theme tokens,
-reusable utilities, paint, and animations.
+Use Tailwind for layout and component styles. Reserve shared CSS for theme
+tokens, reusable utilities, paint, and animations. Every colour comes from the
+token block in `src/client/globals.css`; add a token only when no existing one
+is close.
 
-Show all errors in the shared top-down notifications. Errors must never shift the
-page or dialog layout; keep retry actions in the notification, not inline banners.
+Show all errors in the shared toast notifications, with retry actions inside the
+notification. Errors must never shift the page or dialog layout.
 
-Always play animations regardless of the system's reduced-motion preference.
-Do not add reduced-motion overrides or gate animations behind `motion-safe`.
+Always play animations; ignore the reduced-motion preference.
 
-Read player statistics and rankings from `player_stats`, not lifetime history scans.
-Update totals and `matches.stats_counted` in the same finalization batch so retries
-cannot count a completed match twice. Keep timing totals and sample counts separate.
+Read player statistics and rankings from `player_stats`, never from history
+scans. Update totals and `matches.stats_counted` in the same finalization batch
+so a retry cannot count a match twice. Keep timing totals and sample counts
+separate.
 
 ## Emotes
 
-Match the cartoon style of `public/emotes/chicken.webp` and
-`public/emotes/perso.webp`: berry pink, dark plum shadows, cream highlights, and
-thick outlines. Use readable silhouettes and connected cursive lettering over a
-white, dark-outlined speech bubble. Keep the tail visible and check legibility at
-the displayed size.
+Match `public/emotes/chicken.webp` and `public/emotes/perso.webp`: berry pink,
+dark plum shadows, cream highlights, thick outlines, readable silhouettes, and
+connected cursive lettering over a white, dark-outlined speech bubble with a
+visible tail.
 
-Keep active motion around 1.5 seconds, with an entrance, reaction, and still hold.
-Use short drops, staggered reveals, squash, and damped wobble without distorting
-lettering. Keep bubble recoil and impact accents brief; avoid continuous idle
-effects.
+Active motion lasts about 1.5 seconds: entrance, reaction, still hold. No
+continuous idle effects. Do not distort lettering.
 
-Present alternatives together with replay, slow motion, scrubbing, and previews
-at the displayed size. Get user review before exporting or replacing game assets.
+Show alternatives at the displayed size and get user review before replacing
+game assets.
