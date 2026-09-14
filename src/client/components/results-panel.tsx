@@ -5,9 +5,8 @@ import { cn, toRoman } from "../utils";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "./ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
-const cellClass = "px-1 py-3 text-center whitespace-normal wrap-anywhere sm:px-2";
+const cellClass = "px-1 py-3 text-center align-middle whitespace-normal wrap-anywhere sm:px-2";
 
 /** Seconds until the deadline on the server clock; frozen previews read the snapshot only. */
 function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
@@ -48,51 +47,51 @@ export function ResultsPanel({
         <p className="mb-5 text-sm text-muted-foreground">All players return with one life.</p>
       )}
       <div className="-mx-3 sm:-mx-6">
-        <Table className="table-fixed text-sm sm:text-base">
+        <table className="w-full table-fixed text-sm sm:text-base">
           <colgroup>
             <col className="w-[38%]" />
             <col />
             <col />
             <col className="w-[32%]" />
           </colgroup>
-          <TableHeader>
-            <TableRow className="border-border">
+          <thead>
+            <tr className="border-b border-border">
               {["Player", "Bid", "Won", "Lives"].map((label, i) => (
-                <TableHead
+                <th
                   key={label}
                   className={cn(
-                    "h-10 px-1 text-center text-xs whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
+                    "h-10 px-1 text-center align-middle text-xs font-medium whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
                     i === 0 && "pl-4 text-left sm:pl-8",
                     i === 3 && "pr-4 sm:pr-8",
                   )}
                 >
                   {label}
-                </TableHead>
+                </th>
               ))}
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+            </tr>
+          </thead>
+          <tbody>
             {game.players.map((player, i) => {
               const result = game.results.find((entry) => entry.id === player.id);
               return (
-                <TableRow
+                <tr
                   key={player.id}
                   className={cn(
-                    "border-border",
-                    player.id === game.you && "bg-accent/60 hover:bg-accent/60",
+                    "border-b border-border last:border-0",
+                    player.id === game.you && "bg-accent/60",
                   )}
                 >
-                  <TableCell className={cn(cellClass, "pl-4 text-left sm:pl-8")}>
+                  <td className={cn(cellClass, "pl-4 text-left sm:pl-8")}>
                     <div className="flex items-center gap-2 sm:gap-3">
                       <span className="w-5 shrink-0 text-xs text-muted-foreground">
                         {toRoman(i + 1)}
                       </span>
                       <span className="min-w-0">{player.name}</span>
                     </div>
-                  </TableCell>
-                  <TableCell className={cellClass}>{result?.bid ?? "–"}</TableCell>
-                  <TableCell className={cellClass}>{result?.taken ?? "–"}</TableCell>
-                  <TableCell className={cn(cellClass, "pr-4 sm:pr-8")}>
+                  </td>
+                  <td className={cellClass}>{result?.bid ?? "–"}</td>
+                  <td className={cellClass}>{result?.taken ?? "–"}</td>
+                  <td className={cn(cellClass, "pr-4 sm:pr-8")}>
                     <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
                       <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
                       {!!result?.lost && (
@@ -104,12 +103,12 @@ export function ResultsPanel({
                         </span>
                       )}
                     </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               );
             })}
-          </TableBody>
-        </Table>
+          </tbody>
+        </table>
       </div>
       {finished ? (
         <Button
