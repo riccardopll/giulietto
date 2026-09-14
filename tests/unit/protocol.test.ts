@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { apply, join } from "../../src/server/protocol";
+import { apply, command, join } from "../../src/server/protocol";
 import { deal, score, tick, view } from "../../src/shared/game";
 import { tableOrder } from "../../src/client/table-order";
 import { gameFixture, lobbyFixture } from "./helpers";
@@ -77,10 +77,15 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
     expect(state.players.every((p) => p.hand.every((card) => card === null))).toBe(true);
     expect(game.spectators).toHaveLength(1);
     expect(tableOrder(state).seats).toEqual(game.players.map((p) => p.id));
-    for (const action of ["bid", "play", "start", "settings"]) {
-      expect(() => apply(game, "watcher", { action, commandId: crypto.randomUUID() }, 400)).toThrow(
-        "Spectators cannot",
-      );
+    for (const input of [
+      { action: "bid", bid: 0 },
+      { action: "play", card: 2 },
+      { action: "start" },
+      { action: "settings", startingLives: 3 },
+    ] as const) {
+      expect(() =>
+        apply(game, "watcher", { ...input, commandId: crypto.randomUUID() }, 400),
+      ).toThrow("Spectators cannot");
     }
     apply(game, "watcher", { action: "leave", commandId: crypto.randomUUID() }, 500);
     expect(() => view(game, "watcher")).toThrow();
@@ -136,3 +141,38 @@ test.each(["playing", "finished"] as const)(
     expect(view(game, "watcher").spectating).toBe(true);
   },
 );
+
+test.each([
+  [{ action: "bid", bid: 1.5 }, "Enter a valid prediction."],
+  [{ action: "play", card: "31" }, "Choose a valid card."],
+  [{ action: "settings", startingLives: 9 }, "Choose a whole number"],
+  [{ action: "rename" }, "Enter a display name."],
+  [{ action: "emote", emote: "unknown" }, "Unknown emote."],
+  [{ action: "cheat" }, "Unknown action."],
+  [{ action: "start", commandId: "nope" }, "Invalid command ID."],
+])("rejects %o with a readable error", (input, message) => {
+  expect(() => command({ commandId: crypto.randomUUID(), ...input })).toThrow(message);
+});
+
+test("normalizes accepted commands and drops unknown fields", () => {
+  const commandId = crypto.randomUUID();
+  expect(command({ action: "rename", name: "  bot_1  ", commandId, extra: 1 })).toEqual({
+    action: "rename",
+    name: "bot_1",
+    commandId,
+  });
+  expect(command({ action: "play", card: 31, mode: "low", code: "ABCDEFGH", commandId })).toEqual({
+    action: "play",
+    card: 31,
+    mode: "low",
+    code: "ABCDEFGH",
+    commandId,
+  });
+  expect(command({ action: "join", name: "bot_2", avatar: "king-cups", commandId })).toEqual({
+    action: "join",
+    name: "bot_2",
+    avatar: "king-cups",
+    matchmaking: false,
+    commandId,
+  });
+});

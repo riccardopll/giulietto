@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
+import { GameError } from "../shared/game-error";
 import { TABLE_RETENTION_MS } from "../shared/game";
 import { command, displayName, failure } from "./protocol";
 export class MatchQueue extends DurableObject<Env> {
@@ -8,6 +9,8 @@ export class MatchQueue extends DurableObject<Env> {
     return this.ctx.blockConcurrencyWhile(async () => {
       try {
         const input = command(await req.json());
+        if (input.action !== "create" && input.action !== "match")
+          throw new GameError("Invalid request.");
         displayName(input.name);
         const id = req.headers.get("x-player-id")!;
         const key = `request:${id}:${input.commandId}`;

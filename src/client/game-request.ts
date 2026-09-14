@@ -1,4 +1,12 @@
+import type { EntryCommand, TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
+
+/** Commands sent over HTTP name the table and the guest alongside the action. */
+export type HttpCommand = (EntryCommand | TableCommand) & {
+  code?: string;
+  name?: string;
+  commandId?: string;
+};
 
 export class GameRequestError extends Error {
   constructor(
@@ -14,7 +22,7 @@ export class GameRequestError extends Error {
 
 export async function requestGame(
   token: string,
-  command: { action: string; [key: string]: unknown },
+  command: HttpCommand,
   controller = new AbortController(),
 ): Promise<GameView> {
   const timeout = setTimeout(

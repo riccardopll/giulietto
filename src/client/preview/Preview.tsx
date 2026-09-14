@@ -3,6 +3,7 @@ import { Settings2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import App from "../App";
 import { AceSelection } from "../components/ace-selection";
+import type { TableCommand } from "../../shared/commands";
 import { sendEmote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
 import { bid, deal, play, view, type Game } from "../../shared/game";
@@ -190,23 +191,22 @@ export function Preview() {
     snapshot.serverTime +
     (snapshot.phase === "results" ? 12000 : snapshot.phase === "trick" ? 2600 : 40000);
 
-  function command(action: string, extra: Record<string, unknown>) {
+  function command(input: TableCommand) {
     if (viewer === -1) return;
     const game = structuredClone(entry.game);
     const id = game.players[viewer].id;
-    if (action === "rename" && game.phase === "lobby")
-      game.players[viewer].name = String(extra.name).trim().slice(0, 20);
-    else if (action === "settings" && game.phase === "lobby") {
-      game.startingLives = Number(extra.startingLives);
-      game.players.forEach((p) => {
-        p.lives = game.startingLives;
-      });
-    } else if (action === "start" && game.phase === "lobby") deal(game, Date.now());
-    else if (action === "emote") sendEmote(game, id, extra.emote, Date.now());
-    else if (action === "bid") bid(game, id, Number(extra.bid), Date.now());
-    else if (action === "play") {
-      const card = Number(extra.card);
-      play(game, id, card === -1 ? game.players[viewer].hand[0] : card, extra.mode, Date.now());
+    const now = Date.now();
+    if (input.action === "rename" && game.phase === "lobby")
+      game.players[viewer].name = input.name.trim().slice(0, 20);
+    else if (input.action === "settings" && game.phase === "lobby") {
+      game.startingLives = input.startingLives;
+      for (const player of game.players) player.lives = input.startingLives;
+    } else if (input.action === "start" && game.phase === "lobby") deal(game, now);
+    else if (input.action === "emote") sendEmote(game, id, input.emote, now);
+    else if (input.action === "bid") bid(game, id, input.bid, now);
+    else if (input.action === "play") {
+      const card = input.card ?? -1;
+      play(game, id, card === -1 ? game.players[viewer].hand[0] : card, input.mode, now);
     } else return;
     game.revision++;
     setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));

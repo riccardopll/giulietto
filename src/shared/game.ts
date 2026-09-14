@@ -159,7 +159,13 @@ export function bid(game: Game, id: string, prediction: number, now: number) {
   }
   game.deadline = now + TURN_MS;
 }
-export function play(game: Game, id: string, card: number, mode: unknown, now: number) {
+export function play(
+  game: Game,
+  id: string,
+  card: number,
+  mode: "high" | "low" | undefined,
+  now: number,
+) {
   if (game.phase !== "playing" || game.order[game.turn] !== id)
     throw new GameError("Wait for your turn.");
   const player = findPlayer(game, id)!;
@@ -167,7 +173,7 @@ export function play(game: Game, id: string, card: number, mode: unknown, now: n
   if (card === 31 && mode !== "high" && mode !== "low")
     throw new GameError("Choose high or low for the Ace of Coins.");
   player.hand.splice(player.hand.indexOf(card), 1);
-  game.trick.push({ player: id, card, ...(card === 31 ? { mode: mode as "high" | "low" } : {}) });
+  game.trick.push({ player: id, card, ...(card === 31 ? { mode } : {}) });
   if (game.trick.length === game.order.length) {
     const winning = game.trick.reduce((best, play) =>
       strength(best) > strength(play) ? best : play,

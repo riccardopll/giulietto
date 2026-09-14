@@ -1,7 +1,6 @@
-import { TABLE_ACTIONS } from "../shared/actions";
-import { isAvatar } from "../shared/avatars";
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
+import { isTableCommand, type Command } from "../shared/commands";
 import { GameError } from "../shared/game-error";
 import {
   makeGame,
@@ -15,7 +14,7 @@ import {
 } from "../shared/game";
 import { historyStatements } from "./match-history";
 import { eventStatements, gameEvents, type EventSource, type GameEvent } from "./game-events";
-import { apply, command, displayName, failure, type Command } from "./protocol";
+import { apply, command, displayName, failure } from "./protocol";
 
 type Room = {
   game: Game;
@@ -211,7 +210,9 @@ export class GameTable extends DurableObject<Env> {
       const attachment: Attachment = { id, roomCode: code };
       try {
         if (url.pathname.endsWith("/create")) {
-          const input = (await req.json()) as Command;
+          const input = command(await req.json());
+          if (input.action !== "create" && input.action !== "match")
+            throw new GameError("Invalid request.");
           let room = this.read();
           if (room && room.game.host !== id) throw new GameError("Table already exists.");
           if (!room) {
@@ -220,7 +221,7 @@ export class GameTable extends DurableObject<Env> {
               makePlayer(id, displayName(input.name), Date.now()),
               input.action === "match",
             );
-            if (isAvatar(input.avatar)) game.players[0].avatar = input.avatar;
+            if (input.avatar) game.players[0].avatar = input.avatar;
             room = { game, updated: Date.now(), deliveredSequence: 0 };
             this.ctx.storage.kv.put("room", room);
             await this.schedule(room);
@@ -303,10 +304,11 @@ export class GameTable extends DurableObject<Env> {
         } catch {
           throw new GameError("Invalid JSON.");
         }
+        // Rejections should reach the pending command even when its fields are invalid.
+        if (typeof value?.commandId === "string") commandId = value.commandId;
         const input = command(value);
-        commandId = input.commandId;
         action = input.action;
-        if (!TABLE_ACTIONS.includes(input.action)) throw new GameError("Invalid room command.");
+        if (!isTableCommand(input)) throw new GameError("Invalid room command.");
         const room = this.read();
         if (!room) throw new GameError("Table expired.");
         const { state, duplicate } = await this.execute(await this.advance(room), id, input);

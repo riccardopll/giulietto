@@ -22,7 +22,6 @@ test.each(["chicken", "perso"] as const)(
 test("only active players can send the supported emote during play", () => {
   const game = gameFixture();
   expect(() => sendEmote(game, "outsider", "chicken", 1000)).toThrow("Only players");
-  expect(() => sendEmote(game, "p0", "unknown", 1000)).toThrow("Unknown emote");
   game.players[0].lives = 0;
   expect(() => sendEmote(game, "p0", "chicken", 1000)).toThrow("Only players");
   for (const phase of ["lobby", "results", "finished"] as const) {

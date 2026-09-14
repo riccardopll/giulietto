@@ -1,5 +1,5 @@
-import { ENTRY_ACTIONS, TABLE_ACTIONS } from "../shared/actions";
 import { isAvatar } from "../shared/avatars";
+import type { Command, EntryCommand, TableCommand } from "../shared/commands";
 import { sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
@@ -14,18 +14,66 @@ import {
   findPlayer,
 } from "../shared/game";
 
-export type Command = Record<string, unknown> & { action: string; commandId: string };
+function integer(value: unknown, message: string) {
+  if (typeof value !== "number" || !Number.isInteger(value)) throw new GameError(message);
+  return value;
+}
+function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
+  const name = typeof input.name === "string" ? input.name : undefined;
+  const avatar = isAvatar(input.avatar) ? input.avatar : undefined;
+  switch (input.action) {
+    case "create":
+    case "match":
+      return { action: input.action, name, avatar };
+    case "join":
+      return { action: "join", name, avatar, matchmaking: input.matchmaking === true };
+    case "rename":
+      if (typeof input.name !== "string") throw new GameError("Enter a display name.");
+      return { action: "rename", name: displayName(input.name) };
+    case "settings": {
+      const lives = input.startingLives;
+      if (
+        typeof lives !== "number" ||
+        !Number.isInteger(lives) ||
+        lives < MIN_STARTING_LIVES ||
+        lives > MAX_STARTING_LIVES
+      )
+        throw new GameError(
+          `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
+        );
+      return { action: "settings", startingLives: lives };
+    }
+    case "start":
+    case "leave":
+      return { action: input.action };
+    case "bid":
+      return { action: "bid", bid: integer(input.bid, "Enter a valid prediction.") };
+    case "play":
+      return {
+        action: "play",
+        card: input.card === undefined ? undefined : integer(input.card, "Choose a valid card."),
+        mode: input.mode === "high" || input.mode === "low" ? input.mode : undefined,
+      };
+    case "emote":
+      if (input.emote !== "chicken" && input.emote !== "perso")
+        throw new GameError("Unknown emote.");
+      return { action: "emote", emote: input.emote };
+    default:
+      throw new GameError("Unknown action.");
+  }
+}
 export function command(value: unknown): Command {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new GameError("Invalid request.");
   const input = value as Record<string, unknown>;
-  if (![...ENTRY_ACTIONS, ...TABLE_ACTIONS].includes(String(input.action)))
-    throw new GameError("Unknown action.");
+  const parsed = fields(input);
   if (typeof input.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(input.commandId))
     throw new GameError("Invalid command ID.");
-  if (input.action === "bid" && (typeof input.bid !== "number" || !Number.isInteger(input.bid)))
-    throw new GameError("Enter a valid prediction.");
-  return input as Command;
+  return {
+    ...parsed,
+    commandId: input.commandId,
+    ...(typeof input.code === "string" ? { code: input.code } : {}),
+  };
 }
 export function join(game: Game, id: string, name: string, now: number, matchmaking = false) {
   const seated = findPlayer(game, id);
@@ -47,9 +95,9 @@ export function join(game: Game, id: string, name: string, now: number, matchmak
 }
 export function apply(game: Game, id: string, input: Command, now: number) {
   if (input.action === "join") {
-    join(game, id, displayName(input.name), now, input.matchmaking === true);
+    join(game, id, displayName(input.name), now, input.matchmaking);
     const seated = findPlayer(game, id);
-    if (seated && isAvatar(input.avatar)) seated.avatar = input.avatar;
+    if (seated && input.avatar) seated.avatar = input.avatar;
     if (seated && game.phase === "lobby") seated.name = displayName(input.name);
     return;
   }
@@ -64,36 +112,24 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   player.seen = now;
   if (input.action === "rename") {
     if (game.phase !== "lobby") throw new GameError("Names can only change in the lobby.");
-    if (typeof input.name !== "string") throw new GameError("Enter a display name.");
-    player.name = displayName(input.name);
+    player.name = input.name;
   } else if (input.action === "emote") {
     sendEmote(game, id, input.emote, now);
   } else if (input.action === "settings") {
     if (game.host !== id) throw new GameError("Only the host can change starting lives.");
     if (game.phase !== "lobby")
       throw new GameError("Starting lives cannot change after the game starts.");
-    const lives = input.startingLives;
-    if (
-      typeof lives !== "number" ||
-      !Number.isInteger(lives) ||
-      lives < MIN_STARTING_LIVES ||
-      lives > MAX_STARTING_LIVES
-    )
-      throw new GameError(
-        `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
-      );
-    game.startingLives = lives;
-    for (const member of game.players) member.lives = lives;
+    game.startingLives = input.startingLives;
+    for (const member of game.players) member.lives = input.startingLives;
   } else if (input.action === "start") {
     if (game.host !== id) throw new GameError("Only the host can start.");
     if (game.phase !== "lobby" || game.players.length < 2)
       throw new GameError("You need at least two players.");
     deal(game, now);
-  } else if (input.action === "bid") bid(game, id, input.bid as number, now);
+  } else if (input.action === "bid") bid(game, id, input.bid, now);
   else if (input.action === "play") {
-    if (game.count !== 1 && (typeof input.card !== "number" || !Number.isInteger(input.card)))
-      throw new GameError("Choose a valid card.");
-    play(game, id, game.count === 1 ? player.hand[0] : (input.card as number), input.mode, now);
+    if (game.count !== 1 && input.card === undefined) throw new GameError("Choose a valid card.");
+    play(game, id, game.count === 1 ? player.hand[0] : input.card!, input.mode, now);
   } else if (input.action === "leave" && game.phase === "lobby") {
     game.players = game.players.filter((member) => member.id !== id);
     if (game.host === id) game.host = game.players[0]?.id ?? "";
