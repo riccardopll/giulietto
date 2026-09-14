@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "./match.css";
-@import "./sonner-motion.css";
 
 :root {
   --background: #fbf8fa;
@@ -55,6 +54,18 @@
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --font-sans: Arial, Helvetica, sans-serif;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    translate: 0 -0.5rem;
+  }
+}
+@keyframes toast-out {
+  to {
+    opacity: 0;
+    translate: 0 -0.5rem;
+  }
 }
 @utility range-slider {
   appearance: none;

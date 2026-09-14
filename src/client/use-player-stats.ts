@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
-import { toast } from "sonner";
+import { toast } from "./toast";
 import type { Profile, StatsResponse } from "../shared/player-stats";
 export function usePlayerStats(
   token: string,

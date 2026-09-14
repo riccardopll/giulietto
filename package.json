@@ -5,7 +5,6 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
-    "prepare": "husky",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -31,7 +30,6 @@
     "radix-ui": "1.6.7",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "sonner": "2.0.8",
     "tailwind-merge": "3.6.0"
   },
   "devDependencies": {
@@ -44,8 +42,6 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
     "@vitejs/plugin-react": "6.1.1",
-    "husky": "9.1.7",
-    "lint-staged": "17.5.0",
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
     "tailwindcss": "4.3.3",
@@ -59,13 +55,6 @@
       "miniflare": "5.20260903.0-alpha",
       "wrangler": "$wrangler"
     }
-  },
-  "lint-staged": {
-    "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
-      "npm run lint:fix --",
-      "npm run fmt --"
-    ],
-    "*.{json,jsonc,css,scss,html,vue,md,mdx,yml,yaml,toml,graphql,gql}": "npm run fmt --"
   },
   "engines": {
     "node": "24.21.0"

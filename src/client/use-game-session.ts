@@ -1,5 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
-import { toast } from "sonner";
+import { toast } from "./toast";
 import { isTableCommand, type EntryCommand, type TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
 import { GameConnection } from "./game-connection";
@@ -20,7 +20,7 @@ export type PreviewSession = {
 };
 
 function showError(message: string) {
-  if (message) toast.error(message, { id: "game-error", duration: 4500 });
+  if (message) toast.error(message, { id: "game-error" });
   else toast.dismiss("game-error");
 }
 
@@ -122,7 +122,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     };
   }, [game?.code, isPreview, session.token]);
   useEffect(() => {
-    if (connection) toast.error(connection, { id: "connection-error", duration: 4500 });
+    if (connection) toast.error(connection, { id: "connection-error" });
     else toast.dismiss("connection-error");
   }, [connection]);
   useEffect(() => {

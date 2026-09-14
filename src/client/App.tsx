@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useState } from "react";
-import { Toaster } from "sonner";
 import { defaultAvatar } from "../shared/avatars";
 import { AceSelection } from "./components/ace-selection";
 import { Avatar } from "./components/avatar";
@@ -12,6 +11,7 @@ import { TableHeader } from "./components/table-header";
 import { ActionDialog } from "./components/ui/action-dialog";
 import { Button } from "./components/ui/button";
 import { PageHeader, Wordmark } from "./components/ui/page-header";
+import { Toaster } from "./toast";
 import { useGameSession, type PreviewSession } from "./use-game-session";
 import { usePlayerStats } from "./use-player-stats";
 
@@ -177,14 +177,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           onSelect={(mode) => table.act({ action: "play", card: table.ace ?? -1, mode })}
         />
       </div>
-      <Toaster
-        position="top-center"
-        theme="light"
-        closeButton
-        duration={4500}
-        offset="max(16px, env(safe-area-inset-top))"
-        mobileOffset="max(16px, env(safe-area-inset-top))"
-      />
+      <Toaster />
     </>
   );
 }
