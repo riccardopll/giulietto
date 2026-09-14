@@ -1,8 +1,40 @@
-import { expect, test as base, type Page, type Route } from "@playwright/test";
-import { findPlayer, type GameView } from "../../src/shared/game";
+import { expect, test as base, type Page, type TestInfo } from "@playwright/test";
+import type { GameView } from "../../src/shared/game";
 
 export type Player = { page: Page; state?: GameView };
 
+/** Mirrors the table state a page receives over its own WebSocket. */
+export function observe(page: Page): Player {
+  const player: Player = { page };
+  page.on("websocket", (socket) => {
+    socket.on("framereceived", ({ payload }) => {
+      if (String(payload) === "pong") return;
+      const message = JSON.parse(String(payload));
+      if (message.state?.you) player.state = message.state;
+    });
+  });
+  return player;
+}
+
+export async function rename(page: Page, name: string) {
+  await page.getByRole("button", { name: "Edit your name", exact: true }).click();
+  await page.getByLabel("New name", { exact: true }).fill(name);
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
+}
+
+export async function screenshot(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  options: Parameters<Page["screenshot"]>[0] = {},
+) {
+  const path = testInfo.outputPath(`${name}.png`);
+  await page.screenshot({ path, ...options });
+  await testInfo.attach(name, { path, contentType: "image/png" });
+}
+
+/** Three named players seated in one private lobby, the host first. */
 export const test = base.extend<{ players: Player[] }>({
   players: async ({ page: hostPage, browser, baseURL, viewport, reducedMotion }, use) => {
     const players: Player[] = [];
@@ -12,104 +44,10 @@ export const test = base.extend<{ players: Player[] }>({
           i === 0
             ? hostPage
             : await (await browser.newContext({ baseURL, viewport, reducedMotion })).newPage();
-        const player: Player = { page };
+        const player = observe(page);
         players.push(player);
-        // Observe the real transport; all commands go through browser controls.
-        page.on("websocket", (socket) => {
-          socket.on("framereceived", ({ payload }) => {
-            if (String(payload) === "pong") return;
-            const message = JSON.parse(String(payload));
-            if (message.state?.you) player.state = message.state;
-          });
-        });
         if (i === 0) {
           await page.goto("/");
-          await page.getByRole("button", { name: "Open your profile" }).click();
-          await page.getByRole("button", { name: "Edit your name", exact: true }).click();
-          await page.getByLabel("New name").fill("bot_1");
-          await expect(page.getByRole("radio")).toHaveCount(0);
-          let statsRefresh: Route | undefined;
-          await page.route("**/api/stats", (route) => {
-            statsRefresh = route;
-          });
-          await page.getByRole("button", { name: "Save", exact: true }).click();
-          await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
-          await expect.poll(() => !!statsRefresh).toBe(true);
-          await page.getByRole("button", { name: "Edit your avatar", exact: true }).click();
-          await expect(page.getByLabel("New name")).toHaveCount(0);
-          await page.getByRole("radio", { name: "King of Cups", exact: true }).check();
-          const avatarDialog = page.getByRole("dialog", { name: "Choose your avatar" });
-          await expect(avatarDialog).toHaveCSS("opacity", "1");
-          const dialogBounds = await avatarDialog.boundingBox();
-          await page.route(
-            "**/api/profile",
-            (route) =>
-              route.fulfill({
-                status: 503,
-                contentType: "application/json",
-                body: JSON.stringify({ error: "Could not save your profile." }),
-              }),
-            { times: 1 },
-          );
-          await page.getByRole("button", { name: "Save", exact: true }).click();
-          await expect(
-            page.locator("[data-sonner-toast]").filter({ hasText: "Could not save your profile." }),
-          ).toBeVisible();
-          expect(await avatarDialog.boundingBox()).toEqual(dialogBounds);
-          // A failed save must still let the pending stats request report its result.
-          await statsRefresh!.fulfill({ status: 503 });
-          await page.unroute("**/api/stats");
-          const statsError = page
-            .locator("[data-sonner-toast]")
-            .filter({ hasText: "Could not load player stats." });
-          await expect(statsError).toBeVisible();
-          await page.getByRole("button", { name: "Save", exact: true }).click();
-          await expect(page.getByRole("dialog", { name: "Choose your avatar" })).toBeHidden();
-          await page.waitForLoadState("networkidle");
-          const avatarBounds = await page
-            .getByRole("button", { name: "Edit your avatar", exact: true })
-            .boundingBox();
-          await page.route("**/api/stats", (route) => route.fulfill({ status: 503 }), { times: 1 });
-          await page.reload();
-          await expect(statsError).toBeVisible();
-          const editName = page.getByRole("button", { name: "Edit your name", exact: true });
-          const editAvatar = page.getByRole("button", { name: "Edit your avatar", exact: true });
-          await expect(editName).toBeDisabled();
-          await expect(editAvatar).toBeDisabled();
-          await page.getByRole("main").evaluate(async (element) => {
-            await Promise.all(element.getAnimations().map((animation) => animation.finished));
-          });
-          expect(
-            await page.getByRole("button", { name: "Edit your avatar", exact: true }).boundingBox(),
-          ).toEqual(avatarBounds);
-          let statsRetry: Route | undefined;
-          await page.route(
-            "**/api/stats",
-            (route) => {
-              statsRetry = route;
-            },
-            { times: 1 },
-          );
-          await statsError.getByRole("button", { name: "Retry", exact: true }).click();
-          await expect.poll(() => !!statsRetry).toBe(true);
-          await expect(editName).toBeDisabled();
-          await expect(editAvatar).toBeDisabled();
-          await statsRetry!.continue();
-          await expect(statsError).toBeHidden();
-          await expect(page.getByRole("button", { name: "Edit your name" })).toHaveText("bot_1");
-          await expect(
-            page.getByRole("button", { name: "Edit your avatar", exact: true }).locator("img"),
-          ).toHaveAttribute("src", "/avatars/king-cups.webp");
-          await editName.click();
-          await page.getByLabel("New name").fill("bot_1");
-          const nameSave = page.waitForResponse("**/api/profile");
-          await page.getByRole("button", { name: "Save", exact: true }).click();
-          expect((await nameSave).request().postDataJSON()).toEqual({
-            name: "bot_1",
-            avatar: "king-cups",
-          });
-          await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
-          await page.getByRole("button", { name: "Back to home" }).click();
           await page.getByRole("button", { name: "Create private lobby", exact: true }).click();
         } else {
           await page.goto(`/?table=${players[0].state!.code.toLowerCase()}`);
@@ -119,17 +57,8 @@ export const test = base.extend<{ players: Player[] }>({
         await expect(page.getByRole("button", { name: "Edit your name", exact: true })).toHaveCount(
           1,
         );
-        if (i > 0) {
-          await page.getByRole("button", { name: "Edit your name", exact: true }).click();
-          await page.getByLabel("New name", { exact: true }).fill(`bot_${i + 1}`);
-          await page.getByRole("button", { name: "Save", exact: true }).click();
-          await expect(page.getByRole("dialog", { name: "Edit your name" })).toBeHidden();
-          await expect.poll(() => player.state?.viewerName).toBe(`bot_${i + 1}`);
-          expect(
-            (await page.context().cookies()).find((cookie) => cookie.name === "giulietto-name")
-              ?.value,
-          ).toBe(`bot_${i + 1}`);
-        }
+        await rename(page, `bot_${i + 1}`);
+        await expect.poll(() => player.state?.viewerName).toBe(`bot_${i + 1}`);
       }
       await synced(players, (state) => state.players.length === 3);
       await use(players);
@@ -177,7 +106,8 @@ export async function predict(players: Player[], bid: number, keyboard = false) 
   } else await button.click();
   await synced(
     players,
-    (next) => next.revision > state!.revision && findPlayer(next, state!.you)?.bid === bid,
+    (next) =>
+      next.revision > state!.revision && next.players.find((p) => p.id === state!.you)?.bid === bid,
   );
 }
 

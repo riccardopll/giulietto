@@ -47,6 +47,9 @@ async function connect(player: Guest, code: string) {
   socket.addEventListener("message", (event) => {
     if (typeof event.data === "string") messages.push(JSON.parse(event.data) as Message);
   });
+  const closed = new Promise<{ code: number; reason: string }>((resolve) =>
+    socket.addEventListener("close", ({ code, reason }) => resolve({ code, reason })),
+  );
   socket.accept();
   let open = true;
   const close = () => {
@@ -59,6 +62,8 @@ async function connect(player: Guest, code: string) {
   return {
     latest,
     close,
+    closed,
+    send: (message: string) => socket.send(message),
     async command(input: Input) {
       const commandId = typeof input.commandId === "string" ? input.commandId : crypto.randomUUID();
       socket.send(JSON.stringify({ ...input, commandId }));

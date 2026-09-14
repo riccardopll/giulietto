@@ -312,3 +312,24 @@ test("quitting a started game preserves the seat and rejoining restores play", a
     .toBe(true);
   expect((await reconnected.command({ action: "bid", bid: 0 })).type).toBe("ack");
 });
+
+test("sockets close on floods, oversized messages, and a fourth tab", async () => {
+  const [host, second, third] = [guest(1), guest(2), guest(3)];
+  const { code } = await api.state(host, { action: "create" });
+  await api.state(second, { action: "join", code });
+  await api.state(third, { action: "join", code });
+  const flooded = await api.connect(host, code);
+  for (let i = 0; i < 11; i++) flooded.send(JSON.stringify({ action: "rename", name: "bot_1" }));
+  expect(await flooded.closed).toMatchObject({ code: 1008 });
+
+  const oversized = await api.connect(second, code);
+  oversized.send("x".repeat(2049));
+  expect(await oversized.closed).toMatchObject({ code: 1009 });
+
+  const first = await api.connect(third, code);
+  await api.connect(third, code);
+  await api.connect(third, code);
+  const latest = await api.connect(third, code);
+  expect(await first.closed).toMatchObject({ code: 4002 });
+  expect((await latest.command({ action: "rename", name: "bot_3" })).type).toBe("ack");
+});

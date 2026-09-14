@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, test } from "vitest";
 import { matchEvents } from "../../src/client/match-events";
 import { bid, play, view, type Game } from "../../src/shared/game";
 import { gameFixture } from "./helpers";
@@ -22,7 +22,7 @@ function playing(
 }
 
 describe("in-game match events", () => {
-  it("does not replay a partially played table on opening", () => {
+  test("does not replay a partially played table on opening", () => {
     const game = playing();
     play(game, "p0", 1, undefined, 100);
 
@@ -30,7 +30,7 @@ describe("in-game match events", () => {
     expect(matchEvents(null, view(game, "p1"))).toEqual([]);
   });
 
-  it("announces a prediction", () => {
+  test("announces a prediction", () => {
     const game = gameFixture();
     const events = observe(game, () => bid(game, "p0", 1, 100), "p1");
 
@@ -39,7 +39,7 @@ describe("in-game match events", () => {
     ]);
   });
 
-  it("announces the final prediction before the first playing turn", () => {
+  test("announces the final prediction before the first playing turn", () => {
     const game = gameFixture([[1], [2]]);
     bid(game, "p0", 0, 100);
 
@@ -48,7 +48,7 @@ describe("in-game match events", () => {
     ]);
   });
 
-  it("embeds only publicly played cards and preserves the ace choice on a win", () => {
+  test("embeds only publicly played cards and preserves the ace choice on a win", () => {
     const game = playing();
     const first = observe(game, () => play(game, "p0", 1, undefined, 100), "p1");
     expect(first).toEqual([expect.objectContaining({ type: "play", player: "p0", card: 1 })]);
@@ -59,7 +59,7 @@ describe("in-game match events", () => {
     ]);
   });
 
-  it("uses the winner's card even when the winner played before the final player", () => {
+  test("uses the winner's card even when the winner played before the final player", () => {
     const game = playing([[31], [40]]);
     play(game, "p0", 31, "high", 100);
 
@@ -69,7 +69,7 @@ describe("in-game match events", () => {
     ]);
   });
 
-  it.each([0, -1])("ignores unchanged and stale snapshots (revision offset %i)", (offset) => {
+  test.each([0, -1])("ignores unchanged and stale snapshots (revision offset %i)", (offset) => {
     const game = playing();
     const before = view(structuredClone(game), "p1");
     play(game, "p0", 1, undefined, 100);
@@ -78,7 +78,7 @@ describe("in-game match events", () => {
     expect(matchEvents(before, view(game, "p1"))).toEqual([]);
   });
 
-  it("uses stable IDs and ignores unrelated updates", () => {
+  test("uses stable IDs and ignores unrelated updates", () => {
     const game = gameFixture();
     const before = view(structuredClone(game), "p1");
     bid(game, "p0", 1, 100);
@@ -90,7 +90,7 @@ describe("in-game match events", () => {
     expect(matchEvents(after, { ...after, revision: after.revision + 1 })).toEqual([]);
   });
 
-  it("does not replay actions missed across reconnect revisions", () => {
+  test("does not replay actions missed across reconnect revisions", () => {
     const game = playing();
     const before = view(structuredClone(game), "p1");
     play(game, "p0", 1, undefined, 100);
@@ -99,7 +99,7 @@ describe("in-game match events", () => {
     expect(matchEvents(before, view(game, "p1"))).toEqual([]);
   });
 
-  it.each(["matchId", "code", "you", "round"] as const)(
+  test.each(["matchId", "code", "you", "round"] as const)(
     "treats a changed %s as a fresh context without replaying actions",
     (field) => {
       const game = gameFixture();
@@ -118,7 +118,7 @@ describe("in-game match events", () => {
 });
 
 describe("player presence events", () => {
-  it("announces leaving and rejoining without a game revision change", () => {
+  test("announces leaving and rejoining without a game revision change", () => {
     const game = playing();
     const before = view(game, "p0", new Set(["p0", "p1"]));
     const away = view(game, "p0", new Set(["p0"]));
@@ -132,7 +132,7 @@ describe("player presence events", () => {
     expect(matchEvents(null, away)).toEqual([]);
   });
 
-  it("does not replay presence changes missed during a reconnect", () => {
+  test("does not replay presence changes missed during a reconnect", () => {
     const game = playing();
     const before = view(game, "p0", new Set(["p0", "p1"]));
     game.revision += 3;

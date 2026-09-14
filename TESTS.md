@@ -4,8 +4,9 @@ Run UI tests locally after changes to player flows, layout, or the UI tests
 themselves. After layout changes, inspect the screenshots and open `/preview`
 for the user to review.
 
-UI coverage is one complete three-player game, reload and resume during play,
-and one dense mobile layout check. Rules and event generation belong in unit
+UI coverage is one complete three-player game, entry retries, reload and resume
+during play, profile editing with error recovery, and one dense mobile layout
+check. Rules and event generation belong in unit
 tests; API, WebSocket, and persistence behavior in integration tests. Do not
 add preview permutations.
 

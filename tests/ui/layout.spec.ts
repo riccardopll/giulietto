@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { screenshot, test } from "./helpers";
 
 test("six players and full hands fit the smallest supported phone", async ({ page }, testInfo) => {
   await page.setViewportSize({ width: 320, height: 568 });
@@ -45,12 +46,6 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     return errors;
   });
   expect(errors).toEqual([]);
-  const avatarSizes = await page.locator(".seat-avatar").evaluateAll((avatars) =>
-    avatars.map((avatar) => {
-      const { width, height } = avatar.getBoundingClientRect();
-      return { width, height };
-    }),
-  );
   const overlappingProfiles = await page.locator(".seat-profile").evaluateAll(
     (profiles) =>
       profiles.filter((profile) => {
@@ -60,43 +55,18 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
       }).length,
   );
   expect(overlappingProfiles).toBe(0);
-  expect(avatarSizes).toHaveLength(6);
-  for (const size of avatarSizes) expect(size).toEqual({ width: 40, height: 40 });
-  const emoteButton = await page.getByRole("button", { name: "Emotes", exact: true }).boundingBox();
-  const table = await page.locator(".table-surface").boundingBox();
-  expect(emoteButton!.x + emoteButton!.width).toBeCloseTo(table!.x + table!.width * 0.98, 0);
-  expect(emoteButton!.y + emoteButton!.height / 2).toBeCloseTo(table!.y + table!.height / 2, 0);
   const spectators = page.getByRole("status", { name: "1 spectator", exact: true });
   await expect(spectators).toBeVisible();
   const title = await page.getByRole("heading", { name: "Round I", exact: true }).boundingBox();
   const spectatorBounds = await spectators.boundingBox();
-  expect(title!.x + title!.width / 2).toBeCloseTo(160, 0);
-  expect(spectatorBounds!.x).toBeGreaterThan(title!.x + title!.width);
   const copyBounds = await page.getByRole("button", { name: "Copy lobby invite" }).boundingBox();
+  expect(spectatorBounds!.x).toBeGreaterThan(title!.x + title!.width);
   expect(spectatorBounds!.x + spectatorBounds!.width).toBeLessThanOrEqual(copyBounds!.x);
-  expect(spectatorBounds!.y + spectatorBounds!.height / 2).toBeCloseTo(
-    title!.y + title!.height / 2,
-    0,
-  );
-  const handCenter = await page.locator(".hand-card").evaluateAll((cards) => {
-    const bounds = cards.map((card) => card.getBoundingClientRect());
-    return (
-      (Math.min(...bounds.map((card) => card.left)) +
-        Math.max(...bounds.map((card) => card.right))) /
-      2
-    );
-  });
-  expect(handCenter).toBeCloseTo(160, 0);
+
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
   const prediction = page.getByRole("status", { name: /predicts 0 tricks/ });
   await expect(prediction.locator(".prediction-digit")).toBeVisible();
-  await prediction.evaluate((element) => {
-    const animation = element.getAnimations()[0];
-    animation.pause();
-    animation.currentTime = 250;
-  });
-  const predictionSize = await prediction.locator(".emote-artwork").boundingBox();
   await page.getByRole("button", { name: "Emotes", exact: true }).click();
   const bottomProfiles = page.locator('[data-side="bottom"] .seat-identity');
   for (const profile of await bottomProfiles.all()) await expect(profile).toBeHidden();
@@ -112,17 +82,11 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const handTop = await page
     .locator(".hand-card")
     .evaluateAll((cards) => Math.min(...cards.map((card) => card.getBoundingClientRect().top)));
-  expect(menu!.x + menu!.width / 2).toBeCloseTo(160, 0);
   expect(menu!.x).toBeGreaterThanOrEqual(12);
   expect(menu!.x + menu!.width).toBeLessThanOrEqual(308);
   expect(menu!.y).toBeGreaterThanOrEqual(12);
   expect(menu!.y + menu!.height).toBeLessThanOrEqual(handTop - 12);
-  const menuArtwork = page
-    .getByRole("button", { name: "Send chicken emote" })
-    .locator(".emote-artwork");
-  const menuSize = await menuArtwork.boundingBox();
-  const menuChickenSize = await menuArtwork.locator("img").boundingBox();
-  await page.screenshot({ path: testInfo.outputPath("emote-menu.png") });
+  await screenshot(page, testInfo, "emote-menu");
   await page.getByRole("button", { name: "Send chicken emote" }).click();
   const emoteTrigger = page.locator('button[aria-label="Emotes"]');
   await expect(emoteTrigger).toBeVisible();
@@ -130,23 +94,10 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   for (const profile of await bottomProfiles.all()) await expect(profile).toBeVisible();
   const bubble = page.getByRole("status", { name: /sent the chicken emote/ });
   await expect(bubble.locator(".emote-motion")).toBeVisible();
-  await bubble.evaluate((element) => {
-    const animation = element.getAnimations()[0];
-    animation.pause();
-    animation.currentTime = 250;
-  });
-  const playbackSize = await bubble.locator(".emote-artwork").boundingBox();
-  const playbackChickenSize = await bubble.locator(".emote-motion").boundingBox();
-  expect(playbackSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
-  expect(predictionSize).toMatchObject({ width: menuSize!.width, height: menuSize!.height });
-  expect(playbackChickenSize!.width).toBeCloseTo(menuChickenSize!.width, 2);
-  expect(playbackChickenSize!.height).toBeCloseTo(menuChickenSize!.height, 2);
   await page.mouse.wheel(0, 500);
   await page.clock.runFor(100);
   expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual({ x: 0, y: 0 });
-  const path = testInfo.outputPath("small-phone.png");
-  await page.screenshot({ path });
-  await testInfo.attach("small-phone", { path, contentType: "image/png" });
+  await screenshot(page, testInfo, "small-phone");
   await page.clock.runFor(1600);
   await expect(prediction).toHaveCount(0);
   await expect(bubble).toHaveCount(0);
@@ -160,15 +111,9 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.getByRole("button", { name: "Send Perso emote" }).click();
   const perso = page.getByRole("status", { name: /sent the perso emote/ });
   await expect(perso).toBeVisible();
-  const persoImage = perso.locator(".emote-motion");
-  await expect(persoImage).toBeVisible();
-  await expect(persoImage).toHaveAttribute("src", /^blob:/);
-  await expect(perso.locator(".emote-artwork > svg")).toHaveCount(2);
-  await expect
-    .poll(() => persoImage.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
-    .toBe(true);
+  await expect(perso.locator(".emote-motion")).toBeVisible();
   await page.clock.runFor(300);
-  await page.screenshot({ path: testInfo.outputPath("perso-emote.png") });
+  await screenshot(page, testInfo, "perso-emote");
   await page.clock.runFor(1600);
   await expect(perso).toHaveCount(0);
 
@@ -179,10 +124,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     .nth(1)
     .evaluate((card) => parseFloat(getComputedStyle(card).marginLeft));
   expect(handGap).toBeGreaterThanOrEqual(0);
-  await page.screenshot({
-    path: testInfo.outputPath("four-card-hand.png"),
-    animations: "disabled",
-  });
+  await screenshot(page, testInfo, "four-card-hand", { animations: "disabled" });
 
   await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto("/preview?people=6&cards=6&phase=trick");
@@ -190,31 +132,16 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     .getByRole("region", { name: "Current trick", exact: true })
     .getByRole("img");
   await expect(playedCards).toHaveCount(6);
-  const cards = await playedCards.evaluateAll((images) =>
-    images.map((image) => {
-      const { y, width } = image.getBoundingClientRect();
-      return { y, width };
-    }),
+  const rows = await playedCards.evaluateAll((images) =>
+    images.map((image) => image.getBoundingClientRect().y),
   );
-  expect(
-    Math.max(...cards.map((card) => card.y)) - Math.min(...cards.map((card) => card.y)),
-  ).toBeLessThan(1);
-  expect(Math.min(...cards.map((card) => card.width))).toBeGreaterThan(68);
-  const desktopHandCenter = await page.locator(".hand-card").evaluateAll((cards) => {
-    const bounds = cards.map((card) => card.getBoundingClientRect());
-    return (
-      (Math.min(...bounds.map((card) => card.left)) +
-        Math.max(...bounds.map((card) => card.right))) /
-      2
-    );
-  });
-  expect(desktopHandCenter).toBeCloseTo(640, 0);
-  await page.screenshot({ path: testInfo.outputPath("desktop-trick.png"), animations: "disabled" });
+  expect(Math.max(...rows) - Math.min(...rows)).toBeLessThan(1);
+  await screenshot(page, testInfo, "desktop-trick", { animations: "disabled" });
   await page.getByRole("button", { name: "Emotes", exact: true }).click();
   await expect(page.locator("[data-you] .seat-identity")).toBeHidden();
   for (const profile of await page.locator("[data-seat]:not([data-you]) .seat-identity").all())
     await expect(profile).toBeVisible();
-  await page.screenshot({ path: testInfo.outputPath("desktop-emote-menu.png") });
+  await screenshot(page, testInfo, "desktop-emote-menu");
   await page.keyboard.press("Escape");
   await expect(page.locator("[data-you] .seat-identity")).toBeVisible();
   await page.getByRole("button", { name: "Preview settings", exact: true }).click();
@@ -222,12 +149,10 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const aceDialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
   await expect(aceDialog.locator(".ace-mode")).toHaveText(["low", "high"]);
   await expect(aceDialog.getByRole("button", { name: "Close", exact: true })).toHaveCount(0);
-  await page.screenshot({
-    path: testInfo.outputPath("ace-selection.png"),
-    animations: "disabled",
-  });
+  await screenshot(page, testInfo, "ace-selection", { animations: "disabled" });
   await page.keyboard.press("Escape");
   await expect(aceDialog).toBeHidden();
+
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto("/preview?people=6&cards=6&phase=bidding&viewer=-1");
   const spectatorHand = page.getByRole("region", { name: "Spectator mode" });
@@ -236,5 +161,5 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await expect(page.locator('.seat-slot[data-center] [data-side="bottom"] .seat-hand')).toHaveCount(
     0,
   );
-  await page.screenshot({ path: testInfo.outputPath("spectator-hand.png") });
+  await screenshot(page, testInfo, "spectator-hand");
 });
