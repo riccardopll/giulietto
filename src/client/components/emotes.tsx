@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Popover } from "radix-ui";
 import { Lock, Smile } from "lucide-react";
-import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, type Emote } from "@/shared/emotes";
+import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, type Emote } from "../../shared/emotes";
 import { Button } from "./ui/button";
 import { Bubble, MenuBubble } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
@@ -52,6 +52,11 @@ function Perso({ animated = false }: { animated?: boolean }) {
     </span>
   );
 }
+
+const emotes: { id: Emote["id"]; label: string; Art: typeof Chicken }[] = [
+  { id: "chicken", label: "Send chicken emote", Art: Chicken },
+  { id: "perso", label: "Send Perso emote", Art: Perso },
+];
 
 export function EmoteBubble({
   emote,
@@ -117,49 +122,35 @@ export function EmotePicker({
           onOpenAutoFocus={(event) => event.preventDefault()}
           className="z-50 grid w-auto grid-cols-3 gap-1 sm:gap-3 bg-transparent p-2"
         >
-          <button
-            type="button"
-            className="block"
-            aria-label="Send chicken emote"
-            onClick={() => {
-              if (disabled || coolingDown) return;
-              onSend("chicken");
-              onOpenChange(false);
-            }}
-          >
-            <MenuBubble>
-              <Chicken />
-            </MenuBubble>
-          </button>
-          <button
-            type="button"
-            className="block"
-            aria-label="Send Perso emote"
-            onClick={() => {
-              if (disabled || coolingDown) return;
-              onSend("perso");
-              onOpenChange(false);
-            }}
-          >
-            <MenuBubble>
-              <Perso />
-            </MenuBubble>
-          </button>
-          {[1].map((slot) => (
+          {emotes.map(({ id, label, Art }) => (
             <button
-              key={slot}
+              key={id}
               type="button"
-              disabled
-              aria-label={`Empty emote slot ${slot}`}
-              className="block opacity-60"
+              className="block"
+              aria-label={label}
+              onClick={() => {
+                if (disabled || coolingDown) return;
+                onSend(id);
+                onOpenChange(false);
+              }}
             >
               <MenuBubble>
-                <span className="absolute inset-0 flex items-center justify-center text-gray-400">
-                  <Lock className="size-5" aria-hidden="true" />
-                </span>
+                <Art />
               </MenuBubble>
             </button>
           ))}
+          <button
+            type="button"
+            disabled
+            aria-label="Empty emote slot 1"
+            className="block opacity-60"
+          >
+            <MenuBubble>
+              <span className="absolute inset-0 flex items-center justify-center text-gray-400">
+                <Lock className="size-5" aria-hidden="true" />
+              </span>
+            </MenuBubble>
+          </button>
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

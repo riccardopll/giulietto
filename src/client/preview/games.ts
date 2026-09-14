@@ -9,7 +9,8 @@ import {
   player,
   tick,
   type Game,
-} from "../../shared/game.ts";
+  findPlayer,
+} from "../../shared/game";
 
 export type PreviewPhase =
   | "lobby"
@@ -73,7 +74,7 @@ export function advancePreview(source: Game): Game {
     bid(game, game.order[game.turn], choices.includes(target) ? target : choices[0], now);
   } else if (game.phase === "playing") {
     const id = game.order[game.turn];
-    play(game, id, game.players.find((p) => p.id === id)!.hand[0], "high", now);
+    play(game, id, findPlayer(game, id)!.hand[0], "high", now);
   } else if (game.phase !== "finished") {
     tick(game, game.deadline);
   }

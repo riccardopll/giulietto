@@ -1,8 +1,7 @@
 import { expect, test as base, type Page, type Route } from "@playwright/test";
-import type { view } from "../../src/shared/game";
+import { findPlayer, type GameView } from "../../src/shared/game";
 
-export type State = ReturnType<typeof view>;
-export type Player = { page: Page; state?: State };
+export type Player = { page: Page; state?: GameView };
 
 export const test = base.extend<{ players: Player[] }>({
   players: async ({ page: hostPage, browser, baseURL, viewport, reducedMotion }, use) => {
@@ -140,7 +139,7 @@ export const test = base.extend<{ players: Player[] }>({
   },
 });
 
-export async function synced(players: Player[], ready: (state: State) => boolean) {
+export async function synced(players: Player[], ready: (state: GameView) => boolean) {
   await expect
     .poll(() => players.every((player) => player.state && ready(player.state)), {
       timeout: 20_000,
@@ -178,8 +177,7 @@ export async function predict(players: Player[], bid: number, keyboard = false) 
   } else await button.click();
   await synced(
     players,
-    (next) =>
-      next.revision > state!.revision && next.players.find((p) => p.id === state!.you)?.bid === bid,
+    (next) => next.revision > state!.revision && findPlayer(next, state!.you)?.bid === bid,
   );
 }
 

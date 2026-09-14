@@ -1,8 +1,8 @@
 import { expect, it } from "vitest";
-import { apply, join } from "../../src/server/protocol.ts";
-import { deal, score, tick, view } from "../../src/shared/game.ts";
-import { tableOrder } from "../../src/client/table-order.ts";
-import { gameFixture, lobbyFixture } from "./helpers.ts";
+import { apply, join } from "../../src/server/protocol";
+import { deal, score, tick, view } from "../../src/shared/game";
+import { tableOrder } from "../../src/client/table-order";
+import { gameFixture, lobbyFixture } from "./helpers";
 
 it("lets a timed-out lobby player join again", () => {
   const game = lobbyFixture();

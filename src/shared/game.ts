@@ -1,7 +1,7 @@
 import { defaultAvatar, type AvatarId } from "./avatars";
-import { GameError } from "./game-error.ts";
+import { GameError } from "./game-error";
 import type { Emote } from "./emotes";
-export type PlayerStats = {
+export type RoundStats = {
   roundsPlayed: number;
   tricksWon: number;
   exactPredictions: number;
@@ -16,7 +16,7 @@ export type Player = {
   bid: number | null;
   taken: number;
   seen: number;
-  stats: PlayerStats;
+  stats: RoundStats;
   eliminatedRound?: number;
   emote?: Emote;
 };
@@ -54,6 +54,7 @@ export type Game = {
   tie: boolean;
 };
 export const TURN_MS = 40000;
+export const TABLE_RETENTION_MS = 86400000;
 export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
 export const MIN_STARTING_LIVES = 1;
@@ -92,6 +93,9 @@ export function player(id: string, name: string, now: number): Player {
     seen: now,
     stats: { roundsPlayed: 0, tricksWon: 0, exactPredictions: 0, predictionError: 0 },
   };
+}
+export function findPlayer<T extends { id: string }>(g: { players: T[] }, id: string) {
+  return g.players.find((p) => p.id === id);
 }
 export function strength(p: Play) {
   return p.card === 31 ? (p.mode === "low" ? 0 : 41) : p.card;
@@ -147,7 +151,7 @@ export function bid(g: Game, id: string, n: number, now: number) {
     throw new GameError("Wait for your bidding turn.");
   if (!Number.isInteger(n) || !legalBids(g).includes(n))
     throw new GameError("That prediction would make the total equal the available tricks.");
-  g.players.find((p) => p.id === id)!.bid = n;
+  findPlayer(g, id)!.bid = n;
   g.turn++;
   if (g.turn === g.order.length) {
     g.phase = "playing";
@@ -157,7 +161,7 @@ export function bid(g: Game, id: string, n: number, now: number) {
 }
 export function play(g: Game, id: string, card: number, mode: unknown, now: number) {
   if (g.phase !== "playing" || g.order[g.turn] !== id) throw new GameError("Wait for your turn.");
-  const p = g.players.find((p) => p.id === id)!;
+  const p = findPlayer(g, id)!;
   if (!p.hand.includes(card)) throw new GameError("That card is not in your hand.");
   if (card === 31 && mode !== "high" && mode !== "low")
     throw new GameError("Choose high or low for the Ace of Coins.");
@@ -165,7 +169,7 @@ export function play(g: Game, id: string, card: number, mode: unknown, now: numb
   g.trick.push({ player: id, card, ...(card === 31 ? { mode: mode as "high" | "low" } : {}) });
   if (g.trick.length === g.order.length) {
     const winning = g.trick.reduce((a, b) => (strength(a) > strength(b) ? a : b));
-    const winner = g.players.find((p) => p.id === winning.player)!;
+    const winner = findPlayer(g, winning.player)!;
     winner.taken++;
     g.lastWinner = winner.id;
     g.phase = "trick";
@@ -177,7 +181,7 @@ export function play(g: Game, id: string, card: number, mode: unknown, now: numb
 }
 export function score(g: Game, now: number) {
   g.results = g.order.map((id) => {
-    const p = g.players.find((p) => p.id === id)!;
+    const p = findPlayer(g, id)!;
     const lost = Math.abs(p.taken - p.bid!);
     p.stats.roundsPlayed++;
     p.stats.tricksWon += p.taken;
@@ -194,7 +198,7 @@ export function score(g: Game, now: number) {
       delete p.eliminatedRound;
     }
     for (const r of g.results) {
-      r.lives = g.players.find((p) => p.id === r.id)!.lives;
+      r.lives = findPlayer(g, r.id)!.lives;
     }
     alive = g.players.filter((p) => p.lives > 0);
     g.tie = true;
@@ -224,10 +228,10 @@ export function tick(g: Game, now: number, connected?: ReadonlySet<string>) {
     bid(g, g.order[g.turn], legalBids(g)[0], now);
   } else if (g.phase === "playing") {
     const id = g.order[g.turn];
-    const p = g.players.find((p) => p.id === id)!;
+    const p = findPlayer(g, id)!;
     play(g, id, p.hand[0], "high", now);
   } else if (g.phase === "trick") {
-    if (g.players.find((p) => p.id === g.order[0])!.hand.length === 0) score(g, now);
+    if (findPlayer(g, g.order[0])!.hand.length === 0) score(g, now);
     else {
       g.phase = "playing";
       g.turn = g.order.indexOf(g.lastWinner!);
@@ -237,7 +241,7 @@ export function tick(g: Game, now: number, connected?: ReadonlySet<string>) {
   } else if (g.phase === "results") deal(g, now);
 }
 export function view(g: Game, id: string, connected?: ReadonlySet<string>) {
-  const me = g.players.find((p) => p.id === id);
+  const me = findPlayer(g, id);
   const spectator = g.spectators?.find((p) => p.id === id);
   if (!me && !spectator) throw new GameError("You are no longer at this table. Join again.");
   const active = !!me && g.order.includes(id);
@@ -263,3 +267,4 @@ export function view(g: Game, id: string, connected?: ReadonlySet<string>) {
     serverTime: Date.now(),
   };
 }
+export type GameView = ReturnType<typeof view>;

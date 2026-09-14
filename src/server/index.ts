@@ -1,3 +1,4 @@
+import { ENTRY_ACTIONS } from "../shared/actions";
 import { ensureProfile, saveProfile } from "./player-profile";
 import { playerStats } from "./player-stats";
 import type { Env } from "./env";
@@ -73,7 +74,7 @@ export default {
             headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
           });
         body = command(value);
-        if (["create", "match", "join"].includes(body.action))
+        if (ENTRY_ACTIONS.includes(body.action))
           Object.assign(body, await ensureProfile(env.DB, id, body.name));
       }
       const headers = new Headers({ "x-player-id": id });

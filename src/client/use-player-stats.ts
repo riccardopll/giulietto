@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Profile, StatsResponse } from "@/shared/player-stats";
+import type { Profile, StatsResponse } from "../shared/player-stats";
 export function usePlayerStats(
   token: string,
   active: boolean,

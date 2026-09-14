@@ -1,9 +1,8 @@
-import type { view } from "../shared/game";
+import type { GameView } from "../shared/game";
 import { GameRequestError, requestGame } from "./game-request";
-type State = ReturnType<typeof view>;
 type Pending = {
   message: string;
-  resolve: (state: State) => void;
+  resolve: (state: GameView) => void;
   reject: (error: Error) => void;
   timeout: ReturnType<typeof setTimeout>;
 };
@@ -24,7 +23,7 @@ export class GameConnection {
     private code: string,
     private token: string,
     private name: string,
-    private accept: (state: State) => void,
+    private accept: (state: GameView) => void,
     private status: (message: string) => void,
   ) {
     this.connect();
@@ -118,7 +117,7 @@ export class GameConnection {
     if (this.stopped) return Promise.reject(new Error(this.closedReason));
     const commandId = crypto.randomUUID();
     const message = JSON.stringify({ ...extra, action, commandId });
-    return new Promise<State>((resolve, reject) => {
+    return new Promise<GameView>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pending.delete(commandId);
         reject(new Error("Connection interrupted. Check the table state before trying again."));

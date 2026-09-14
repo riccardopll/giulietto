@@ -1,4 +1,4 @@
-import { legalBids, TURN_MS, type Game } from "../shared/game.ts";
+import { legalBids, TURN_MS, type Game, findPlayer } from "../shared/game";
 
 export type EventSource = { source: "player" | "timeout" | "system"; commandId?: string };
 export type GameEvent = {
@@ -53,7 +53,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
   ) {
     const id = before.order[before.turn];
     add("bid", id, {
-      bid: after.players.find((p) => p.id === id)!.bid,
+      bid: findPlayer(after, id)!.bid,
       elapsedMs,
       position: before.turn + 1,
       legalBids: legalBids(before),
@@ -67,7 +67,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
       mode: move.mode ?? null,
       trick,
       position: after.trick.length,
-      handBefore: before.players.find((p) => p.id === move.player)!.hand,
+      handBefore: findPlayer(before, move.player)!.hand,
     });
     if (after.phase === "trick") add("trick_won", after.lastWinner, { trick, plays: after.trick });
   }

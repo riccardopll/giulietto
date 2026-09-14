@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { EMOTE_DURATION_MS } from "@/shared/emotes";
+import { EMOTE_DURATION_MS } from "../../shared/emotes";
 import { Bubble } from "./bubble";
 
 const digits = [

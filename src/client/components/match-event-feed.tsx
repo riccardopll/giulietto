@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Trophy } from "lucide-react";
-import type { view } from "../../shared/game";
+import type { GameView } from "../../shared/game";
 import { matchEvents, type MatchEvent } from "../match-events";
 import { PlayingCard, cardLabel } from "./playing-card";
 
-type State = ReturnType<typeof view>;
 type VisibleEvent = MatchEvent & { expiresAt: number };
 const EVENT_DURATION = 5000;
 
@@ -17,8 +16,8 @@ function description(event: MatchEvent, you: string) {
   return `${name} ${action} ${cardLabel(event.card)}${event.mode ? `, ${event.mode}` : ""}`;
 }
 
-export function MatchEventFeed({ game }: { game: State }) {
-  const previous = useRef<State | null>(null);
+export function MatchEventFeed({ game }: { game: GameView }) {
+  const previous = useRef<GameView | null>(null);
   const [events, setEvents] = useState<VisibleEvent[]>([]);
 
   useEffect(() => {

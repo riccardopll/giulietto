@@ -1,7 +1,7 @@
 import type { Game } from "../shared/game";
 
 /** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
-export function historyStatements(db: D1Database, g: Game, recording: { eventCount: number }) {
+export function historyStatements(db: D1Database, g: Game, eventCount: number) {
   const guard = "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=?)";
   const uncounted =
     "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=? AND stats_counted=0)";
@@ -34,7 +34,7 @@ export function historyStatements(db: D1Database, g: Game, recording: { eventCou
         g.winner,
         g.round,
         g.revision,
-        recording.eventCount,
+        eventCount,
       ),
     db
       .prepare(`INSERT INTO match_results(match_id,player_id,display_name,outcome,lives,

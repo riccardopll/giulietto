@@ -1,4 +1,4 @@
-import { makeGame, player, type Game } from "../../src/shared/game.ts";
+import { makeGame, player, type Game } from "../../src/shared/game";
 
 export function lobbyFixture(people = 3): Game {
   const players = Array.from({ length: people }, (_, i) => player(`p${i}`, `bot_${i + 1}`, 100));

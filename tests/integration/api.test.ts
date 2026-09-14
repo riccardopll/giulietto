@@ -1,5 +1,6 @@
+import { findPlayer, type GameView } from "../../src/shared/game";
 import { expect } from "vitest";
-import { guest, test, type State } from "./worker";
+import { guest, test } from "./worker";
 
 test("public matchmaking fills a lobby that waits for its host to start", async ({ api }) => {
   const players = Array.from({ length: 6 }, (_, index) => guest(index + 1));
@@ -11,7 +12,7 @@ test("public matchmaking fills a lobby that waits for its host to start", async 
   expect(codes).toEqual(new Set([created.code]));
   expect(joined.every((state) => state.phase === "lobby")).toBe(true);
   const response = await api.get(players[0], created.code);
-  const state = (await response.json()) as State;
+  const state = (await response.json()) as GameView;
   expect(state.phase).toBe("lobby");
   expect(state.players).toHaveLength(6);
   expect(new Set(state.players.map((player) => player.id)).size).toBe(6);
@@ -104,7 +105,7 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
 
   for (const socket of sockets) {
     const state = socket.latest()!;
-    const own = state.players.find((player) => player.id === state.you)!;
+    const own = findPlayer(state, state.you)!;
     const opponent = state.players.find((player) => player.id !== state.you)!;
     expect(own.hand).toHaveLength(6);
     expect(own.hand.every((card) => typeof card === "number")).toBe(true);
@@ -135,13 +136,13 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
     .toBe(true);
   const playing = sockets[0].latest()!;
   const current = byId.get(playing.order[playing.turn])!;
-  const currentState = current.latest()!;
-  const card = currentState.players.find((player) => player.id === currentState.you)!.hand[0];
+  const currentGameView = current.latest()!;
+  const card = findPlayer(currentGameView, currentGameView.you)!.hand[0];
   expect((await current.command({ action: "play", card, mode: "high" })).type).toBe("ack");
   for (const socket of sockets) {
     await expect
       .poll(() => socket.latest()?.trick)
-      .toEqual([{ player: currentState.you, card, ...(card === 31 ? { mode: "high" } : {}) }]);
+      .toEqual([{ player: currentGameView.you, card, ...(card === 31 ? { mode: "high" } : {}) }]);
   }
 });
 
@@ -311,7 +312,7 @@ test("quitting a started game preserves the seat and rejoining restores play", a
   const resumed = await api.state(first, { action: "join", code });
   expect(resumed.spectating).toBe(false);
   expect(resumed.players).toHaveLength(2);
-  expect(resumed.players.find((p) => p.id === resumed.you)).toEqual({
+  expect(findPlayer(resumed, resumed.you)).toEqual({
     ...own,
     seen: expect.any(Number),
     connected: false,

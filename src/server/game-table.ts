@@ -1,13 +1,23 @@
+import { TABLE_ACTIONS } from "../shared/actions";
 import { isAvatar } from "../shared/avatars";
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
-import { makeGame, player, tick, view, SPECTATOR_RETENTION_MS, type Game } from "../shared/game";
+import {
+  makeGame,
+  player,
+  tick,
+  view,
+  SPECTATOR_RETENTION_MS,
+  TABLE_RETENTION_MS,
+  type Game,
+  findPlayer,
+} from "../shared/game";
 import { historyStatements } from "./match-history";
 import { eventStatements, gameEvents, type EventSource, type GameEvent } from "./game-events";
 import { apply, command, displayName, failure, type Command } from "./protocol";
 
-type Record = {
+type Room = {
   game: Game;
   updated: number;
   outbox?: Game;
@@ -16,7 +26,6 @@ type Record = {
   deliveredSequence: number;
 };
 type Attachment = { id: string; roomCode: string; connectionId?: string };
-const DAY = 86400000;
 
 export class GameTable extends DurableObject<Env> {
   private rates = new Map<string, { start: number; count: number }>();
@@ -34,7 +43,7 @@ export class GameTable extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   private read() {
-    return this.ctx.storage.kv.get("room") as Record | undefined;
+    return this.ctx.storage.kv.get("room") as Room | undefined;
   }
   private logConnection(
     event: string,
@@ -82,9 +91,9 @@ export class GameTable extends DurableObject<Env> {
   private broadcast(g: Game) {
     for (const ws of this.ctx.getWebSockets()) this.snapshot(ws, g);
   }
-  private due(r: Record) {
+  private due(r: Room) {
     const g = r.game;
-    if (Date.now() - r.updated >= DAY && r.outbox) return Infinity;
+    if (Date.now() - r.updated >= TABLE_RETENTION_MS && r.outbox) return Infinity;
     const connected = this.connected();
     return Math.min(
       ...(g.phase === "lobby" ? g.players : [])
@@ -94,22 +103,22 @@ export class GameTable extends DurableObject<Env> {
         .filter((p) => !connected.has(p.id))
         .map((p) => p.seen + SPECTATOR_RETENTION_MS),
       g.deadline || Infinity,
-      r.updated + DAY,
+      r.updated + TABLE_RETENTION_MS,
     );
   }
-  private async schedule(r: Record) {
+  private async schedule(r: Room) {
     await this.ctx.storage.setAlarm(
       Math.max(Date.now() + 1, Math.min(this.due(r), r.retryAt ?? Infinity)),
     );
   }
   private async save(
-    before: Record,
+    before: Room,
     g: Game,
     receipt?: { id: string; commandId: string },
     origin?: EventSource,
   ) {
     g.revision = before.game.revision + 1;
-    const r: Record = { ...before, game: g, updated: Date.now() };
+    const r: Room = { ...before, game: g, updated: Date.now() };
     const events = gameEvents(
       before.game,
       g,
@@ -149,7 +158,7 @@ export class GameTable extends DurableObject<Env> {
     this.broadcast(g);
     return r;
   }
-  private async advance(r: Record) {
+  private async advance(r: Room) {
     const g = structuredClone(r.game);
     const now = Date.now();
     // Connections survive hibernation. Open lobby seats should not time out while waiting.
@@ -170,11 +179,11 @@ export class GameTable extends DurableObject<Env> {
     if (this.ctx.storage.kv.get("expired"))
       throw new GameError("Table not found or expired. Check the invite code.");
     const r = this.read();
-    if (!r || Date.now() - r.updated >= DAY)
+    if (!r || Date.now() - r.updated >= TABLE_RETENTION_MS)
       throw new GameError("Table not found or expired. Check the invite code.");
     return r;
   }
-  private async execute(r: Record, id: string, b: Command) {
+  private async execute(r: Room, id: string, b: Command) {
     const duplicate = this.ctx.storage.sql
       .exec("SELECT 1 FROM receipts WHERE player=? AND command=?", id, b.commandId)
       .toArray().length;
@@ -183,7 +192,7 @@ export class GameTable extends DurableObject<Env> {
       apply(g, id, b, Date.now());
       if (b.action === "rename") {
         await this.env.DB.prepare("UPDATE players SET display_name=? WHERE id=?")
-          .bind(g.players.find((p) => p.id === id)!.name, id)
+          .bind(findPlayer(g, id)!.name, id)
           .run();
       }
       r = await this.save(r, g, { id, commandId: b.commandId });
@@ -296,8 +305,7 @@ export class GameTable extends DurableObject<Env> {
         const b = command(value);
         commandId = b.commandId;
         action = b.action;
-        if (!["rename", "settings", "start", "bid", "play", "emote", "leave"].includes(b.action))
-          throw new GameError("Invalid room command.");
+        if (!TABLE_ACTIONS.includes(b.action)) throw new GameError("Invalid room command.");
         const r = this.read();
         if (!r) throw new GameError("Table expired.");
         const { state, duplicate } = await this.execute(await this.advance(r), id, b);
@@ -343,7 +351,7 @@ export class GameTable extends DurableObject<Env> {
       const { id } = ws.deserializeAttachment() as Attachment;
       const p =
         r.game.phase === "lobby"
-          ? r.game.players.find((p) => p.id === id)
+          ? findPlayer(r.game, id)
           : r.game.spectators?.find((p) => p.id === id);
       if (p && !this.connected().has(id)) {
         p.seen = Date.now();
@@ -365,7 +373,7 @@ export class GameTable extends DurableObject<Env> {
       let r = this.read();
       if (!r) return;
       if (
-        Date.now() - r.updated >= DAY &&
+        Date.now() - r.updated >= TABLE_RETENTION_MS &&
         !r.outbox &&
         ["lobby", "finished"].includes(r.game.phase)
       ) {
@@ -404,11 +412,7 @@ export class GameTable extends DurableObject<Env> {
     try {
       await this.env.DB.batch([
         ...eventStatements(this.env.DB, pending.game, pending.events),
-        ...(pending.last
-          ? historyStatements(this.env.DB, pending.game, {
-              eventCount: pending.sequence,
-            })
-          : []),
+        ...(pending.last ? historyStatements(this.env.DB, pending.game, pending.sequence) : []),
       ]);
       await this.ctx.blockConcurrencyWhile(async () => {
         const r = this.read();

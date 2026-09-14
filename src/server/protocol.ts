@@ -1,3 +1,4 @@
+import { ENTRY_ACTIONS, TABLE_ACTIONS } from "../shared/actions";
 import { isAvatar } from "../shared/avatars";
 import { sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
@@ -10,6 +11,7 @@ import {
   MIN_STARTING_LIVES,
   MAX_STARTING_LIVES,
   type Game,
+  findPlayer,
 } from "../shared/game";
 
 export type Command = Record<string, unknown> & { action: string; commandId: string };
@@ -17,20 +19,7 @@ export function command(value: unknown): Command {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new GameError("Invalid request.");
   const b = value as Record<string, unknown>;
-  if (
-    ![
-      "create",
-      "match",
-      "join",
-      "rename",
-      "settings",
-      "start",
-      "bid",
-      "play",
-      "emote",
-      "leave",
-    ].includes(String(b.action))
-  )
+  if (![...ENTRY_ACTIONS, ...TABLE_ACTIONS].includes(String(b.action)))
     throw new GameError("Unknown action.");
   if (typeof b.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.commandId))
     throw new GameError("Invalid command ID.");
@@ -39,7 +28,7 @@ export function command(value: unknown): Command {
   return b as Command;
 }
 export function join(g: Game, id: string, name: string, now: number, matchmaking = false) {
-  const seated = g.players.find((p) => p.id === id);
+  const seated = findPlayer(g, id);
   if (matchmaking && g.phase !== "lobby" && !seated)
     throw new GameError("This table is no longer available.");
   const existing = seated ?? g.spectators?.find((p) => p.id === id);
@@ -59,7 +48,7 @@ export function join(g: Game, id: string, name: string, now: number, matchmaking
 export function apply(g: Game, id: string, b: Command, now: number) {
   if (b.action === "join") {
     join(g, id, displayName(b.name), now, b.matchmaking === true);
-    const seated = g.players.find((p) => p.id === id);
+    const seated = findPlayer(g, id);
     if (seated && isAvatar(b.avatar)) seated.avatar = b.avatar;
     if (seated && g.phase === "lobby") seated.name = displayName(b.name);
     return;
@@ -70,7 +59,7 @@ export function apply(g: Game, id: string, b: Command, now: number) {
     g.spectators = g.spectators!.filter((p) => p.id !== id);
     return;
   }
-  const p = g.players.find((p) => p.id === id);
+  const p = findPlayer(g, id);
   if (!p) throw new GameError("Join this table first.");
   p.seen = now;
   if (b.action === "rename") {
@@ -105,12 +94,10 @@ export function apply(g: Game, id: string, b: Command, now: number) {
     if (g.count !== 1 && (typeof b.card !== "number" || !Number.isInteger(b.card)))
       throw new GameError("Choose a valid card.");
     play(g, id, g.count === 1 ? p.hand[0] : (b.card as number), b.mode, now);
-  } else if (b.action === "leave") {
-    if (g.phase === "lobby") {
-      g.players = g.players.filter((p) => p.id !== id);
-      if (g.host === id) g.host = g.players[0]?.id ?? "";
-    }
-  } else throw new GameError("Unknown action.");
+  } else if (b.action === "leave" && g.phase === "lobby") {
+    g.players = g.players.filter((p) => p.id !== id);
+    if (g.host === id) g.host = g.players[0]?.id ?? "";
+  }
 }
 export function displayName(value: unknown) {
   const name = typeof value === "string" ? value.trim().slice(0, 20) : "Guest";

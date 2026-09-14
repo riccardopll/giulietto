@@ -1,25 +1,43 @@
+import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
-import type { view } from "../../shared/game";
+import { findPlayer, type GameView } from "../../shared/game";
 import { cn, toRoman } from "../utils";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "./ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 
-type State = ReturnType<typeof view>;
 const cellClass = "px-1 py-3 text-center whitespace-normal wrap-anywhere sm:px-2";
+
+/** Seconds until the deadline on the server clock; frozen previews read the snapshot only. */
+function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
+  const [clock, setClock] = useState({ deadline, serverTime, elapsed: 0 });
+  if (clock.deadline !== deadline || clock.serverTime !== serverTime)
+    setClock({ deadline, serverTime, elapsed: 0 });
+  useEffect(() => {
+    if (frozen) return;
+    const received = Date.now();
+    const timer = setInterval(
+      () => setClock((current) => ({ ...current, elapsed: Date.now() - received })),
+      500,
+    );
+    return () => clearInterval(timer);
+  }, [frozen, deadline, serverTime]);
+  return Math.max(0, Math.ceil((clock.deadline - clock.serverTime - clock.elapsed) / 1000));
+}
 
 export function ResultsPanel({
   game,
-  seconds,
+  preview,
   onReset,
 }: {
-  game: State;
-  seconds: number;
+  game: GameView;
+  preview: boolean;
   onReset: () => void;
 }) {
+  const seconds = useCountdown(game, preview);
   const finished = game.phase === "finished";
-  const winner = finished ? game.players.find((player) => player.id === game.winner) : undefined;
+  const winner = finished && game.winner ? findPlayer(game, game.winner) : undefined;
   if (winner) return <WinnerPodium game={game} winner={winner} onReset={onReset} />;
   return (
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center sm:p-6">
@@ -77,17 +95,14 @@ export function ResultsPanel({
                   <TableCell className={cn(cellClass, "pr-4 sm:pr-8")}>
                     <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
                       <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
-                      <span
-                        className={cn(
-                          "col-start-3 justify-self-start text-xs whitespace-nowrap tabular-nums",
-                          result?.lost
-                            ? "rounded-md bg-destructive/10 px-1.5 py-0.5 font-semibold text-destructive"
-                            : "text-primary",
-                        )}
-                        aria-label={result ? `${result.lost} lives lost` : "No round result"}
-                      >
-                        {result ? (result.lost ? `−${result.lost}` : null) : "–"}
-                      </span>
+                      {!!result?.lost && (
+                        <span
+                          className="col-start-3 justify-self-start rounded-md bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-destructive tabular-nums"
+                          aria-label={`${result.lost} lives lost`}
+                        >
+                          −{result.lost}
+                        </span>
+                      )}
                     </div>
                   </TableCell>
                 </TableRow>

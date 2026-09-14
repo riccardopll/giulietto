@@ -1,8 +1,6 @@
-import type { view } from "../shared/game.ts";
+import type { GameView } from "../shared/game";
 
-type State = ReturnType<typeof view>;
-
-export function tableOrder(game: State) {
+export function tableOrder(game: GameView) {
   const viewer = Math.max(
     0,
     game.players.findIndex((p) => p.id === game.you),

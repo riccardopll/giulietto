@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { tableOrder } from "../../src/client/table-order.ts";
-import { view } from "../../src/shared/game.ts";
-import { gameFixture } from "./helpers.ts";
+import { tableOrder } from "../../src/client/table-order";
+import { view } from "../../src/shared/game";
+import { gameFixture } from "./helpers";
 
 describe("table order", () => {
   it("rotates clockwise seats around each viewer and retains inactive seats", () => {

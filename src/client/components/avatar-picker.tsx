@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { avatars, type AvatarId } from "@/shared/avatars";
+import { avatars, type AvatarId } from "../../shared/avatars";
 import { Avatar } from "./avatar";
 
 export function AvatarPicker({
