@@ -4,7 +4,7 @@ type Pending = {
   message: string;
   resolve: (state: GameView) => void;
   reject: (error: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
+  timeout: number;
 };
 
 /** Retries keep the same command ID; the room acknowledges each mutation only once. */
@@ -12,8 +12,8 @@ export class GameConnection {
   private socket?: WebSocket;
   private stopped = false;
   private attempt = 0;
-  private retry?: ReturnType<typeof setTimeout>;
-  private heartbeat?: ReturnType<typeof setInterval>;
+  private retry?: number;
+  private heartbeat?: number;
   private joining?: AbortController;
   private synced = false;
   private closedReason = "Connection closed.";
