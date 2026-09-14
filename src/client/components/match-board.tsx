@@ -32,6 +32,7 @@ export function MatchBoard({
   const [emoteMenuOpen, setEmoteMenuOpen] = useState(false);
   const seating = tableOrder(game);
   const me = game.players.find((p) => p.id === game.you);
+  const handPlayer = game.players.find((p) => p.id === seating.seats[0]);
   const active = !!me && me.lives > 0;
   const myTurn = seating.current === game.you && active;
   const canPlay = myTurn && game.phase === "playing" && !busy;
@@ -123,6 +124,7 @@ export function MatchBoard({
           player={player}
           number={number}
           you={id === game.you}
+          handInTray={id === seating.seats[0]}
           current={seating.current === id}
           activeTurn={game.phase === "playing" && seating.current === id && player.lives > 0}
           deadline={game.deadline}
@@ -220,7 +222,7 @@ export function MatchBoard({
       <div className="@container/hand relative mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[2rem_minmax(0,1fr)_2rem] items-center pt-2">
         <section
           className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] @min-2xl/board:[--hand-card-limit:6rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
-          style={{ "--hand-count": me?.hand.length ?? 0 } as CSSProperties}
+          style={{ "--hand-count": handPlayer?.hand.length ?? 0 } as CSSProperties}
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
           <div
@@ -231,33 +233,29 @@ export function MatchBoard({
             }
             data-active-turn={(canPlay && !!me?.hand.length) || undefined}
           >
-            {game.spectating && (
-              <p className="text-sm text-muted-foreground">You are spectating.</p>
-            )}
-            {!game.spectating &&
-              me?.hand.map((card, i) => {
-                const middle = (me.hand.length - 1) / 2;
-                const position = middle ? (i - middle) / middle : 0;
-                return (
-                  <div
-                    className="hand-card relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
-                    key={card ?? i}
-                    style={
-                      {
-                        "--hand-angle": `${position * 3}deg`,
-                        "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
-                      } as CSSProperties
-                    }
-                  >
-                    <PlayingCard
-                      card={card}
-                      disabled={!canPlay}
-                      pending={pendingCard === (card ?? -1)}
-                      onClick={() => onPlay(card)}
-                    />
-                  </div>
-                );
-              })}
+            {handPlayer?.hand.map((card, i) => {
+              const middle = (handPlayer.hand.length - 1) / 2;
+              const position = middle ? (i - middle) / middle : 0;
+              return (
+                <div
+                  className="hand-card relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                  key={card ?? i}
+                  style={
+                    {
+                      "--hand-angle": `${position * 3}deg`,
+                      "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
+                    } as CSSProperties
+                  }
+                >
+                  <PlayingCard
+                    card={game.spectating ? null : card}
+                    disabled={!canPlay}
+                    pending={pendingCard === (card ?? -1)}
+                    onClick={game.spectating ? undefined : () => onPlay(card)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </section>
       </div>

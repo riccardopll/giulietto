@@ -73,9 +73,7 @@ test("three players complete a game, including round results and elimination", a
     }
     if (round === 1) {
       await synced(players, (state) => state.round === 2 && state.phase === "bidding");
-      await expect(players[2].page.getByRole("region", { name: "Spectator mode" })).toContainText(
-        "You are spectating.",
-      );
+      await expect(players[2].page.getByRole("region", { name: "Spectator mode" })).toBeVisible();
       await expect(
         players[2].page
           .getByRole("button", { name: /^Predict / })

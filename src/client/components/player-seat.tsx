@@ -14,6 +14,7 @@ export function PlayerSeat({
   player,
   number,
   you,
+  handInTray,
   current,
   activeTurn,
   deadline,
@@ -26,6 +27,7 @@ export function PlayerSeat({
   player: SeatPlayer;
   number: number;
   you: boolean;
+  handInTray: boolean;
   current: boolean;
   activeTurn: boolean;
   deadline: number;
@@ -159,7 +161,7 @@ export function PlayerSeat({
           </div>
         </div>
       </div>
-      {!you && (
+      {!handInTray && (
         <div
           className={cn(
             "seat-hand relative h-full w-full",
