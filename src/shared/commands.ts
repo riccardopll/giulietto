@@ -1,11 +1,9 @@
 import type { AvatarId } from "./avatars";
 import type { Emote } from "./emotes";
 
-/** Commands that enter a table over HTTP. */
 export type EntryCommand =
   | { action: "create" | "match"; name?: string; avatar?: AvatarId }
   | { action: "join"; name?: string; avatar?: AvatarId; matchmaking?: boolean };
-/** Commands a seated player sends to their table. */
 export type TableCommand =
   | { action: "rename"; name: string }
   | { action: "settings"; startingLives: number }

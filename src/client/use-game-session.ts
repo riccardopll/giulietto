@@ -24,7 +24,6 @@ function showError(message: string) {
   else toast.dismiss("game-error");
 }
 
-/** Owns the table lifecycle: guest session, transport, retries, history entries, and errors. */
 export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const isPreview = !!preview;
   const [session] = useState(() =>

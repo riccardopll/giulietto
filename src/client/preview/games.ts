@@ -43,7 +43,6 @@ export function normalizePreview(options: PreviewOptions): Required<PreviewOptio
     { length: people },
     (_, index) => options.seatStates?.[index] ?? "active",
   );
-  // A round needs at least two active players.
   let active = seatStates.filter((state) => state === "active").length;
   for (let index = 0; active < 2; index++) {
     if (seatStates[index] !== "active") {
