@@ -5,7 +5,7 @@ import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
 import {
   makeGame,
-  player,
+  makePlayer,
   tick,
   view,
   SPECTATOR_RETENTION_MS,
@@ -77,61 +77,61 @@ export class GameTable extends DurableObject<Env> {
         .map((ws) => (ws.deserializeAttachment() as Attachment).id),
     );
   }
-  private view(g: Game, id: string) {
-    return view(g, id, this.connected());
+  private view(game: Game, id: string) {
+    return view(game, id, this.connected());
   }
-  private snapshot(ws: WebSocket, g: Game) {
+  private snapshot(ws: WebSocket, game: Game) {
     const { id } = ws.deserializeAttachment() as Attachment;
     try {
-      this.send(ws, { type: "state", state: this.view(g, id) });
+      this.send(ws, { type: "state", state: this.view(game, id) });
     } catch {
       /* A leave acknowledgement is sent before the client closes its socket. */
     }
   }
-  private broadcast(g: Game) {
-    for (const ws of this.ctx.getWebSockets()) this.snapshot(ws, g);
+  private broadcast(game: Game) {
+    for (const ws of this.ctx.getWebSockets()) this.snapshot(ws, game);
   }
-  private due(r: Room) {
-    const g = r.game;
-    if (Date.now() - r.updated >= TABLE_RETENTION_MS && r.outbox) return Infinity;
+  private due(room: Room) {
+    const game = room.game;
+    if (Date.now() - room.updated >= TABLE_RETENTION_MS && room.outbox) return Infinity;
     const connected = this.connected();
     return Math.min(
-      ...(g.phase === "lobby" ? g.players : [])
-        .filter((p) => !connected.has(p.id))
-        .map((p) => p.seen + 120000),
-      ...(g.spectators ?? [])
-        .filter((p) => !connected.has(p.id))
-        .map((p) => p.seen + SPECTATOR_RETENTION_MS),
-      g.deadline || Infinity,
-      r.updated + TABLE_RETENTION_MS,
+      ...(game.phase === "lobby" ? game.players : [])
+        .filter((player) => !connected.has(player.id))
+        .map((player) => player.seen + 120000),
+      ...(game.spectators ?? [])
+        .filter((spectator) => !connected.has(spectator.id))
+        .map((spectator) => spectator.seen + SPECTATOR_RETENTION_MS),
+      game.deadline || Infinity,
+      room.updated + TABLE_RETENTION_MS,
     );
   }
-  private async schedule(r: Room) {
+  private async schedule(room: Room) {
     await this.ctx.storage.setAlarm(
-      Math.max(Date.now() + 1, Math.min(this.due(r), r.retryAt ?? Infinity)),
+      Math.max(Date.now() + 1, Math.min(this.due(room), room.retryAt ?? Infinity)),
     );
   }
   private async save(
     before: Room,
-    g: Game,
+    game: Game,
     receipt?: { id: string; commandId: string },
     origin?: EventSource,
   ) {
-    g.revision = before.game.revision + 1;
-    const r: Room = { ...before, game: g, updated: Date.now() };
+    game.revision = before.game.revision + 1;
+    const room: Room = { ...before, game, updated: Date.now() };
     const events = gameEvents(
       before.game,
-      g,
+      game,
       origin ?? { source: "player", commandId: receipt?.commandId },
-      r.updated,
+      room.updated,
     );
     if (events.length) {
-      r.outbox = structuredClone(g);
-      r.retryAt = Date.now() + 1;
-      r.failures = 0;
+      room.outbox = structuredClone(game);
+      room.retryAt = Date.now() + 1;
+      room.failures = 0;
     }
     this.ctx.storage.transactionSync(() => {
-      this.ctx.storage.kv.put("room", r);
+      this.ctx.storage.kv.put("room", room);
       for (const event of events)
         this.ctx.storage.sql.exec(
           `INSERT INTO game_events
@@ -154,51 +154,52 @@ export class GameTable extends DurableObject<Env> {
           receipt.commandId,
         );
     });
-    await this.schedule(r);
-    this.broadcast(g);
-    return r;
+    await this.schedule(room);
+    this.broadcast(game);
+    return room;
   }
-  private async advance(r: Room) {
-    const g = structuredClone(r.game);
+  private async advance(room: Room) {
+    const game = structuredClone(room.game);
     const now = Date.now();
     // Connections survive hibernation. Open lobby seats should not time out while waiting.
-    if (g.phase === "lobby") {
+    if (game.phase === "lobby") {
       const ids = new Set(
         this.ctx.getWebSockets().map((ws) => (ws.deserializeAttachment() as Attachment).id),
       );
-      for (const p of g.players) if (ids.has(p.id) && now - p.seen >= 60000) p.seen = now;
+      for (const player of game.players)
+        if (ids.has(player.id) && now - player.seen >= 60000) player.seen = now;
     }
-    tick(g, now, this.connected());
-    return JSON.stringify(g) === JSON.stringify(r.game)
-      ? r
-      : this.save(r, g, undefined, {
-          source: ["bidding", "playing"].includes(r.game.phase) ? "timeout" : "system",
+    tick(game, now, this.connected());
+    return JSON.stringify(game) === JSON.stringify(room.game)
+      ? room
+      : this.save(room, game, undefined, {
+          source: ["bidding", "playing"].includes(room.game.phase) ? "timeout" : "system",
         });
   }
   private load() {
     if (this.ctx.storage.kv.get("expired"))
       throw new GameError("Table not found or expired. Check the invite code.");
-    const r = this.read();
-    if (!r || Date.now() - r.updated >= TABLE_RETENTION_MS)
+    const room = this.read();
+    if (!room || Date.now() - room.updated >= TABLE_RETENTION_MS)
       throw new GameError("Table not found or expired. Check the invite code.");
-    return r;
+    return room;
   }
-  private async execute(r: Room, id: string, b: Command) {
+  private async execute(room: Room, id: string, input: Command) {
     const duplicate = this.ctx.storage.sql
-      .exec("SELECT 1 FROM receipts WHERE player=? AND command=?", id, b.commandId)
+      .exec("SELECT 1 FROM receipts WHERE player=? AND command=?", id, input.commandId)
       .toArray().length;
     if (!duplicate) {
-      const g = structuredClone(r.game);
-      apply(g, id, b, Date.now());
-      if (b.action === "rename") {
+      const game = structuredClone(room.game);
+      apply(game, id, input, Date.now());
+      if (input.action === "rename") {
         await this.env.DB.prepare("UPDATE players SET display_name=? WHERE id=?")
-          .bind(findPlayer(g, id)!.name, id)
+          .bind(findPlayer(game, id)!.name, id)
           .run();
       }
-      r = await this.save(r, g, { id, commandId: b.commandId });
+      room = await this.save(room, game, { id, commandId: input.commandId });
     }
     return {
-      state: b.action === "leave" ? { ok: true } : this.view(r.game, id),
+      state: input.action === "leave" ? { ok: true } : this.view(room.game, id),
       duplicate: !!duplicate,
     };
   }
@@ -210,44 +211,44 @@ export class GameTable extends DurableObject<Env> {
       const attachment: Attachment = { id, roomCode: code };
       try {
         if (url.pathname.endsWith("/create")) {
-          const b = (await req.json()) as Command;
-          let r = this.read();
-          if (r && r.game.host !== id) throw new GameError("Table already exists.");
-          if (!r) {
-            const g = makeGame(
+          const input = (await req.json()) as Command;
+          let room = this.read();
+          if (room && room.game.host !== id) throw new GameError("Table already exists.");
+          if (!room) {
+            const game = makeGame(
               code,
-              player(id, displayName(b.name), Date.now()),
-              b.action === "match",
+              makePlayer(id, displayName(input.name), Date.now()),
+              input.action === "match",
             );
-            if (isAvatar(b.avatar)) g.players[0].avatar = b.avatar;
-            r = { game: g, updated: Date.now(), deliveredSequence: 0 };
-            this.ctx.storage.kv.put("room", r);
-            await this.schedule(r);
+            if (isAvatar(input.avatar)) game.players[0].avatar = input.avatar;
+            room = { game, updated: Date.now(), deliveredSequence: 0 };
+            this.ctx.storage.kv.put("room", room);
+            await this.schedule(room);
           }
-          return Response.json(this.view(r.game, id));
+          return Response.json(this.view(room.game, id));
         }
-        let r = this.load();
+        let room = this.load();
         // Membership must be checked before reads can advance or broadcast a room.
         if (
           req.method === "GET" &&
-          !r.game.players.some((p) => p.id === id) &&
-          !r.game.spectators?.some((p) => p.id === id)
+          !findPlayer(room.game, id) &&
+          !room.game.spectators?.some((spectator) => spectator.id === id)
         )
           throw new GameError("Join this table first.");
-        r = await this.advance(r);
+        room = await this.advance(room);
         if (url.pathname.endsWith("/socket")) {
-          this.view(r.game, id);
+          this.view(room.game, id);
           const sockets = this.ctx.getWebSockets(id);
           if (sockets.length >= 3) sockets[0].close(4002, "Connected in another tab.");
           const { 0: client, 1: server } = new WebSocketPair();
           this.ctx.acceptWebSocket(server, [id]);
           attachment.connectionId = crypto.randomUUID();
           server.serializeAttachment(attachment);
-          this.broadcast(r.game);
-          await this.schedule(r);
+          this.broadcast(room.game);
+          await this.schedule(room);
           this.logConnection("opened", attachment, {
-            matchId: r.game.matchId ?? null,
-            phase: r.game.phase,
+            matchId: room.game.matchId ?? null,
+            phase: room.game.phase,
           });
           return new Response(null, {
             status: 101,
@@ -255,8 +256,8 @@ export class GameTable extends DurableObject<Env> {
             headers: { "Sec-WebSocket-Protocol": "giulietto" },
           });
         }
-        if (req.method === "GET") return Response.json(this.view(r.game, id));
-        const { state } = await this.execute(r, id, command(await req.json()));
+        if (req.method === "GET") return Response.json(this.view(room.game, id));
+        const { state } = await this.execute(room, id, command(await req.json()));
         return Response.json(state);
       } catch (error) {
         const response = failure(error);
@@ -302,13 +303,13 @@ export class GameTable extends DurableObject<Env> {
         } catch {
           throw new GameError("Invalid JSON.");
         }
-        const b = command(value);
-        commandId = b.commandId;
-        action = b.action;
-        if (!TABLE_ACTIONS.includes(b.action)) throw new GameError("Invalid room command.");
-        const r = this.read();
-        if (!r) throw new GameError("Table expired.");
-        const { state, duplicate } = await this.execute(await this.advance(r), id, b);
+        const input = command(value);
+        commandId = input.commandId;
+        action = input.action;
+        if (!TABLE_ACTIONS.includes(input.action)) throw new GameError("Invalid room command.");
+        const room = this.read();
+        if (!room) throw new GameError("Table expired.");
+        const { state, duplicate } = await this.execute(await this.advance(room), id, input);
         this.send(ws, { type: "ack", commandId, state });
         outcome = duplicate ? "duplicate" : "accepted";
       } catch (error) {
@@ -318,16 +319,16 @@ export class GameTable extends DurableObject<Env> {
         reason = body.error;
         this.send(ws, { type: "error", commandId, ...body });
       } finally {
-        const g = this.read()?.game;
+        const game = this.read()?.game;
         console.log({
           message: "websocket_command",
           commandId: commandId ?? null,
           action: action ?? null,
           playerId: playerId ?? null,
           connectionId: (ws.deserializeAttachment() as Attachment).connectionId ?? null,
-          roomCode: g?.code ?? null,
-          matchId: g?.matchId ?? null,
-          revision: g?.revision ?? null,
+          roomCode: game?.code ?? null,
+          matchId: game?.matchId ?? null,
+          revision: game?.revision ?? null,
           outcome,
           ...(reason ? { reason } : {}),
         });
@@ -346,19 +347,19 @@ export class GameTable extends DurableObject<Env> {
   }
   private async disconnected(ws: WebSocket) {
     await this.ctx.blockConcurrencyWhile(async () => {
-      const r = this.read();
-      if (!r) return;
+      const room = this.read();
+      if (!room) return;
       const { id } = ws.deserializeAttachment() as Attachment;
-      const p =
-        r.game.phase === "lobby"
-          ? findPlayer(r.game, id)
-          : r.game.spectators?.find((p) => p.id === id);
-      if (p && !this.connected().has(id)) {
-        p.seen = Date.now();
-        this.ctx.storage.kv.put("room", r);
+      const member =
+        room.game.phase === "lobby"
+          ? findPlayer(room.game, id)
+          : room.game.spectators?.find((spectator) => spectator.id === id);
+      if (member && !this.connected().has(id)) {
+        member.seen = Date.now();
+        this.ctx.storage.kv.put("room", room);
       }
-      this.broadcast(r.game);
-      await this.schedule(r);
+      this.broadcast(room.game);
+      await this.schedule(room);
     });
   }
   async webSocketError(ws: WebSocket, error: unknown) {
@@ -370,33 +371,33 @@ export class GameTable extends DurableObject<Env> {
   }
   async alarm() {
     const pending = await this.ctx.blockConcurrencyWhile(async () => {
-      let r = this.read();
-      if (!r) return;
+      let room = this.read();
+      if (!room) return;
       if (
-        Date.now() - r.updated >= TABLE_RETENTION_MS &&
-        !r.outbox &&
-        ["lobby", "finished"].includes(r.game.phase)
+        Date.now() - room.updated >= TABLE_RETENTION_MS &&
+        !room.outbox &&
+        ["lobby", "finished"].includes(room.game.phase)
       ) {
         for (const ws of this.ctx.getWebSockets()) ws.close(4001, "Table expired.");
         await this.ctx.storage.deleteAll();
         this.ctx.storage.kv.put("expired", true);
         return;
       }
-      r = await this.advance(r);
+      room = await this.advance(room);
       // Retry deadline is persisted before external I/O, including process failure.
       const pending =
-        r.outbox && (r.retryAt ?? 0) <= Date.now() ? structuredClone(r.outbox) : undefined;
+        room.outbox && (room.retryAt ?? 0) <= Date.now() ? structuredClone(room.outbox) : undefined;
       if (pending) {
-        r.failures = (r.failures ?? 0) + 1;
-        r.retryAt = Date.now() + Math.min(300000, 1000 * 2 ** Math.min(r.failures, 9));
-        this.ctx.storage.kv.put("room", r);
+        room.failures = (room.failures ?? 0) + 1;
+        room.retryAt = Date.now() + Math.min(300000, 1000 * 2 ** Math.min(room.failures, 9));
+        this.ctx.storage.kv.put("room", room);
       }
-      await this.schedule(r);
+      await this.schedule(room);
       if (!pending) return;
       const rows = this.ctx.storage.sql
         .exec<GameEvent>(
           "SELECT * FROM game_events WHERE sequence>? AND revision<=? ORDER BY sequence LIMIT 101",
-          r.deliveredSequence,
+          room.deliveredSequence,
           pending.revision,
         )
         .toArray();
@@ -405,7 +406,7 @@ export class GameTable extends DurableObject<Env> {
         game: pending,
         events,
         last: rows.length <= 100,
-        sequence: events.at(-1)?.sequence ?? r.deliveredSequence,
+        sequence: events.at(-1)?.sequence ?? room.deliveredSequence,
       };
     });
     if (!pending) return;
@@ -415,21 +416,21 @@ export class GameTable extends DurableObject<Env> {
         ...(pending.last ? historyStatements(this.env.DB, pending.game, pending.sequence) : []),
       ]);
       await this.ctx.blockConcurrencyWhile(async () => {
-        const r = this.read();
-        if (!r) return;
-        r.deliveredSequence = Math.max(r.deliveredSequence, pending.sequence);
-        if (r.outbox?.revision === pending.game.revision) {
+        const room = this.read();
+        if (!room) return;
+        room.deliveredSequence = Math.max(room.deliveredSequence, pending.sequence);
+        if (room.outbox?.revision === pending.game.revision) {
           if (pending.last) {
-            delete r.outbox;
-            delete r.retryAt;
-            delete r.failures;
+            delete room.outbox;
+            delete room.retryAt;
+            delete room.failures;
           } else {
-            r.retryAt = Date.now() + 1;
-            r.failures = 0;
+            room.retryAt = Date.now() + 1;
+            room.failures = 0;
           }
         }
-        this.ctx.storage.kv.put("room", r);
-        await this.schedule(r);
+        this.ctx.storage.kv.put("room", room);
+        await this.schedule(room);
       });
     } catch (error) {
       console.error("Match history delivery will retry", error);

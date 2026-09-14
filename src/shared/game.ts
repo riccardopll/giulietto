@@ -59,15 +59,15 @@ export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
 export const MIN_STARTING_LIVES = 1;
 export const MAX_STARTING_LIVES = 5;
-export function makeGame(code: string, p: Player, isPublic: boolean): Game {
+export function makeGame(code: string, host: Player, isPublic: boolean): Game {
   return {
     code,
     revision: 0,
     public: isPublic,
-    host: p.id,
+    host: host.id,
     startingLives: DEFAULT_STARTING_LIVES,
     phase: "lobby",
-    players: [p],
+    players: [host],
     order: [],
     round: 0,
     count: 6,
@@ -81,7 +81,7 @@ export function makeGame(code: string, p: Player, isPublic: boolean): Game {
     tie: false,
   };
 }
-export function player(id: string, name: string, now: number): Player {
+export function makePlayer(id: string, name: string, now: number): Player {
   return {
     id,
     name,
@@ -94,176 +94,186 @@ export function player(id: string, name: string, now: number): Player {
     stats: { roundsPlayed: 0, tricksWon: 0, exactPredictions: 0, predictionError: 0 },
   };
 }
-export function findPlayer<T extends { id: string }>(g: { players: T[] }, id: string) {
-  return g.players.find((p) => p.id === id);
+export function findPlayer<T extends { id: string }>(game: { players: T[] }, id: string) {
+  return game.players.find((player) => player.id === id);
 }
-export function strength(p: Play) {
-  return p.card === 31 ? (p.mode === "low" ? 0 : 41) : p.card;
+export function strength(play: Play) {
+  return play.card === 31 ? (play.mode === "low" ? 0 : 41) : play.card;
 }
-function shuffle<T>(a: T[]) {
-  for (let i = a.length - 1; i > 0; i--) {
+function shuffle<T>(items: T[]) {
+  for (let i = items.length - 1; i > 0; i--) {
     const range = i + 1,
       limit = Math.floor(4294967296 / range) * range;
-    let n;
+    let random;
     do {
-      n = crypto.getRandomValues(new Uint32Array(1))[0];
-    } while (n >= limit);
-    const j = n % range;
-    [a[i], a[j]] = [a[j], a[i]];
+      random = crypto.getRandomValues(new Uint32Array(1))[0];
+    } while (random >= limit);
+    const j = random % range;
+    [items[i], items[j]] = [items[j], items[i]];
   }
-  return a;
+  return items;
 }
-export function deal(g: Game, now: number) {
-  if (g.round === 0) {
-    g.matchId = crypto.randomUUID();
-    g.startedAt = now;
-    for (const p of g.players) p.lives = g.startingLives;
-    shuffle(g.players);
+export function deal(game: Game, now: number) {
+  if (game.round === 0) {
+    game.matchId = crypto.randomUUID();
+    game.startedAt = now;
+    for (const player of game.players) player.lives = game.startingLives;
+    shuffle(game.players);
   }
-  g.round++;
-  g.count = 6 - ((g.round - 1) % 6);
-  g.cycle = Math.floor((g.round - 1) / 6) + 1;
-  const active = g.players.filter((p) => p.lives > 0);
-  g.order = active.map((p) => p.id);
-  const offset = (g.round - 1) % active.length;
-  g.order = [...g.order.slice(offset), ...g.order.slice(0, offset)];
+  game.round++;
+  game.count = 6 - ((game.round - 1) % 6);
+  game.cycle = Math.floor((game.round - 1) / 6) + 1;
+  const active = game.players.filter((player) => player.lives > 0);
+  game.order = active.map((player) => player.id);
+  const offset = (game.round - 1) % active.length;
+  game.order = [...game.order.slice(offset), ...game.order.slice(0, offset)];
   const deck = shuffle(Array.from({ length: 40 }, (_, i) => i + 1));
-  for (const p of g.players) {
-    p.hand = active.includes(p) ? deck.splice(0, g.count).sort((a, b) => a - b) : [];
-    p.bid = null;
-    p.taken = 0;
+  for (const player of game.players) {
+    player.hand = active.includes(player) ? deck.splice(0, game.count).sort((a, b) => a - b) : [];
+    player.bid = null;
+    player.taken = 0;
   }
-  g.phase = "bidding";
-  g.turn = 0;
-  g.trick = [];
-  g.results = [];
-  g.tie = false;
-  g.deadline = now + TURN_MS;
+  game.phase = "bidding";
+  game.turn = 0;
+  game.trick = [];
+  game.results = [];
+  game.tie = false;
+  game.deadline = now + TURN_MS;
 }
-export function legalBids(g: Game) {
-  const sum = g.players.reduce((n, p) => n + (p.bid ?? 0), 0);
-  return Array.from({ length: g.count + 1 }, (_, i) => i).filter(
-    (n) => g.turn !== g.order.length - 1 || sum + n !== g.count,
+export function legalBids(game: Game) {
+  const sum = game.players.reduce((total, player) => total + (player.bid ?? 0), 0);
+  return Array.from({ length: game.count + 1 }, (_, i) => i).filter(
+    (option) => game.turn !== game.order.length - 1 || sum + option !== game.count,
   );
 }
-export function bid(g: Game, id: string, n: number, now: number) {
-  if (g.phase !== "bidding" || g.order[g.turn] !== id)
+export function bid(game: Game, id: string, prediction: number, now: number) {
+  if (game.phase !== "bidding" || game.order[game.turn] !== id)
     throw new GameError("Wait for your bidding turn.");
-  if (!Number.isInteger(n) || !legalBids(g).includes(n))
+  if (!Number.isInteger(prediction) || !legalBids(game).includes(prediction))
     throw new GameError("That prediction would make the total equal the available tricks.");
-  findPlayer(g, id)!.bid = n;
-  g.turn++;
-  if (g.turn === g.order.length) {
-    g.phase = "playing";
-    g.turn = 0;
+  findPlayer(game, id)!.bid = prediction;
+  game.turn++;
+  if (game.turn === game.order.length) {
+    game.phase = "playing";
+    game.turn = 0;
   }
-  g.deadline = now + TURN_MS;
+  game.deadline = now + TURN_MS;
 }
-export function play(g: Game, id: string, card: number, mode: unknown, now: number) {
-  if (g.phase !== "playing" || g.order[g.turn] !== id) throw new GameError("Wait for your turn.");
-  const p = findPlayer(g, id)!;
-  if (!p.hand.includes(card)) throw new GameError("That card is not in your hand.");
+export function play(game: Game, id: string, card: number, mode: unknown, now: number) {
+  if (game.phase !== "playing" || game.order[game.turn] !== id)
+    throw new GameError("Wait for your turn.");
+  const player = findPlayer(game, id)!;
+  if (!player.hand.includes(card)) throw new GameError("That card is not in your hand.");
   if (card === 31 && mode !== "high" && mode !== "low")
     throw new GameError("Choose high or low for the Ace of Coins.");
-  p.hand.splice(p.hand.indexOf(card), 1);
-  g.trick.push({ player: id, card, ...(card === 31 ? { mode: mode as "high" | "low" } : {}) });
-  if (g.trick.length === g.order.length) {
-    const winning = g.trick.reduce((a, b) => (strength(a) > strength(b) ? a : b));
-    const winner = findPlayer(g, winning.player)!;
+  player.hand.splice(player.hand.indexOf(card), 1);
+  game.trick.push({ player: id, card, ...(card === 31 ? { mode: mode as "high" | "low" } : {}) });
+  if (game.trick.length === game.order.length) {
+    const winning = game.trick.reduce((best, play) =>
+      strength(best) > strength(play) ? best : play,
+    );
+    const winner = findPlayer(game, winning.player)!;
     winner.taken++;
-    g.lastWinner = winner.id;
-    g.phase = "trick";
-    g.deadline = now + 2600;
+    game.lastWinner = winner.id;
+    game.phase = "trick";
+    game.deadline = now + 2600;
   } else {
-    g.turn = (g.turn + 1) % g.order.length;
-    g.deadline = now + TURN_MS;
+    game.turn = (game.turn + 1) % game.order.length;
+    game.deadline = now + TURN_MS;
   }
 }
-export function score(g: Game, now: number) {
-  g.results = g.order.map((id) => {
-    const p = findPlayer(g, id)!;
-    const lost = Math.abs(p.taken - p.bid!);
-    p.stats.roundsPlayed++;
-    p.stats.tricksWon += p.taken;
-    p.stats.exactPredictions += lost === 0 ? 1 : 0;
-    p.stats.predictionError += lost;
-    p.lives = Math.max(0, p.lives - lost);
-    if (p.lives === 0) p.eliminatedRound = g.round;
-    return { id: p.id, name: p.name, bid: p.bid!, taken: p.taken, lost, lives: p.lives };
+export function score(game: Game, now: number) {
+  game.results = game.order.map((id) => {
+    const player = findPlayer(game, id)!;
+    const lost = Math.abs(player.taken - player.bid!);
+    player.stats.roundsPlayed++;
+    player.stats.tricksWon += player.taken;
+    player.stats.exactPredictions += lost === 0 ? 1 : 0;
+    player.stats.predictionError += lost;
+    player.lives = Math.max(0, player.lives - lost);
+    if (player.lives === 0) player.eliminatedRound = game.round;
+    return {
+      id: player.id,
+      name: player.name,
+      bid: player.bid!,
+      taken: player.taken,
+      lost,
+      lives: player.lives,
+    };
   });
-  let alive = g.players.filter((p) => p.lives > 0);
+  let alive = game.players.filter((player) => player.lives > 0);
   if (!alive.length) {
-    for (const p of g.players) {
-      p.lives = 1;
-      delete p.eliminatedRound;
+    for (const player of game.players) {
+      player.lives = 1;
+      delete player.eliminatedRound;
     }
-    for (const r of g.results) {
-      r.lives = findPlayer(g, r.id)!.lives;
+    for (const result of game.results) {
+      result.lives = findPlayer(game, result.id)!.lives;
     }
-    alive = g.players.filter((p) => p.lives > 0);
-    g.tie = true;
+    alive = game.players.filter((player) => player.lives > 0);
+    game.tie = true;
   }
   if (alive.length <= 1) {
-    g.phase = "finished";
-    g.finishedAt = now;
-    g.winner = alive[0]?.id ?? null;
-    g.deadline = 0;
+    game.phase = "finished";
+    game.finishedAt = now;
+    game.winner = alive[0]?.id ?? null;
+    game.deadline = 0;
   } else {
-    g.phase = "results";
-    g.deadline = now + 12000;
+    game.phase = "results";
+    game.deadline = now + 12000;
   }
 }
-export function tick(g: Game, now: number, connected?: ReadonlySet<string>) {
-  if (g.spectators)
-    g.spectators = g.spectators.filter(
-      (p) => connected?.has(p.id) || now - p.seen < SPECTATOR_RETENTION_MS,
+export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
+  if (game.spectators)
+    game.spectators = game.spectators.filter(
+      (spectator) => connected?.has(spectator.id) || now - spectator.seen < SPECTATOR_RETENTION_MS,
     );
-  if (g.phase === "lobby") {
-    g.players = g.players.filter((p) => now - p.seen < 120000);
-    if (!g.players.some((p) => p.id === g.host)) g.host = g.players[0]?.id ?? "";
+  if (game.phase === "lobby") {
+    game.players = game.players.filter((player) => now - player.seen < 120000);
+    if (!findPlayer(game, game.host)) game.host = game.players[0]?.id ?? "";
     return;
   }
-  if (!g.deadline || now < g.deadline) return;
-  if (g.phase === "bidding") {
-    bid(g, g.order[g.turn], legalBids(g)[0], now);
-  } else if (g.phase === "playing") {
-    const id = g.order[g.turn];
-    const p = findPlayer(g, id)!;
-    play(g, id, p.hand[0], "high", now);
-  } else if (g.phase === "trick") {
-    if (findPlayer(g, g.order[0])!.hand.length === 0) score(g, now);
+  if (!game.deadline || now < game.deadline) return;
+  if (game.phase === "bidding") {
+    bid(game, game.order[game.turn], legalBids(game)[0], now);
+  } else if (game.phase === "playing") {
+    const id = game.order[game.turn];
+    play(game, id, findPlayer(game, id)!.hand[0], "high", now);
+  } else if (game.phase === "trick") {
+    if (findPlayer(game, game.order[0])!.hand.length === 0) score(game, now);
     else {
-      g.phase = "playing";
-      g.turn = g.order.indexOf(g.lastWinner!);
-      g.trick = [];
-      g.deadline = now + TURN_MS;
+      game.phase = "playing";
+      game.turn = game.order.indexOf(game.lastWinner!);
+      game.trick = [];
+      game.deadline = now + TURN_MS;
     }
-  } else if (g.phase === "results") deal(g, now);
+  } else if (game.phase === "results") deal(game, now);
 }
-export function view(g: Game, id: string, connected?: ReadonlySet<string>) {
-  const me = findPlayer(g, id);
-  const spectator = g.spectators?.find((p) => p.id === id);
+export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
+  const me = findPlayer(game, id);
+  const spectator = game.spectators?.find((spectator) => spectator.id === id);
   if (!me && !spectator) throw new GameError("You are no longer at this table. Join again.");
-  const active = !!me && g.order.includes(id);
-  const blind = g.count === 1 && ["bidding", "playing", "trick"].includes(g.phase);
+  const active = !!me && game.order.includes(id);
+  const blind = game.count === 1 && ["bidding", "playing", "trick"].includes(game.phase);
   return {
-    ...g,
+    ...game,
     you: id,
     viewerName: (me ?? spectator)!.name,
     spectatorCount: [
-      ...(g.spectators ?? []),
-      ...g.players.filter((p) => g.phase !== "lobby" && p.lives <= 0),
-    ].filter((p) => !connected || connected.has(p.id)).length,
-    spectating: !me || (g.phase !== "lobby" && me.lives <= 0),
-    canChooseAce: active && g.phase === "playing" && g.order[g.turn] === id && me.hand.includes(31),
-    players: g.players.map((p) => ({
-      ...p,
-      connected: connected?.has(p.id) ?? true,
-      hand: p.hand.map((card) =>
-        active && ((!blind && p.id === id) || (blind && p.id !== id)) ? card : null,
+      ...(game.spectators ?? []),
+      ...game.players.filter((player) => game.phase !== "lobby" && player.lives <= 0),
+    ].filter((watcher) => !connected || connected.has(watcher.id)).length,
+    spectating: !me || (game.phase !== "lobby" && me.lives <= 0),
+    canChooseAce:
+      active && game.phase === "playing" && game.order[game.turn] === id && me.hand.includes(31),
+    players: game.players.map((player) => ({
+      ...player,
+      connected: connected?.has(player.id) ?? true,
+      hand: player.hand.map((card) =>
+        active && ((!blind && player.id === id) || (blind && player.id !== id)) ? card : null,
       ),
     })),
-    legalBids: g.phase === "bidding" && g.order[g.turn] === id ? legalBids(g) : [],
+    legalBids: game.phase === "bidding" && game.order[game.turn] === id ? legalBids(game) : [],
     serverTime: Date.now(),
   };
 }
