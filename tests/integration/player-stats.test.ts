@@ -1,20 +1,22 @@
-import { expect } from "vitest";
-import { test, guest } from "./worker";
+import { SELF, env } from "cloudflare:test";
+import { expect, test } from "vitest";
+import { api, guest } from "./helpers";
 import { gameFixture } from "../unit/helpers";
 import { historyStatements } from "../../src/server/match-history";
 import type { StatsResponse } from "../../src/shared/player-stats";
 import { eventStatements, type GameEvent } from "../../src/server/game-events";
 import { playerStats } from "../../src/server/player-stats";
-import { readFile } from "node:fs/promises";
 
-test("stats use finalized history once, preserve identity, and rank players by wins", async ({
-  api,
-}) => {
+const db = env.DB;
+const migration = (name: string) =>
+  env.TEST_MIGRATIONS.find((entry) => entry.name === name)!.queries;
+
+test("stats use finalized history once, preserve identity, and rank players by wins", async () => {
   const host = guest(1);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(host.token));
   const id = Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join("");
   const read = async (token = host.token) => {
-    const response = await api.runtime.dispatchFetch("http://game.test/api/stats", {
+    const response = await SELF.fetch("http://game.test/api/stats", {
       headers: { "x-player-token": token },
     });
     expect(response.status).toBe(200);
@@ -25,16 +27,10 @@ test("stats use finalized history once, preserve identity, and rank players by w
     player: { matches: 0, wins: 0, level: 1, xp: 0 },
     leaders: [],
   });
-  const db = await api.runtime.getD1Database("DB");
   const game = gameFixture();
   game.players[0].id = id;
   const hostPlayer = game.players[0];
-  const deliver = () =>
-    db.batch(
-      historyStatements(db as unknown as D1Database, game, 0) as unknown as Parameters<
-        typeof db.batch
-      >[0],
-    );
+  const deliver = () => db.batch(historyStatements(db, game, 0));
   await deliver();
   expect((await read()).player.matches).toBe(0);
   game.phase = "finished";
@@ -79,11 +75,7 @@ test("stats use finalized history once, preserve identity, and rank players by w
   expect(JSON.stringify(result)).not.toContain(host.token);
 });
 
-test("decision stats combine completed-match samples, omit missing timing, and survive replay", async ({
-  api,
-}) => {
-  const database = await api.runtime.getD1Database("DB");
-  const db = database as unknown as D1Database;
+test("decision stats combine completed-match samples, omit missing timing, and survive replay", async () => {
   const read = async () => (await playerStats(db, "p0")).player;
   const make = (matchId: string, status: "completed" | "active" | "abandoned" = "completed") => {
     const game = gameFixture();
@@ -138,8 +130,7 @@ test("decision stats combine completed-match samples, omit missing timing, and s
       "UPDATE match_results SET aces_of_coins_played=NULL, prediction_total=NULL, prediction_count=NULL WHERE match_id='older'",
     )
     .run();
-  const migration = await readFile("migrations/0007_player_decision_stats.sql", "utf8");
-  await db.prepare(migration.slice(migration.indexOf("UPDATE match_results"))).run();
+  await db.prepare(migration("0007_player_decision_stats.sql").at(-1)!).run();
   const expected = {
     matches: 3,
     acesOfCoinsPlayed: 3,
@@ -174,22 +165,20 @@ test("decision stats combine completed-match samples, omit missing timing, and s
   });
 });
 
-test("stats API requires a guest token and rejects writes and foreign origins", async ({ api }) => {
+test("stats API requires a guest token and rejects writes and foreign origins", async () => {
   for (const [init, status] of [
     [{}, 400],
     [{ method: "POST" }, 405],
     [{ headers: { Origin: "https://foreign.test" } }, 403],
   ] as const) {
-    expect((await api.runtime.dispatchFetch("http://game.test/api/stats", init)).status).toBe(
-      status,
-    );
+    expect((await SELF.fetch("http://game.test/api/stats", init)).status).toBe(status);
   }
 });
 
-test("profile edits persist, reach tables, and survive older match history", async ({ api }) => {
+test("profile edits persist, reach tables, and survive older match history", async () => {
   const host = guest(1);
   const save = (value: unknown) =>
-    api.runtime.dispatchFetch("http://game.test/api/profile", {
+    SELF.fetch("http://game.test/api/profile", {
       method: "POST",
       headers: { "x-player-token": host.token },
       body: JSON.stringify(value),
@@ -207,15 +196,10 @@ test("profile edits persist, reach tables, and survive older match history", asy
   expect(created.players[0]).toMatchObject({ name: "bot_1", avatar: "queen-coins" });
   const renamed = { name: "bot_2", avatar: "knight-swords" };
   expect((await save(renamed)).status).toBe(200);
-  const db = await api.runtime.getD1Database("DB");
   const old = gameFixture();
   old.players[0].id = created.you;
-  await db.batch(
-    historyStatements(db as unknown as D1Database, old, 0) as unknown as Parameters<
-      typeof db.batch
-    >[0],
-  );
-  const read = await api.runtime.dispatchFetch("http://game.test/api/stats", {
+  await db.batch(historyStatements(db, old, 0));
+  const read = await SELF.fetch("http://game.test/api/stats", {
     headers: { "x-player-token": host.token },
   });
   expect(await read.json()).toMatchObject({ profile: renamed });
@@ -226,7 +210,7 @@ test("profile edits persist, reach tables, and survive older match history", asy
   });
   expect(rejoined.players[0]).toMatchObject(renamed);
   await api.state(host, { action: "rename", code: created.code, name: "bot_1" });
-  const updated = await api.runtime.dispatchFetch("http://game.test/api/stats", {
+  const updated = await SELF.fetch("http://game.test/api/stats", {
     headers: { "x-player-token": host.token },
   });
   expect(await updated.json()).toMatchObject({
@@ -234,10 +218,7 @@ test("profile edits persist, reach tables, and survive older match history", asy
   });
 });
 
-test("aggregate migration preserves historical samples and retries count each completed match once", async ({
-  api,
-}) => {
-  const db = (await api.runtime.getD1Database("DB")) as unknown as D1Database;
+test("aggregate migration preserves historical samples and retries count each completed match once", async () => {
   const games = ["completed", "completed", "active", "abandoned"].map((status, i) => {
     const game = gameFixture();
     game.matchId = `backfill-${i}`;
@@ -261,13 +242,7 @@ test("aggregate migration preserves historical samples and retries count each co
     db.prepare("DROP TABLE player_stats"),
     db.prepare("ALTER TABLE matches DROP COLUMN stats_counted"),
   ]);
-  const migration = await readFile("migrations/0008_player_stats.sql", "utf8");
-  await db.batch(
-    migration
-      .split(";")
-      .filter((sql) => sql.trim())
-      .map((sql) => db.prepare(sql)),
-  );
+  await db.batch(migration("0008_player_stats.sql").map((sql) => db.prepare(sql)));
   const read = async () => (await playerStats(db, "p0")).player;
   const expected = {
     matches: 2,

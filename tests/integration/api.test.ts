@@ -1,8 +1,9 @@
 import { findPlayer, type GameView } from "../../src/shared/game";
-import { expect } from "vitest";
-import { guest, test } from "./worker";
+import { SELF, env } from "cloudflare:test";
+import { expect, test } from "vitest";
+import { api, captureLogs, guest } from "./helpers";
 
-test("public matchmaking fills a lobby that waits for its host to start", async ({ api }) => {
+test("public matchmaking fills a lobby that waits for its host to start", async () => {
   const players = Array.from({ length: 6 }, (_, index) => guest(index + 1));
   const created = await api.state(players[0], { action: "match" });
   const joined = await Promise.all(
@@ -29,9 +30,7 @@ for (const { visibility, action } of [
   { visibility: "private", action: "create" },
   { visibility: "public", action: "match" },
 ]) {
-  test(`a ${visibility} lobby lets only its host configure lives and start the game`, async ({
-    api,
-  }) => {
+  test(`a ${visibility} lobby lets only its host configure lives and start the game`, async () => {
     const host = guest(1);
     const other = guest(2);
     const created = await api.state(host, { action });
@@ -60,9 +59,7 @@ for (const { visibility, action } of [
   });
 }
 
-test("players rename only themselves in the lobby and keep the name on reconnect", async ({
-  api,
-}) => {
+test("players rename only themselves in the lobby and keep the name on reconnect", async () => {
   const host = guest(1);
   const other = guest(2);
   const { code, you: hostId } = await api.state(host, { action: "create" });
@@ -91,7 +88,7 @@ test("players rename only themselves in the lobby and keep the name on reconnect
   expect((await api.post(spectator, { action: "rename", code, name: "bot_4" })).status).toBe(400);
 });
 
-test("WebSockets send each player their own hand and broadcast accepted moves", async ({ api }) => {
+test("WebSockets send each player their own hand and broadcast accepted moves", async () => {
   const host = guest(1);
   const other = guest(2);
   const { code } = await api.state(host, { action: "create" });
@@ -146,7 +143,7 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
   }
 });
 
-test("started matches and player commands are recorded in D1", async ({ api }) => {
+test("started matches and player commands are recorded in D1", async () => {
   const host = guest(1);
   const other = guest(2);
   const { code } = await api.state(host, { action: "create" });
@@ -155,31 +152,26 @@ test("started matches and player commands are recorded in D1", async ({ api }) =
   const first = started.order[0] === started.you ? host : other;
   const commandId = crypto.randomUUID();
   await api.state(first, { action: "bid", code, bid: 0, commandId });
-  const db = await api.runtime.getD1Database("DB");
   await expect
     .poll(() =>
-      db
-        .prepare("SELECT status, player_count FROM matches WHERE id=?")
+      env.DB.prepare("SELECT status, player_count FROM matches WHERE id=?")
         .bind(started.matchId!)
         .first(),
     )
     .toEqual({ status: "active", player_count: 2 });
   await expect
     .poll(() =>
-      db
-        .prepare("SELECT type, player_id FROM match_events WHERE command_id=? AND type='bid'")
+      env.DB.prepare("SELECT type, player_id FROM match_events WHERE command_id=? AND type='bid'")
         .bind(commandId)
         .first(),
     )
     .toEqual({ type: "bid", player_id: first === host ? started.you : joined.you });
 });
 
-test("the API rejects malformed commands, foreign origins, and players outside the game", async ({
-  api,
-}) => {
+test("the API rejects malformed commands, foreign origins, and players outside the game", async () => {
   const host = guest(1);
   for (const body of ["null", "[]", "{", JSON.stringify({ action: "create" })]) {
-    const response = await api.runtime.dispatchFetch("http://game.test/api/game", {
+    const response = await SELF.fetch("http://game.test/api/game", {
       method: "POST",
       headers: { "x-player-token": host.token },
       body,
@@ -187,14 +179,11 @@ test("the API rejects malformed commands, foreign origins, and players outside t
     expect(response.status).toBe(400);
     expect(await response.json()).toEqual({ error: expect.any(String) });
   }
-  const foreign = await api.runtime.dispatchFetch(
-    "http://game.test/api/game/socket?code=ABCDEFGH",
-    {
-      headers: { Upgrade: "websocket", Origin: "https://foreign.test" },
-    },
-  );
+  const foreign = await SELF.fetch("http://game.test/api/game/socket?code=ABCDEFGH", {
+    headers: { Upgrade: "websocket", Origin: "https://foreign.test" },
+  });
   expect(foreign.status).toBe(403);
-  expect((await api.runtime.dispatchFetch("http://game.test/api/game")).status).toBe(400);
+  expect((await SELF.fetch("http://game.test/api/game")).status).toBe(400);
 
   const { code } = await api.state(host, { action: "create" });
   const other = guest(2);
@@ -203,29 +192,29 @@ test("the API rejects malformed commands, foreign origins, and players outside t
   expect((await api.get(guest(3), code)).status).toBe(400);
 });
 
-test("reconnected players resume and late spectators receive live updates", async ({ api }) => {
+test("reconnected players resume and late spectators receive live updates", async () => {
   const host = guest(1);
   const other = guest(2);
   const watcher = guest(3);
   const { code } = await api.state(host, { action: "create" });
   await api.state(other, { action: "join", code });
+  const logs = captureLogs();
   const connection = await api.connect(host, code);
   const start = { action: "start", commandId: crypto.randomUUID() };
   await connection.command(start);
   const before = connection.latest()!;
-  const openedLog = () =>
-    api.logs.find((log) => log.includes("event: 'opened'") && log.includes(before.you));
-  await expect.poll(openedLog).toBeDefined();
-  const connectionId = openedLog()!.match(/connectionId: '([^']+)'/)![1];
+  const opened = () => logs.find((log) => log.event === "opened" && log.playerId === before.you);
+  await expect.poll(opened).toBeDefined();
+  const { connectionId } = opened()!;
   connection.close();
   await expect
     .poll(() =>
-      api.logs.some(
+      logs.some(
         (log) =>
-          log.includes("event: 'closed'") &&
-          log.includes(connectionId) &&
-          log.includes(before.you) &&
-          log.includes(code),
+          log.event === "closed" &&
+          log.connectionId === connectionId &&
+          log.playerId === before.you &&
+          log.roomCode === code,
       ),
     )
     .toBe(true);
@@ -267,12 +256,12 @@ test("reconnected players resume and late spectators receive live updates", asyn
   expect((await api.get(watcher, code)).status).toBe(400);
   await expect
     .poll(() =>
-      api.logs.some(
+      logs.some(
         (log) =>
-          log.includes("request_failed") &&
-          log.includes(watching.you) &&
-          log.includes(code) &&
-          log.includes("Join this table first."),
+          log.event === "request_failed" &&
+          log.playerId === watching.you &&
+          log.roomCode === code &&
+          log.reason === "Join this table first.",
       ),
     )
     .toBe(true);
@@ -280,10 +269,10 @@ test("reconnected players resume and late spectators receive live updates", asyn
   const restored = await api.connect(watcher, code);
   expect(restored.latest()!.spectating).toBe(true);
   expect(restored.latest()!.players).toHaveLength(2);
-  expect(api.logs.join("\n")).not.toContain(watcher.token);
+  expect(JSON.stringify(logs)).not.toContain(watcher.token);
 });
 
-test("matchmaking skips games that have started", async ({ api }) => {
+test("matchmaking skips games that have started", async () => {
   const host = guest(1);
   const { code } = await api.state(host, { action: "match" });
   await api.state(guest(2), { action: "match" });
@@ -294,7 +283,7 @@ test("matchmaking skips games that have started", async ({ api }) => {
   expect(next.spectating).toBe(false);
 });
 
-test("quitting a started game preserves the seat and rejoining restores play", async ({ api }) => {
+test("quitting a started game preserves the seat and rejoining restores play", async () => {
   const host = guest(1);
   const other = guest(2);
   const { code } = await api.state(host, { action: "create" });

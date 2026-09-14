@@ -1,8 +1,8 @@
-import { expect } from "vitest";
-import { test } from "./worker";
+import { SELF } from "cloudflare:test";
+import { expect, test } from "vitest";
 
-test("homepage and room invites expose distinct link previews in HTML", async ({ api }) => {
-  const home = await api.runtime.dispatchFetch("https://giulietto.online/");
+test("homepage and room invites expose distinct link previews in HTML", async () => {
+  const home = await SELF.fetch("https://giulietto.online/");
   const html = await home.text();
   expect(home.status).toBe(200);
   expect(html).toContain('<meta property="og:title" content="Giulietto"');
@@ -15,7 +15,7 @@ test("homepage and room invites expose distinct link previews in HTML", async ({
   expect(html).not.toContain('property="og:image');
   for (const code of ["ABCD2345", "VWJ68J8G"]) {
     const url = `https://giulietto.online/?table=${code}`;
-    const invite = await api.runtime.dispatchFetch(url);
+    const invite = await SELF.fetch(url);
     const body = await invite.text();
     expect(invite.status).toBe(200);
     expect(body).toContain('<meta property="og:title" content="Join me on Giulietto"');

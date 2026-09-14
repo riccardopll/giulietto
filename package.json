@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.4",
+    "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260907.1",
     "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "4.3.3",
@@ -45,15 +46,19 @@
     "@vitejs/plugin-react": "6.1.1",
     "husky": "9.1.7",
     "lint-staged": "17.5.0",
-    "miniflare": "5.20260903.0-alpha",
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
-    "rolldown": "1.2.7",
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "8.2.2",
-    "vitest": "5.0.0",
+    "vitest": "4.1.11",
     "wrangler": "4.129.0"
+  },
+  "overrides": {
+    "@cloudflare/vitest-pool-workers": {
+      "miniflare": "5.20260903.0-alpha",
+      "wrangler": "$wrangler"
+    }
   },
   "lint-staged": {
     "*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}": [
