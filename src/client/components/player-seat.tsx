@@ -87,7 +87,7 @@ export function PlayerSeat({
                 "seat-avatar relative grid size-full place-items-center rounded-full border-2 font-semibold",
                 player.lives <= 0
                   ? "border-transparent"
-                  : "border-background bg-card shadow-[0_0_0_1px_#6f4a5e12]",
+                  : "border-background bg-card shadow-[0_0_0_1px] shadow-plum/7",
               )}
               aria-hidden="true"
             >
@@ -102,7 +102,7 @@ export function PlayerSeat({
                   <img
                     src="/skull-giulietto.webp"
                     alt=""
-                    className="size-full object-contain [filter:drop-shadow(0_1px_1px_#49152d40)_drop-shadow(0_3px_3px_#49152d26)]"
+                    className="size-full object-contain drop-shadow-[0_1px_1px,0_3px_3px] drop-shadow-plum/20"
                     draggable={false}
                   />
                 </span>
@@ -110,8 +110,8 @@ export function PlayerSeat({
             </div>
             <span
               className={cn(
-                "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-[#fff8fb] px-0.5 text-[9px] font-semibold sm:h-[18px] sm:min-w-[18px] sm:text-[10px]",
-                current ? "border-primary text-primary" : "border-[#dcb8c9] text-[#653248]",
+                "seat-number absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-background px-0.5 text-[9px] font-semibold sm:h-[18px] sm:min-w-[18px] sm:text-[10px]",
+                current ? "border-primary text-primary" : "border-input text-secondary-foreground",
               )}
               aria-label={`Seat ${toRoman(number)}`}
             >
@@ -141,7 +141,7 @@ export function PlayerSeat({
             >
               <LifeCount n={player.lives} />
               <span
-                className="player-score inline-flex shrink-0 items-center gap-0.5 border-l border-[#63414f]/10 pl-1 font-semibold whitespace-nowrap text-foreground tabular-nums"
+                className="player-score inline-flex shrink-0 items-center gap-0.5 border-l border-foreground/10 pl-1 font-semibold whitespace-nowrap text-foreground tabular-nums"
                 aria-label={`${player.taken} tricks won, ${player.bid ?? "no"} predicted`}
               >
                 <span
@@ -197,7 +197,7 @@ export function PlayerSeat({
                   <PlayingCard
                     card={card}
                     className={cn(
-                      "border border-[#fffaf6]",
+                      "border border-parchment",
                       card === null && "rounded-[.2rem]",
                       activeTurn && "turn-glow",
                     )}

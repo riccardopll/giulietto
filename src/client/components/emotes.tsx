@@ -106,7 +106,7 @@ export function EmotePicker({
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
-          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center rounded-l-2xl bg-[#fff8ed] shadow-sm">
+          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center rounded-l-2xl bg-parchment shadow-sm">
             <Smile className="size-6" aria-hidden="true" />
           </span>
         </Button>

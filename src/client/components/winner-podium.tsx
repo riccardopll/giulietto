@@ -36,10 +36,7 @@ export function WinnerPodium({
             >
               <div className="mb-3 space-y-2">
                 {place === 1 && (
-                  <Crown
-                    className="mx-auto size-8 fill-[#dfb64d] text-[#dfb64d]"
-                    aria-hidden="true"
-                  />
+                  <Crown className="mx-auto size-8 fill-gold text-gold" aria-hidden="true" />
                 )}
                 {group.players.length === 1 && (
                   <Avatar

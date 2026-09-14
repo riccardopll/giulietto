@@ -16,11 +16,11 @@
     pointer-events: none;
     background: conic-gradient(
       from var(--turn-glow-angle),
-      #b7437520,
-      #b7437530 90deg,
-      #b7437590 160deg,
-      #edabc8b0 200deg,
-      #b7437520 280deg
+      --alpha(var(--color-ring) / 12%),
+      --alpha(var(--color-ring) / 19%) 90deg,
+      --alpha(var(--color-ring) / 56%) 160deg,
+      --alpha(var(--color-glow) / 69%) 200deg,
+      --alpha(var(--color-ring) / 12%) 280deg
     );
     mask:
       linear-gradient(#fff 0 0) content-box,
@@ -54,9 +54,13 @@
 
 @utility table-felt {
   background:
-    radial-gradient(ellipse at 45% 30%, #f8dce30a 15%, #71354a45 100%),
+    radial-gradient(
+      ellipse at 45% 30%,
+      --alpha(var(--color-felt-highlight) / 4%) 15%,
+      --alpha(var(--color-felt-shadow) / 27%) 100%
+    ),
     url("/textures/rose-felt.webp") center / 320px 320px repeat;
-  background-color: #b16b80;
+  background-color: var(--color-felt);
 }
 
 :root .seat-timer circle {
