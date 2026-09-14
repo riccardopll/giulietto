@@ -40,10 +40,10 @@ function Perso({ animated = false }: { animated?: boolean }) {
   return (
     <span className="absolute -left-6 -top-[32.55px] h-[90px] w-[108px]">
       {animated ? (
-        <AnimatedWebp src="/emotes/perso-lettering.webp" poster="/emotes/perso-picker.webp" />
+        <AnimatedWebp src="/emotes/perso.webp" poster="/emotes/perso-still.webp" />
       ) : (
         <img
-          src="/emotes/perso-picker.webp"
+          src="/emotes/perso-still.webp"
           alt=""
           className="size-full object-contain"
           draggable={false}
@@ -93,7 +93,7 @@ export function EmotePicker({
 }) {
   useEffect(() => {
     void preloadWebp("/emotes/chicken.webp").catch(() => {});
-    void preloadWebp("/emotes/perso-lettering.webp").catch(() => {});
+    void preloadWebp("/emotes/perso.webp").catch(() => {});
   }, []);
   const coolingDown = useRecent(emote?.sentAt, serverTime, EMOTE_COOLDOWN_MS);
   return (
