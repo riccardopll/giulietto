@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useState, type ComponentProps } from "react";
 import { Settings2, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import App from "../App";
@@ -17,20 +17,55 @@ import {
 } from "./games";
 
 type Entry = { options: Required<PreviewOptions>; game: Game; reset: number };
+type Option = { value: string | number; label?: string; disabled?: boolean };
 const counts = [2, 3, 4, 5, 6];
-const phases: PreviewPhase[] = [
-  "lobby",
-  "playing",
-  "bidding",
-  "trick",
-  "results",
-  "finished",
-  "blind",
+const scenarios: { value: PreviewPhase; label: string }[] = [
+  { value: "lobby", label: "Lobby" },
+  { value: "playing", label: "Playing" },
+  { value: "bidding", label: "Predictions" },
+  { value: "trick", label: "Trick won" },
+  { value: "results", label: "Round results" },
+  { value: "finished", label: "Winner podium" },
+  { value: "blind", label: "Blind round" },
 ];
-const seatStates: PreviewSeatState[] = ["active", "eliminated"];
-const selectClass =
-  "h-11 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none disabled:opacity-50";
-const labelClass = "grid min-w-0 gap-1 text-xs text-muted-foreground";
+const seatStates: { value: PreviewSeatState; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "eliminated", label: "Eliminated" },
+];
+const range = (length: number, start = 0, label = (value: number) => String(value)): Option[] =>
+  Array.from({ length }, (_, i) => ({ value: i + start, label: label(i + start) }));
+
+function Field({
+  label,
+  value,
+  options,
+  disabled = false,
+  onChange,
+}: {
+  label: string;
+  value: string | number;
+  options: Option[];
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="grid min-w-0 gap-1 text-xs text-muted-foreground">
+      {label}
+      <select
+        className="h-11 w-full min-w-0 rounded-md border border-input bg-background px-2 text-sm outline-none disabled:opacity-50"
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value} disabled={option.disabled}>
+            {option.label ?? option.value}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 function readSettings() {
   const query = new URLSearchParams(window.location.search);
@@ -46,13 +81,11 @@ function readSettings() {
       people,
       cards: number("cards", 6, 1, 6),
       played: number("played", 0, 0, people),
-      phase: phases.includes(phase) ? phase : "playing",
+      phase: scenarios.some((scenario) => scenario.value === phase) ? phase : "playing",
       seatStates: query
         .get("seats")
         ?.split(",")
-        .map((state) =>
-          seatStates.includes(state as PreviewSeatState) ? (state as PreviewSeatState) : "active",
-        ),
+        .map((state) => (state === "eliminated" ? "eliminated" : "active")),
       startingLives: number("startingLives", 5, 1, 5),
       completedTricks: number("completedTricks", 0, 0, 5),
       bids: number("bids", 0, 0, people - 1),
@@ -88,12 +121,14 @@ export function Preview() {
     ),
   );
   const entry = tables[people];
-  const active = entry.options.seatStates.filter((state) => state === "active").length;
+  const { options } = entry;
+  const active = options.seatStates.filter((state) => state === "active").length;
   const eliminationTarget =
-    entry.options.seatStates[eliminationSeat] === "active"
+    options.seatStates[eliminationSeat] === "active"
       ? eliminationSeat
-      : entry.options.seatStates.indexOf("active");
-  const hasTrick = ["playing", "blind"].includes(entry.options.phase);
+      : options.seatStates.indexOf("active");
+  const lobby = options.phase === "lobby";
+  const hasTrick = options.phase === "playing" || options.phase === "blind";
 
   function configure(patch: Partial<PreviewOptions> = {}) {
     setRunning(false);
@@ -168,19 +203,19 @@ export function Preview() {
   useEffect(() => {
     const query = new URLSearchParams({
       people: String(people),
-      cards: String(entry.options.cards),
-      phase: entry.options.phase,
-      played: String(entry.options.played),
+      cards: String(options.cards),
+      phase: options.phase,
+      played: String(options.played),
       viewer: String(viewer),
-      longNames: entry.options.longNames ? "1" : "0",
-      seats: entry.options.seatStates.join(","),
-      startingLives: String(entry.options.startingLives),
-      completedTricks: String(entry.options.completedTricks),
-      bids: String(entry.options.bids),
-      cycle: String(entry.options.cycle),
+      longNames: options.longNames ? "1" : "0",
+      seats: options.seatStates.join(","),
+      startingLives: String(options.startingLives),
+      completedTricks: String(options.completedTricks),
+      bids: String(options.bids),
+      cycle: String(options.cycle),
     });
     window.history.replaceState(null, "", `${window.location.pathname}?${query}`);
-  }, [people, viewer, entry.options]);
+  }, [people, viewer, options]);
 
   const snapshot = view(
     { ...entry.game, spectators: [{ id: "preview-spectator", name: "Spectator", seen: 0 }] },
@@ -211,6 +246,87 @@ export function Preview() {
     game.revision++;
     setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
   }
+
+  function show(patch: Partial<PreviewOptions>) {
+    configure(patch);
+    setControlsOpen(false);
+  }
+  const set =
+    (key: "cycle" | "cards" | "played" | "startingLives" | "completedTricks" | "bids") =>
+    (value: string) =>
+      configure({ [key]: Number(value) });
+
+  const controls: ComponentProps<typeof Field>[] = [
+    {
+      label: "Players",
+      value: people,
+      options: counts.map((count) => ({ value: count, label: `${count} players` })),
+      onChange: (value) => {
+        setPeople(Number(value));
+        setViewer(0);
+        setRunning(false);
+      },
+    },
+    {
+      label: "Scenario",
+      value: options.phase,
+      options: scenarios,
+      onChange: (value) => configure({ phase: value as PreviewPhase }),
+    },
+    {
+      label: "Cycle",
+      value: options.cycle,
+      disabled: lobby,
+      options: range(5, 0, (cycle) => String(cycle + 1)),
+      onChange: set("cycle"),
+    },
+    {
+      label: "Cards each",
+      value: options.phase === "blind" ? 1 : options.cards,
+      disabled: options.phase === "blind" || lobby,
+      options: range(6, 1),
+      onChange: set("cards"),
+    },
+    {
+      label: "Cards played",
+      value: hasTrick ? options.played : options.phase === "trick" ? active : 0,
+      disabled: !hasTrick,
+      options: range(active + 1),
+      onChange: set("played"),
+    },
+    {
+      label: "View as",
+      value: viewer,
+      options: [
+        { value: -1, label: "Spectator" },
+        ...entry.game.players.map((player, index) => ({ value: index, label: player.name })),
+      ],
+      onChange: (value) => {
+        setViewer(Number(value));
+        setRunning(false);
+      },
+    },
+    {
+      label: "Starting lives",
+      value: options.startingLives,
+      options: range(5, 1),
+      onChange: set("startingLives"),
+    },
+    {
+      label: "Completed tricks",
+      value: options.completedTricks,
+      disabled: !hasTrick && options.phase !== "trick",
+      options: range(options.cards),
+      onChange: set("completedTricks"),
+    },
+    {
+      label: "Predictions made",
+      value: options.bids,
+      disabled: options.phase !== "bidding",
+      options: range(active),
+      onChange: set("bids"),
+    },
+  ];
 
   const exitControl = (
     <Dialog.Trigger asChild>
@@ -253,8 +369,7 @@ export function Preview() {
             className="min-h-11 w-full"
             onClick={() => {
               setViewer(0);
-              configure({ phase: "lobby" });
-              setControlsOpen(false);
+              show({ phase: "lobby" });
             }}
           >
             Show lobby
@@ -262,200 +377,58 @@ export function Preview() {
           <Button
             variant="outline"
             className="min-h-11 w-full"
-            onClick={() => {
-              configure({ phase: "finished" });
-              setControlsOpen(false);
-            }}
+            onClick={() => show({ phase: "finished" })}
           >
             Show winning screen
           </Button>
           <div className="grid grid-cols-2 gap-3">
-            <label className={labelClass}>
-              Players
-              <select
-                className={selectClass}
-                value={people}
-                onChange={(e) => {
-                  setPeople(Number(e.target.value));
-                  setViewer(0);
-                  setRunning(false);
-                }}
-              >
-                {counts.map((count) => (
-                  <option key={count} value={count}>
-                    {count} players
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Scenario
-              <select
-                className={selectClass}
-                value={entry.options.phase}
-                onChange={(e) => configure({ phase: e.target.value as PreviewPhase })}
-              >
-                <option value="lobby">Lobby</option>
-                <option value="playing">Playing</option>
-                <option value="bidding">Predictions</option>
-                <option value="trick">Trick won</option>
-                <option value="results">Round results</option>
-                <option value="finished">Winner podium</option>
-                <option value="blind">Blind round</option>
-              </select>
-            </label>
-            <label className={labelClass}>
-              Cycle
-              <select
-                className={selectClass}
-                value={entry.options.cycle}
-                disabled={entry.options.phase === "lobby"}
-                onChange={(e) => configure({ cycle: Number(e.target.value) })}
-              >
-                {[0, 1, 2, 3, 4].map((cycle) => (
-                  <option value={cycle} key={cycle}>
-                    {cycle + 1}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Cards each
-              <select
-                className={selectClass}
-                disabled={entry.options.phase === "blind" || entry.options.phase === "lobby"}
-                value={entry.options.phase === "blind" ? 1 : entry.options.cards}
-                onChange={(e) => configure({ cards: Number(e.target.value) })}
-              >
-                {[1, 2, 3, 4, 5, 6].map((n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Cards played
-              <select
-                className={selectClass}
-                disabled={!hasTrick}
-                value={
-                  hasTrick ? entry.options.played : entry.options.phase === "trick" ? active : 0
-                }
-                onChange={(e) => configure({ played: Number(e.target.value) })}
-              >
-                {Array.from({ length: active + 1 }, (_, n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              View as
-              <select
-                className={selectClass}
-                value={viewer}
-                onChange={(e) => {
-                  setViewer(Number(e.target.value));
-                  setRunning(false);
-                }}
-              >
-                <option value={-1}>Spectator</option>
-                {entry.game.players.map((p, i) => (
-                  <option value={i} key={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Starting lives
-              <select
-                className={selectClass}
-                value={entry.options.startingLives}
-                onChange={(e) => configure({ startingLives: Number(e.target.value) })}
-              >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Completed tricks
-              <select
-                className={selectClass}
-                disabled={!hasTrick && entry.options.phase !== "trick"}
-                value={entry.options.completedTricks}
-                onChange={(e) => configure({ completedTricks: Number(e.target.value) })}
-              >
-                {Array.from({ length: entry.options.cards }, (_, n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </label>
-            <label className={labelClass}>
-              Predictions made
-              <select
-                className={selectClass}
-                disabled={entry.options.phase !== "bidding"}
-                value={entry.options.bids}
-                onChange={(e) => configure({ bids: Number(e.target.value) })}
-              >
-                {Array.from({ length: active }, (_, n) => (
-                  <option key={n}>{n}</option>
-                ))}
-              </select>
-            </label>
+            {controls.map((control) => (
+              <Field key={control.label} {...control} />
+            ))}
           </div>
           <fieldset className="grid grid-cols-2 gap-3">
             <legend className="mb-2 text-xs text-muted-foreground">Seats</legend>
-            {entry.options.seatStates.map((state, index) => (
-              <label key={index} className={labelClass}>
-                Seat {index + 1}
-                <select
-                  className={selectClass}
-                  value={state}
-                  disabled={entry.options.phase === "lobby"}
-                  onChange={(e) =>
-                    configure({
-                      seatStates: entry.options.seatStates.map((value, seat) =>
-                        seat === index ? (e.target.value as PreviewSeatState) : value,
-                      ),
-                    })
-                  }
-                >
-                  <option value="active">Active</option>
-                  <option value="eliminated">Eliminated</option>
-                </select>
-              </label>
+            {options.seatStates.map((state, index) => (
+              <Field
+                key={index}
+                label={`Seat ${index + 1}`}
+                value={state}
+                options={seatStates}
+                disabled={lobby}
+                onChange={(value) =>
+                  configure({
+                    seatStates: options.seatStates.map((current, seat) =>
+                      seat === index ? (value as PreviewSeatState) : current,
+                    ),
+                  })
+                }
+              />
             ))}
           </fieldset>
           <div className="space-y-2">
-            <label className={labelClass}>
-              Player to eliminate
-              <select
-                className={selectClass}
-                value={eliminationTarget}
-                onChange={(event) => setEliminationSeat(Number(event.target.value))}
-              >
-                {entry.options.seatStates.map((state, index) => (
-                  <option key={index} value={index} disabled={state === "eliminated"}>
-                    Seat {index + 1}: {entry.game.players[index].name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <Field
+              label="Player to eliminate"
+              value={eliminationTarget}
+              options={options.seatStates.map((state, index) => ({
+                value: index,
+                label: `Seat ${index + 1}: ${entry.game.players[index].name}`,
+                disabled: state === "eliminated",
+              }))}
+              onChange={(value) => setEliminationSeat(Number(value))}
+            />
             <Button
               variant="outline"
               className="h-11 w-full"
               disabled={active <= 2}
-              onClick={() => {
-                configure({
+              onClick={() =>
+                show({
                   phase: "bidding",
                   bids: 0,
-                  seatStates: entry.options.seatStates.map((state, index) =>
+                  seatStates: options.seatStates.map((state, index) =>
                     index === eliminationTarget ? "eliminated" : state,
                   ),
-                });
-                setControlsOpen(false);
-              }}
+                })
+              }
             >
               Eliminate player
             </Button>
@@ -464,8 +437,8 @@ export function Preview() {
             <input
               className="size-4 accent-primary"
               type="checkbox"
-              checked={entry.options.longNames}
-              onChange={(e) => configure({ longNames: e.target.checked })}
+              checked={options.longNames}
+              onChange={(event) => configure({ longNames: event.target.checked })}
             />
             Long names
           </label>
