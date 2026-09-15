@@ -83,9 +83,17 @@ function Sheet({
   const input = useRef<HTMLInputElement>(null);
   const pinned = useRef(true);
   const [text, setText] = useState("");
+  const showLatest = () => {
+    if (pinned.current && list.current) list.current.scrollTop = list.current.scrollHeight;
+  };
+  useEffect(showLatest, [latest]);
+  // The list shrinks when the keyboard opens; keep the newest messages in view.
   useEffect(() => {
-    if (pinned.current) list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [latest]);
+    if (!list.current) return;
+    const observer = new ResizeObserver(showLatest);
+    observer.observe(list.current);
+    return () => observer.disconnect();
+  }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
     const message = text.trim();
