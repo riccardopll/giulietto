@@ -160,7 +160,7 @@ function Sheet({
             <li
               key={message.id}
               className={cn(
-                "relative max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere shadow-xs",
+                "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere shadow-xs",
                 own
                   ? "self-end rounded-br-md bg-accent text-accent-foreground"
                   : "self-start rounded-bl-md bg-secondary text-foreground",
@@ -172,12 +172,10 @@ function Sheet({
                 </strong>
               )}{" "}
               <span className="text-base leading-snug">{message.text}</span>
-              {/* Reserves room for the time on the last line; wraps to a new line when it does not fit. */}
-              <span className="inline-block w-9" aria-hidden="true" />
               <time
                 dateTime={new Date(message.sentAt).toISOString()}
                 className={cn(
-                  "absolute right-3 bottom-2.5 text-[10px] leading-none whitespace-nowrap",
+                  "float-right mt-2 ml-2 text-[10px] leading-none whitespace-nowrap",
                   own ? "text-primary/70" : "text-muted-foreground",
                 )}
               >
