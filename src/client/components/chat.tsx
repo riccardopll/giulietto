@@ -138,7 +138,7 @@ function Sheet({
         ref={list}
         role="log"
         aria-label="Messages"
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4"
+        className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-3 pb-3"
         onScroll={(event) => {
           const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
           pinned.current = scrollHeight - scrollTop - clientHeight < 32;
@@ -160,7 +160,7 @@ function Sheet({
             <li
               key={message.id}
               className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-3 wrap-anywhere shadow-xs",
+                "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere shadow-xs",
                 own
                   ? "self-end rounded-br-md bg-accent text-accent-foreground"
                   : "self-start rounded-bl-md bg-secondary text-foreground",
@@ -168,19 +168,19 @@ function Sheet({
             >
               <strong
                 className={cn(
-                  "block text-sm font-semibold",
+                  "block text-xs font-semibold",
                   own ? "text-primary" : "text-secondary-foreground",
                 )}
               >
                 {own ? "You" : message.name}
               </strong>{" "}
-              <span className="text-lg leading-snug">{message.text}</span>
+              <span className="text-base leading-snug">{message.text}</span>
             </li>
           );
         })}
       </ol>
       <form
-        className="flex items-center gap-2 border-t px-3 pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:pb-2"
+        className="flex items-center gap-2 border-t px-3 pt-1.5 pb-[max(.375rem,env(safe-area-inset-bottom))] sm:pb-1.5"
         onSubmit={(event) => void submit(event)}
       >
         <Input
