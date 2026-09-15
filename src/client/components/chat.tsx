@@ -116,7 +116,9 @@ function Sheet({
           "--viewport-height": `${viewport.height}px`,
         } as CSSProperties)
       }
-      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg"
+      // The background continues below the composer: iOS Safari leaves its collapsed address
+      // pill out of the visual viewport but still shows the page through that strip.
+      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-screen after:bg-card data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg sm:after:hidden"
     >
       <header className="flex items-center gap-2 border-b px-4 pt-[env(safe-area-inset-top)] sm:pt-0">
         <Dialog.Title className="py-2 text-lg font-semibold">Chat</Dialog.Title>
