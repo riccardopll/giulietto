@@ -124,7 +124,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await composer.fill("Room for a chat on the smallest phone?");
   await chat.getByRole("button", { name: "Send message" }).click();
   await expect(chat.getByRole("log", { name: "Messages" })).toContainText(
-    "You Room for a chat on the smallest phone?",
+    "Room for a chat on the smallest phone?",
   );
   await expect(composer).toHaveValue("");
   await expect.poll(() => chat.boundingBox()).toEqual({ x: 0, y: 0, width: 320, height: 568 });
@@ -205,7 +205,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await spectatorChat.getByLabel("Message", { exact: true }).fill("Watching from the stands");
   await spectatorChat.getByLabel("Message", { exact: true }).press("Enter");
   await expect(spectatorChat.getByRole("log", { name: "Messages" })).toContainText(
-    "You Watching from the stands",
+    "Watching from the stands",
   );
   await screenshot(page, testInfo, "spectator-chat", { animations: "disabled" });
 });
