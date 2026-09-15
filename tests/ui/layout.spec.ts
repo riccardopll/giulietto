@@ -162,4 +162,16 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     0,
   );
   await screenshot(page, testInfo, "spectator-hand");
+  await page.getByRole("button", { name: "Emotes", exact: true }).click();
+  await page.getByRole("button", { name: "Send chicken emote" }).click();
+  const reaction = page.getByRole("status", { name: "Spectator sent the chicken emote" });
+  await expect(reaction.locator(".emote-motion")).toBeVisible();
+  await expect
+    .poll(async () => {
+      const box = (await reaction.boundingBox())!;
+      return box.x >= 0 && box.x + box.width <= 393;
+    })
+    .toBe(true);
+  await page.clock.runFor(300);
+  await screenshot(page, testInfo, "spectator-reaction");
 });

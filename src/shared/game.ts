@@ -20,6 +20,7 @@ export type Player = {
   eliminatedRound?: number;
   emote?: Emote;
 };
+export type Spectator = { id: string; name: string; seen: number; emote?: Emote };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
 export type Result = {
   id: string;
@@ -40,7 +41,7 @@ export type Game = {
   startingLives: number;
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
-  spectators?: { id: string; name: string; seen: number }[];
+  spectators?: Spectator[];
   order: string[];
   round: number;
   count: number;

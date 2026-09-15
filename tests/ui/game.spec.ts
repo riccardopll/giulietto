@@ -80,6 +80,13 @@ test("three players complete a game, including round results and elimination", a
           .getByRole("button", { name: /^Predict / })
           .and(players[2].page.locator(":enabled")),
       ).toHaveCount(0);
+      await players[2].page.getByRole("button", { name: "Emotes", exact: true }).click();
+      await players[2].page.getByRole("button", { name: "Send Perso emote" }).click();
+      for (const { page } of players) {
+        await expect(
+          page.getByRole("status", { name: "bot_3 sent the perso emote" }),
+        ).toBeVisible();
+      }
     }
   }
 

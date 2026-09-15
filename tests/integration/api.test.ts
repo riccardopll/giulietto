@@ -122,7 +122,12 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
   expect((await sockets[1].command({ action: "emote", emote: "perso" })).type).toBe("ack");
   const spectator = guest(3);
   await api.state(spectator, { action: "join", code });
-  expect((await api.post(spectator, { action: "emote", emote: "chicken", code })).status).toBe(400);
+  const reacted = await api.state(spectator, { action: "emote", emote: "chicken", code });
+  expect(reacted.spectators?.find((watcher) => watcher.id === reacted.you)?.emote).toEqual({
+    id: "chicken",
+    sentAt: expect.any(Number),
+  });
+  await expect.poll(() => sockets[1].latest()?.spectators?.[0]?.emote?.id).toBe("chicken");
 
   const byId = new Map(sockets.map((socket) => [socket.latest()!.you, socket]));
   for (const id of sockets[0].latest()!.order) {

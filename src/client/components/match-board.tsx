@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from 
 import type { Emote } from "../../shared/emotes";
 import { findPlayer, type GameView } from "../../shared/game";
 import { tableOrder } from "../table-order";
-import { EmotePicker } from "./emotes";
+import { EmotePicker, ReactionRail } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
 import { TableSurface } from "./table-surface";
@@ -32,6 +32,8 @@ export function MatchBoard({
   const me = findPlayer(game, game.you);
   const handPlayer = findPlayer(game, seating.seats[0]);
   const active = !!me && me.lives > 0;
+  const myEmote =
+    me?.emote ?? game.spectators?.find((spectator) => spectator.id === game.you)?.emote;
   const myTurn = seating.current === game.you && active;
   const canPlay = myTurn && game.phase === "playing" && !busy;
   const opponents = seating.seats.slice(1);
@@ -154,12 +156,13 @@ export function MatchBoard({
           <EmotePicker
             open={emoteMenuOpen}
             onOpenChange={setEmoteMenuOpen}
-            disabled={busy || !active}
-            emote={me?.emote}
+            disabled={busy}
+            emote={myEmote}
             serverTime={game.serverTime}
             onSend={onEmote}
           />
         </div>
+        <ReactionRail game={game} />
         <div className="seats contents">{seating.seats.map(seat)}</div>
         <section
           className="play-table @container/play col-span-full row-start-3 grid min-h-0 min-w-0 place-items-center [container-type:size]"
