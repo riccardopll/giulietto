@@ -253,7 +253,6 @@ function Sheet({
           ref={input}
           value={text}
           maxLength={CHAT_MAX_LENGTH}
-          placeholder="Message"
           aria-label="Message"
           autoComplete="off"
           enterKeyHint="send"
