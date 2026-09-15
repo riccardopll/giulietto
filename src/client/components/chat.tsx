@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { Dialog } from "radix-ui";
-import { MessageCircle, SendHorizontal, X } from "lucide-react";
+import { MessageCircle, MessageCircleDashed, SendHorizontal, X } from "lucide-react";
 import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
 import type { GameView } from "../../shared/game";
 import { cn } from "../utils";
@@ -202,8 +202,8 @@ function Sheet({
       >
         {messages.length === 0 && (
           <li className="flex flex-1 flex-col items-center justify-center gap-4 text-center text-base text-muted-foreground">
-            <MessageCircle
-              className="size-32 text-primary/70"
+            <MessageCircleDashed
+              className="size-32 text-muted-foreground/50"
               strokeWidth={1.25}
               aria-hidden="true"
             />
