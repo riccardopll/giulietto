@@ -216,10 +216,8 @@ function Sheet({
             <li
               key={message.id}
               className={cn(
-                "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere shadow-xs",
-                own
-                  ? "self-end rounded-br-md bg-accent text-accent-foreground"
-                  : "self-start rounded-bl-md bg-secondary text-foreground",
+                "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere text-foreground shadow-xs",
+                own ? "self-end rounded-br-md bg-accent" : "self-start rounded-bl-md bg-secondary",
               )}
             >
               {!own && (
@@ -230,10 +228,7 @@ function Sheet({
               <span className="text-base leading-snug">{message.text}</span>
               <time
                 dateTime={new Date(message.sentAt).toISOString()}
-                className={cn(
-                  "float-right mt-2 ml-2 text-[10px] leading-none whitespace-nowrap",
-                  own ? "text-primary/70" : "text-muted-foreground",
-                )}
+                className="float-right mt-2 ml-2 text-[10px] leading-none whitespace-nowrap text-muted-foreground"
               >
                 {new Date(message.sentAt).toLocaleTimeString([], {
                   hour: "2-digit",
