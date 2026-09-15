@@ -160,7 +160,7 @@ function Sheet({
             <li
               key={message.id}
               className={cn(
-                "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere shadow-xs",
+                "relative max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere shadow-xs",
                 own
                   ? "self-end rounded-br-md bg-accent text-accent-foreground"
                   : "self-start rounded-bl-md bg-secondary text-foreground",
@@ -172,14 +172,15 @@ function Sheet({
                 </strong>
               )}{" "}
               <span className="text-base leading-snug">{message.text}</span>
+              {/* Reserves room for the time on the last line; wraps to a new line when it does not fit. */}
+              <span className="inline-block w-9" aria-hidden="true" />
               <time
                 dateTime={new Date(message.sentAt).toISOString()}
                 className={cn(
-                  "text-[10px] whitespace-nowrap",
+                  "absolute right-3 bottom-2.5 text-[10px] leading-none whitespace-nowrap",
                   own ? "text-primary/70" : "text-muted-foreground",
                 )}
               >
-                {"\u00A0\u00A0"}
                 {new Date(message.sentAt).toLocaleTimeString([], {
                   hour: "2-digit",
                   minute: "2-digit",
