@@ -18,7 +18,7 @@ import { Input } from "./ui/input";
 
 export type ChatState = { open: boolean; setOpen: (open: boolean) => void; unread: number };
 
-/** Sheet state kept above the board, so unread counts survive the results screen. */
+/** Sheet state kept above the board and results screen, so both outlive the switch between them. */
 export function useChat(game: GameView | null): ChatState {
   const code = game?.code;
   // The sheet belongs to one round, results included, and closes when the next one is dealt.
