@@ -51,13 +51,16 @@ export function PlayerSeat({
         className={cn(
           "seat-identity relative flex size-full min-w-0 items-center justify-center px-1",
           side === "bottom" ? "row-start-2" : "row-start-1",
-          emoteMenuOpen && (you ? "invisible" : side === "bottom" && "@max-2xl/board:invisible"),
+          emoteMenuOpen &&
+            (handInTray ? "invisible" : side === "bottom" && "@max-2xl/board:invisible"),
         )}
         data-seat-identity
       >
         <div className="seat-profile relative flex min-w-0 max-w-full items-center gap-2">
           <div className="seat-bubble-slot pointer-events-none absolute bottom-[calc(100%+.375rem)] left-0 z-30 flex w-full items-end justify-center gap-1">
-            <EmoteBubble emote={player.emote} serverTime={serverTime} name={player.name} />
+            {player.lives > 0 && (
+              <EmoteBubble emote={player.emote} serverTime={serverTime} name={player.name} />
+            )}
             <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
           </div>
           <div className="seat-avatar-wrap relative size-10 shrink-0 @min-2xl/board:size-13">

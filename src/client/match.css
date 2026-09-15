@@ -141,3 +141,22 @@
     transform: translateY(3px) scale(0.9);
   }
 }
+@keyframes reaction-slide {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(var(--slide-from) * 120%)) scale(0.8);
+  }
+  12% {
+    opacity: 1;
+    transform: translateX(calc(var(--slide-from) * -6%)) scale(1.04);
+  }
+  18%,
+  86% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(var(--slide-from) * 30%)) scale(0.9);
+  }
+}

@@ -4,7 +4,7 @@ import { Dialog } from "radix-ui";
 import App from "../App";
 import { AceSelection } from "../components/ace-selection";
 import type { TableCommand } from "../../shared/commands";
-import { sendEmote } from "../../shared/emotes";
+import { sendEmote, type Emote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
 import { bid, deal, play, view, type Game } from "../../shared/game";
 import {
@@ -112,6 +112,7 @@ export function Preview() {
   const [controlsOpen, setControlsOpen] = useState(false);
   const [aceOpen, setAceOpen] = useState(false);
   const [eliminationSeat, setEliminationSeat] = useState(0);
+  const [spectatorEmote, setSpectatorEmote] = useState<Emote>();
   const [tables, setTables] = useState<Record<number, Entry>>(() =>
     Object.fromEntries(
       counts.map((people) => {
@@ -217,9 +218,10 @@ export function Preview() {
     window.history.replaceState(null, "", `${window.location.pathname}?${query}`);
   }, [people, viewer, options]);
 
+  const spectator = { id: "preview-spectator", name: "Spectator", seen: 0, emote: spectatorEmote };
   const snapshot = view(
-    { ...entry.game, spectators: [{ id: "preview-spectator", name: "Spectator", seen: 0 }] },
-    viewer === -1 ? "preview-spectator" : entry.game.players[viewer].id,
+    { ...entry.game, spectators: [spectator] },
+    viewer === -1 ? spectator.id : entry.game.players[viewer].id,
   );
   // Keep the countdown frozen between moves, like the rest of the preview.
   snapshot.deadline =
@@ -227,10 +229,16 @@ export function Preview() {
     (snapshot.phase === "results" ? 12000 : snapshot.phase === "trick" ? 2600 : 40000);
 
   function command(input: TableCommand) {
-    if (viewer === -1) return;
+    const now = Date.now();
+    if (viewer === -1) {
+      if (input.action !== "emote") return;
+      const watcher = { ...spectator };
+      sendEmote({ ...entry.game, spectators: [watcher] }, watcher.id, input.emote, now);
+      setSpectatorEmote(watcher.emote);
+      return;
+    }
     const game = structuredClone(entry.game);
     const id = game.players[viewer].id;
-    const now = Date.now();
     if (input.action === "rename" && game.phase === "lobby")
       game.players[viewer].name = input.name.trim().slice(0, 20);
     else if (input.action === "settings" && game.phase === "lobby") {

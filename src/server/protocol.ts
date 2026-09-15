@@ -103,8 +103,11 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   }
   const spectator = game.spectators?.find((spectator) => spectator.id === id);
   if (spectator) {
-    if (input.action !== "leave") throw new GameError("Spectators cannot play or change the game.");
-    game.spectators = game.spectators!.filter((spectator) => spectator.id !== id);
+    spectator.seen = now;
+    if (input.action === "emote") sendEmote(game, id, input.emote, now);
+    else if (input.action === "leave")
+      game.spectators = game.spectators!.filter((spectator) => spectator.id !== id);
+    else throw new GameError("Spectators cannot play or change the game.");
     return;
   }
   const player = findPlayer(game, id);

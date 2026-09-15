@@ -19,13 +19,19 @@ test.each(["chicken", "perso"] as const)(
   },
 );
 
-test("only active players can send the supported emote during play", () => {
+test("anyone at the table reacts during play; an id that never joined cannot", () => {
   const game = gameFixture();
-  expect(() => sendEmote(game, "outsider", "chicken", 1000)).toThrow("Only players");
+  game.spectators = [{ id: "watcher", name: "Observer", seen: 0 }];
+  expect(() => sendEmote(game, "never-joined", "chicken", 1000)).toThrow("Join this table");
   game.players[0].lives = 0;
-  expect(() => sendEmote(game, "p0", "chicken", 1000)).toThrow("Only players");
+  sendEmote(game, "p0", "chicken", 1000);
+  sendEmote(game, "watcher", "perso", 1000);
+  expect(game.players[0].emote).toEqual({ id: "chicken", sentAt: 1000 });
+  expect(game.spectators[0].emote).toEqual({ id: "perso", sentAt: 1000 });
+  expect(() => sendEmote(game, "watcher", "chicken", 3999)).toThrow("Wait");
   for (const phase of ["lobby", "results", "finished"] as const) {
     game.phase = phase;
     expect(() => sendEmote(game, "p1", "chicken", 1000)).toThrow("during play");
+    expect(() => sendEmote(game, "watcher", "chicken", 5000)).toThrow("during play");
   }
 });

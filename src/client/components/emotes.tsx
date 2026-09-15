@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { Popover } from "radix-ui";
 import { Lock, Smile } from "lucide-react";
 import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, type Emote } from "../../shared/emotes";
+import type { GameView } from "../../shared/game";
 import { Button } from "./ui/button";
-import { Bubble, MenuBubble } from "./bubble";
+import { Bubble, MenuBubble, SideBubble, type Side } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
 
 function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
@@ -53,9 +54,10 @@ function Perso({ animated = false }: { animated?: boolean }) {
   );
 }
 
-const emotes: { id: Emote["id"]; label: string; Art: typeof Chicken }[] = [
-  { id: "chicken", label: "Send chicken emote", Art: Chicken },
-  { id: "perso", label: "Send Perso emote", Art: Perso },
+const art: Record<Emote["id"], typeof Chicken> = { chicken: Chicken, perso: Perso };
+const emotes: { id: Emote["id"]; label: string }[] = [
+  { id: "chicken", label: "Send chicken emote" },
+  { id: "perso", label: "Send Perso emote" },
 ];
 
 export function EmoteBubble({
@@ -69,10 +71,64 @@ export function EmoteBubble({
 }) {
   const visible = useRecent(emote?.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!emote || !visible) return null;
+  const Art = art[emote.id];
   return (
     <Bubble key={emote.sentAt} label={`${name} sent the ${emote.id} emote`}>
-      {emote.id === "perso" ? <Perso animated /> : <Chicken animated />}
+      <Art animated />
     </Bubble>
+  );
+}
+
+function SideReaction({
+  emote,
+  serverTime,
+  name,
+}: {
+  emote: Emote;
+  serverTime: number;
+  name: string;
+}) {
+  const visible = useRecent(emote.sentAt, serverTime, EMOTE_DURATION_MS);
+  if (!visible) return null;
+  const Art = art[emote.id];
+  return (
+    <SideBubble label={`${name} sent the ${emote.id} emote`} {...placement(emote)}>
+      <Art animated />
+    </SideBubble>
+  );
+}
+
+// A random side and height per reaction; the timestamp keeps every client in agreement.
+function placement(emote: Emote): { side: Side; top: number } {
+  return {
+    side: emote.sentAt % 2 ? "right" : "left",
+    top: 8 + (Math.floor(emote.sentAt / 2) % 65),
+  };
+}
+
+/** Reactions from spectators and eliminated players, each at its own spot along the edges. */
+export function ReactionRail({ game }: { game: GameView }) {
+  const reactions = [
+    ...(game.spectators ?? []),
+    ...game.players.filter((player) => player.lives <= 0),
+  ]
+    .flatMap((sender) =>
+      sender.emote && game.serverTime - sender.emote.sentAt < EMOTE_DURATION_MS
+        ? [{ ...sender, emote: sender.emote }]
+        : [],
+    )
+    .sort((a, b) => a.emote.sentAt - b.emote.sentAt);
+  return (
+    <div className="reaction-rail pointer-events-none relative z-30 col-span-full row-start-3 min-h-0">
+      {reactions.map((sender) => (
+        <SideReaction
+          key={`${sender.id}-${sender.emote.sentAt}`}
+          emote={sender.emote}
+          serverTime={game.serverTime}
+          name={sender.name}
+        />
+      ))}
+    </div>
   );
 }
 
@@ -122,23 +178,26 @@ export function EmotePicker({
           onOpenAutoFocus={(event) => event.preventDefault()}
           className="z-50 grid w-auto grid-cols-3 gap-1 sm:gap-3 bg-transparent p-2"
         >
-          {emotes.map(({ id, label, Art }) => (
-            <button
-              key={id}
-              type="button"
-              className="block"
-              aria-label={label}
-              onClick={() => {
-                if (disabled || coolingDown) return;
-                onSend(id);
-                onOpenChange(false);
-              }}
-            >
-              <MenuBubble>
-                <Art />
-              </MenuBubble>
-            </button>
-          ))}
+          {emotes.map(({ id, label }) => {
+            const Art = art[id];
+            return (
+              <button
+                key={id}
+                type="button"
+                className="block"
+                aria-label={label}
+                onClick={() => {
+                  if (disabled || coolingDown) return;
+                  onSend(id);
+                  onOpenChange(false);
+                }}
+              >
+                <MenuBubble>
+                  <Art />
+                </MenuBubble>
+              </button>
+            );
+          })}
           <button
             type="button"
             disabled
