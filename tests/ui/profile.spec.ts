@@ -41,7 +41,9 @@ test("profile edits recover from failed saves and stats loads without shifting l
   // A failed save must still let the pending stats request report its result.
   await statsRefresh!.fulfill({ status: 503 });
   await page.unroute("**/api/stats");
-  const statsError = page.locator("[role=alert]").filter({ hasText: "Could not load player stats." });
+  const statsError = page
+    .locator("[role=alert]")
+    .filter({ hasText: "Could not load player stats." });
   await expect(statsError).toBeVisible();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(avatarDialog).toBeHidden();
