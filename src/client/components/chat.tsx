@@ -8,7 +8,7 @@ import {
   type RefObject,
 } from "react";
 import { Dialog } from "radix-ui";
-import { MessageCircle, MessageCircleDashed, SendHorizontal, X } from "lucide-react";
+import { MessageCircleDashed, MessageCircleMore, SendHorizontal, X } from "lucide-react";
 import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
 import type { GameView } from "../../shared/game";
 import { cn } from "../utils";
@@ -91,7 +91,7 @@ export function ChatButton({
           edge ? "absolute inset-y-0 left-0 w-8 rounded-r-2xl bg-background shadow-sm" : "relative",
         )}
       >
-        <MessageCircle className="size-6" aria-hidden="true" />
+        <MessageCircleMore className="size-6" aria-hidden="true" />
         {unread > 0 && (
           <span
             aria-hidden="true"
