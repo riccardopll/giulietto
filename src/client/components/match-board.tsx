@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from 
 import type { Emote } from "../../shared/emotes";
 import { findPlayer, type GameView } from "../../shared/game";
 import { tableOrder } from "../table-order";
-import { ChatButton, ChatSheet, type ChatState } from "./chat";
+import { ChatButton, type ChatState } from "./chat";
 import { EmotePicker, ReactionRail } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
@@ -16,7 +16,6 @@ export function MatchBoard({
   pendingCard,
   preview,
   chat,
-  onChat,
   onEmote,
   onBid,
   onPlay,
@@ -26,7 +25,6 @@ export function MatchBoard({
   pendingCard: number | null;
   preview: boolean;
   chat: ChatState;
-  onChat: (text: string) => Promise<boolean>;
   onEmote: (emote: Emote["id"]) => void;
   onBid: (bid: number) => void;
   onPlay: (card: number | null) => void;
@@ -158,7 +156,12 @@ export function MatchBoard({
       >
         <TableSurface />
         <div className="pointer-events-none relative z-40 col-span-full row-start-2 row-end-5 min-h-0">
-          <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />
+          <ChatButton
+            edge
+            className="pointer-events-auto absolute left-[2%] top-1/2 -translate-y-1/2"
+            unread={chat.unread}
+            onClick={() => chat.setOpen(true)}
+          />
           <EmotePicker
             open={emoteMenuOpen}
             onOpenChange={setEmoteMenuOpen}
@@ -266,13 +269,6 @@ export function MatchBoard({
           </div>
         </section>
       </div>
-      <ChatSheet
-        open={chat.open}
-        onOpenChange={chat.setOpen}
-        game={game}
-        busy={busy}
-        onSend={onChat}
-      />
     </div>
   );
 }

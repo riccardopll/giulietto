@@ -4,10 +4,10 @@ import { Dialog } from "radix-ui";
 import App from "../App";
 import { AceSelection } from "../components/ace-selection";
 import type { TableCommand } from "../../shared/commands";
-import { sendChat } from "../../shared/chat";
+import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
-import { bid, deal, inPlay, play, view, type Game } from "../../shared/game";
+import { bid, deal, play, view, type Game } from "../../shared/game";
 import {
   advancePreview,
   makePreview,
@@ -491,7 +491,7 @@ export function Preview() {
           <Button
             variant="outline"
             className="h-11 w-full"
-            disabled={!inPlay(entry.game)}
+            disabled={!chatOpen(entry.game)}
             onClick={sendBotMessage}
           >
             Send message

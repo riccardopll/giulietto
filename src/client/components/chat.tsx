@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type RefObject,
+} from "react";
 import { Dialog } from "radix-ui";
-import { MessageCircle, SendHorizontal, X } from "lucide-react";
-import { CHAT_MAX_LENGTH } from "../../shared/chat";
-import { inPlay, type GameView } from "../../shared/game";
+import { MessageCircleDashed, MessageCircleMore, SendHorizontal, X } from "lucide-react";
+import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
+import type { GameView } from "../../shared/game";
 import { cn } from "../utils";
 import { overlayClass } from "./ui/action-dialog";
 import { Button } from "./ui/button";
@@ -10,11 +18,11 @@ import { Input } from "./ui/input";
 
 export type ChatState = { open: boolean; setOpen: (open: boolean) => void; unread: number };
 
-/** Sheet state kept above the board, so unread counts survive the results screen. */
+/** Sheet state kept above the board and results screen, so both outlive the switch between them. */
 export function useChat(game: GameView | null): ChatState {
   const code = game?.code;
-  // The sheet belongs to one round of play and closes when the board leaves.
-  const key = game && inPlay(game) ? `${game.code}:${game.round}` : null;
+  // The sheet belongs to one round, results included, and closes when the next one is dealt.
+  const key = game && chatOpen(game) ? `${game.code}:${game.round}` : null;
   const latest = game?.chat?.at(-1)?.id ?? 0;
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [seen, setSeen] = useState({ code, id: 0 });
@@ -25,17 +33,65 @@ export function useChat(game: GameView | null): ChatState {
   return { open, setOpen: (next) => setOpenKey(next ? key : null), unread };
 }
 
-export function ChatButton({ unread, onClick }: { unread: number; onClick: () => void }) {
+/** Where the chat button last stood, so it can slide to its next spot when the screen changes. */
+let lastSpot: { rect: DOMRect; at: number } | undefined;
+
+function useSlideFromLastSpot(ref: RefObject<HTMLButtonElement | null>) {
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const from = lastSpot;
+    lastSpot = undefined;
+    if (from && performance.now() - from.at < 1000) {
+      const to = element.getBoundingClientRect();
+      const dx = from.rect.left - to.left;
+      const dy = from.rect.top - to.top;
+      if (dx || dy)
+        element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], {
+          duration: 450,
+          easing: "cubic-bezier(.2,.8,.2,1)",
+        });
+    }
+    return () => {
+      lastSpot = { rect: element.getBoundingClientRect(), at: performance.now() };
+    };
+  }, [ref]);
+}
+
+/** Opens the chat; a tab on the table's edge during play, a plain button on the results screen. */
+export function ChatButton({
+  unread,
+  onClick,
+  edge = false,
+  className,
+}: {
+  unread: number;
+  onClick: () => void;
+  edge?: boolean;
+  className?: string;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useSlideFromLastSpot(ref);
   return (
     <Button
+      ref={ref}
       variant="ghost"
       size="icon"
-      className="pointer-events-auto absolute left-[2%] top-1/2 h-11 w-11 shrink-0 -translate-y-1/2 rounded-none bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring"
+      className={cn(
+        "h-11 w-11 shrink-0 bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring",
+        edge ? "rounded-none" : "rounded-lg",
+        className,
+      )}
       aria-label={unread ? `Chat, ${unread} unread` : "Chat"}
       onClick={onClick}
     >
-      <span className="absolute inset-y-0 left-0 grid w-8 place-items-center rounded-r-2xl bg-background shadow-sm">
-        <MessageCircle className="size-6" aria-hidden="true" />
+      <span
+        className={cn(
+          "grid place-items-center",
+          edge ? "absolute inset-y-0 left-0 w-8 rounded-r-2xl bg-background shadow-sm" : "relative",
+        )}
+      >
+        <MessageCircleMore className="size-6" aria-hidden="true" />
         {unread > 0 && (
           <span
             aria-hidden="true"
@@ -83,9 +139,17 @@ function Sheet({
   const input = useRef<HTMLInputElement>(null);
   const pinned = useRef(true);
   const [text, setText] = useState("");
+  const showLatest = () => {
+    if (pinned.current && list.current) list.current.scrollTop = list.current.scrollHeight;
+  };
+  useEffect(showLatest, [latest]);
+  // The list shrinks when the keyboard opens; keep the newest messages in view.
   useEffect(() => {
-    if (pinned.current) list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [latest]);
+    if (!list.current) return;
+    const observer = new ResizeObserver(showLatest);
+    observer.observe(list.current);
+    return () => observer.disconnect();
+  }, []);
   async function submit(event: FormEvent) {
     event.preventDefault();
     const message = text.trim();
@@ -108,10 +172,13 @@ function Sheet({
           "--viewport-height": `${viewport.height}px`,
         } as CSSProperties)
       }
-      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg"
+      // The background extends a screen above and below the sheet. iOS Safari shows the page
+      // through the strip under its collapsed address pill, and pans the viewport during the
+      // keyboard animation before the sheet has moved with it.
+      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none transition-[height] duration-300 ease-out after:pointer-events-none after:absolute after:inset-x-0 after:-inset-y-[100dvh] after:-z-10 after:bg-card data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg sm:after:hidden"
     >
-      <header className="flex items-center gap-2 border-b px-4 pt-[env(safe-area-inset-top)] sm:pt-0">
-        <Dialog.Title className="py-2 text-lg font-semibold">Chat</Dialog.Title>
+      <header className="flex items-center px-4 pt-[env(safe-area-inset-top)] sm:pt-0">
+        <Dialog.Title className="sr-only">Chat</Dialog.Title>
         <Dialog.Close asChild>
           <Button
             variant="ghost"
@@ -127,7 +194,7 @@ function Sheet({
         ref={list}
         role="log"
         aria-label="Messages"
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain px-4 py-4"
+        className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-3 pb-3"
         onScroll={(event) => {
           const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
           pinned.current = scrollHeight - scrollTop - clientHeight < 32;
@@ -135,8 +202,8 @@ function Sheet({
       >
         {messages.length === 0 && (
           <li className="flex flex-1 flex-col items-center justify-center gap-4 text-center text-base text-muted-foreground">
-            <MessageCircle
-              className="size-32 text-primary/70"
+            <MessageCircleDashed
+              className="size-32 text-muted-foreground/50"
               strokeWidth={1.25}
               aria-hidden="true"
             />
@@ -149,34 +216,40 @@ function Sheet({
             <li
               key={message.id}
               className={cn(
-                "max-w-[85%] rounded-2xl px-4 py-3 wrap-anywhere shadow-xs",
+                "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere text-foreground shadow-xs",
                 own
-                  ? "self-end rounded-br-md bg-accent text-accent-foreground"
-                  : "self-start rounded-bl-md bg-secondary text-foreground",
+                  ? "self-end rounded-br-md bg-primary/30"
+                  : "self-start rounded-bl-md bg-secondary",
               )}
             >
-              <strong
-                className={cn(
-                  "block text-sm font-semibold",
-                  own ? "text-primary" : "text-secondary-foreground",
-                )}
+              {!own && (
+                <strong className="block text-xs font-semibold text-secondary-foreground">
+                  {message.name}
+                </strong>
+              )}{" "}
+              <span className="text-base leading-snug">{message.text}</span>
+              <time
+                dateTime={new Date(message.sentAt).toISOString()}
+                className="float-right mt-2 ml-2 text-[10px] leading-none whitespace-nowrap text-muted-foreground"
               >
-                {own ? "You" : message.name}
-              </strong>{" "}
-              <span className="text-lg leading-snug">{message.text}</span>
+                {new Date(message.sentAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hourCycle: "h23",
+                })}
+              </time>
             </li>
           );
         })}
       </ol>
       <form
-        className="flex items-center gap-2 border-t px-3 pt-2 pb-[max(.5rem,env(safe-area-inset-bottom))] sm:pb-2"
+        className="flex items-center gap-2 border-t px-3 pt-1.5 pb-[max(.375rem,env(safe-area-inset-bottom))] sm:pb-1.5"
         onSubmit={(event) => void submit(event)}
       >
         <Input
           ref={input}
           value={text}
           maxLength={CHAT_MAX_LENGTH}
-          placeholder="Message"
           aria-label="Message"
           autoComplete="off"
           enterKeyHint="send"

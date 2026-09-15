@@ -26,9 +26,13 @@ function CardFace({ card }: { card: number | null }) {
         aria-hidden="true"
         style={{ visibility: loaded ? "hidden" : "visible" }}
       >
-        <span>{card === null ? "Hidden card" : cardLabel(card)}</span>
-        {card !== null && (
-          <span className="text-sm font-semibold">{card === 31 ? "0 / 41" : card}</span>
+        {card === null ? (
+          <span className="text-lg font-semibold">?</span>
+        ) : (
+          <>
+            <span>{cardLabel(card)}</span>
+            <span className="text-sm font-semibold">{card === 31 ? "0 / 41" : card}</span>
+          </>
         )}
       </span>
       <img

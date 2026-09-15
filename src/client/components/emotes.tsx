@@ -102,11 +102,14 @@ function SideReaction({
 function placement(emote: Emote): { side: Side; top: number } {
   return {
     side: emote.sentAt % 2 ? "right" : "left",
-    top: 8 + (Math.floor(emote.sentAt / 2) % 65),
+    top: 4 + (Math.floor(emote.sentAt / 2) % 82),
   };
 }
 
-/** Reactions from spectators and eliminated players, each at its own spot along the edges. */
+/**
+ * Reactions from spectators and eliminated players, each at its own spot along the edges.
+ * Drawn above the chat and emote buttons so a bubble is never cut off by them.
+ */
 export function ReactionRail({ game }: { game: GameView }) {
   const reactions = [
     ...(game.spectators ?? []),
@@ -119,7 +122,7 @@ export function ReactionRail({ game }: { game: GameView }) {
     )
     .sort((a, b) => a.emote.sentAt - b.emote.sentAt);
   return (
-    <div className="reaction-rail pointer-events-none relative z-30 col-span-full row-start-3 min-h-0">
+    <div className="reaction-rail pointer-events-none relative z-50 col-span-full row-start-2 row-end-5 min-h-0">
       {reactions.map((sender) => (
         <SideReaction
           key={`${sender.id}-${sender.emote.sentAt}`}

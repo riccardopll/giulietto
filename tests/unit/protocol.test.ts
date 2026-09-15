@@ -91,14 +91,17 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
     const chat = { action: "chat", text: "hi", commandId: crypto.randomUUID() } as const;
     if (["bidding", "playing", "trick"].includes(phase)) {
       apply(game, "watcher", emote, 400);
-      apply(game, "watcher", chat, 401);
       expect(game.spectators?.[0].emote).toEqual({ id: "chicken", sentAt: 400 });
+    } else {
+      expect(() => apply(game, "watcher", emote, 400)).toThrow("during play");
+    }
+    if (phase === "finished") {
+      expect(() => apply(game, "watcher", chat, 401)).toThrow("until the table closes");
+    } else {
+      apply(game, "watcher", chat, 401);
       expect(game.chat).toEqual([
         { id: 1, sender: "watcher", name: "Observer", text: "hi", sentAt: 401 },
       ]);
-    } else {
-      expect(() => apply(game, "watcher", emote, 400)).toThrow("during play");
-      expect(() => apply(game, "watcher", chat, 401)).toThrow("during play");
     }
     apply(game, "watcher", { action: "leave", commandId: crypto.randomUUID() }, 500);
     expect(() => view(game, "watcher")).toThrow();

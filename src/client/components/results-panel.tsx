@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
 import { findPlayer, type GameView } from "../../shared/game";
 import { cn, toRoman } from "../utils";
+import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "./ui/button";
@@ -28,10 +29,12 @@ function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
 export function ResultsPanel({
   game,
   preview,
+  chat,
   onReset,
 }: {
   game: GameView;
   preview: boolean;
+  chat: ChatState;
   onReset: () => void;
 }) {
   const seconds = useCountdown(game, preview);
@@ -40,9 +43,12 @@ export function ResultsPanel({
   if (winner) return <WinnerPodium game={game} winner={winner} onReset={onReset} />;
   return (
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center sm:p-6">
-      <h1 className="mb-4 px-1 pt-2 text-left text-2xl font-semibold wrap-anywhere">
-        {finished ? "Table closed" : game.tie ? "Everyone returns" : "Round results"}
-      </h1>
+      <div className="mb-4 flex items-center gap-3 px-1 pt-2">
+        <h1 className="min-w-0 text-left text-2xl font-semibold wrap-anywhere">
+          {finished ? "Table closed" : game.tie ? "Everyone returns" : "Round results"}
+        </h1>
+        {!finished && <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />}
+      </div>
       {game.tie && (
         <p className="mb-5 text-sm text-muted-foreground">All players return with one life.</p>
       )}

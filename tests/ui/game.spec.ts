@@ -48,7 +48,7 @@ test("three players complete a game, including round results and elimination", a
   await expect(hostChat.getByRole("log", { name: "Messages" })).toContainText("No messages yet.");
   await hostChat.getByLabel("Message", { exact: true }).fill("good luck all");
   await hostChat.getByRole("button", { name: "Send message" }).click();
-  await expect(hostChat.getByRole("log", { name: "Messages" })).toContainText("You good luck all");
+  await expect(hostChat.getByRole("log", { name: "Messages" })).toContainText("good luck all");
   await expect(hostChat.getByLabel("Message", { exact: true })).toHaveValue("");
   await players[1].page.getByRole("button", { name: "Chat, 1 unread", exact: true }).click();
   const guestChat = players[1].page.getByRole("dialog", { name: "Chat", exact: true });
