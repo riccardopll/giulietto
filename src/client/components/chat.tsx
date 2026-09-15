@@ -116,9 +116,10 @@ function Sheet({
           "--viewport-height": `${viewport.height}px`,
         } as CSSProperties)
       }
-      // The background continues below the composer: iOS Safari leaves its collapsed address
-      // pill out of the visual viewport but still shows the page through that strip.
-      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none transition-[height] duration-300 ease-out after:pointer-events-none after:absolute after:inset-x-0 after:top-full after:h-screen after:bg-card data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg sm:after:hidden"
+      // The background extends a screen above and below the sheet. iOS Safari shows the page
+      // through the strip under its collapsed address pill, and pans the viewport during the
+      // keyboard animation before the sheet has moved with it.
+      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none transition-[height] duration-300 ease-out after:pointer-events-none after:absolute after:inset-x-0 after:-inset-y-[100dvh] after:-z-10 after:bg-card data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg sm:after:hidden"
     >
       <header className="flex items-center px-4 pt-[env(safe-area-inset-top)] sm:pt-0">
         <Dialog.Title className="sr-only">Chat</Dialog.Title>
