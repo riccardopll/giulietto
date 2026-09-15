@@ -217,7 +217,9 @@ function Sheet({
               key={message.id}
               className={cn(
                 "max-w-[85%] rounded-2xl px-3 py-1.5 wrap-anywhere text-foreground shadow-xs",
-                own ? "self-end rounded-br-md bg-primary/30" : "self-start rounded-bl-md bg-secondary",
+                own
+                  ? "self-end rounded-br-md bg-primary/30"
+                  : "self-start rounded-bl-md bg-secondary",
               )}
             >
               {!own && (
