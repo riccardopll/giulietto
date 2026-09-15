@@ -39,12 +39,12 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
       cycle: after.cycle,
       blind: after.count === 1,
       order: after.order,
-      players: after.players.map((p, seat) => ({
-        id: p.id,
-        name: p.name,
+      players: after.players.map((player, seat) => ({
+        id: player.id,
+        name: player.name,
         seat,
-        hand: p.hand,
-        lives: p.lives,
+        hand: player.hand,
+        lives: player.lives,
       })),
     });
   } else if (
@@ -60,7 +60,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
     });
   } else if (before.phase === "playing" && after.trick.length > before.trick.length) {
     const move = after.trick[after.trick.length - 1];
-    const trick = before.players.reduce((sum, p) => sum + p.taken, 0) + 1;
+    const trick = before.players.reduce((sum, player) => sum + player.taken, 0) + 1;
     add("play", move.player, {
       card: move.card,
       elapsedMs,
@@ -75,10 +75,10 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
     add("round_scored", null, {
       results: after.results,
       tie: after.tie,
-      players: after.players.map((p) => ({
-        id: p.id,
-        lives: p.lives,
-        stats: p.stats,
+      players: after.players.map((player) => ({
+        id: player.id,
+        lives: player.lives,
+        stats: player.stats,
       })),
     });
   }
@@ -87,13 +87,13 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
   return events;
 }
 
-export function eventStatements(db: D1Database, g: Game, events: GameEvent[]) {
+export function eventStatements(db: D1Database, game: Game, events: GameEvent[]) {
   return [
     // Events may be delivered over several bounded batches before finalizing the summary.
     db
       .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at)
       VALUES(?,?,'active',?,?,?) ON CONFLICT(id) DO NOTHING`)
-      .bind(g.matchId!, g.code, g.public ? 1 : 0, g.players.length, g.startedAt!),
+      .bind(game.matchId!, game.code, game.public ? 1 : 0, game.players.length, game.startedAt!),
     db
       .prepare(`INSERT INTO match_events(match_id,sequence,revision,round,type,player_id,source,command_id,occurred_at,payload)
       SELECT json_extract(value,'$.match_id'),json_extract(value,'$.sequence'),

@@ -1,7 +1,6 @@
 export async function serveSite(req: Request, assets: Pick<Fetcher, "fetch">) {
   const url = new URL(req.url);
   const preview = url.pathname === "/preview";
-  // Preview is a development-only route; production serves a real 404.
   const assetRequest = preview && import.meta.env.DEV ? new Request(new URL("/", url), req) : req;
   const assetResponse = await assets.fetch(assetRequest);
   let response = new Response(assetResponse.body, assetResponse);

@@ -1,7 +1,9 @@
-import { makeGame, player, type Game } from "../../src/shared/game";
+import { makeGame, makePlayer, type Game } from "../../src/shared/game";
 
 export function lobbyFixture(people = 3): Game {
-  const players = Array.from({ length: people }, (_, i) => player(`p${i}`, `bot_${i + 1}`, 100));
+  const players = Array.from({ length: people }, (_, i) =>
+    makePlayer(`p${i}`, `bot_${i + 1}`, 100),
+  );
   return { ...makeGame("ABCDEFGH", players[0], false), players };
 }
 
@@ -14,8 +16,8 @@ export function gameFixture(
   ],
 ): Game {
   const game = lobbyFixture(hands.length);
-  game.players.forEach((p, i) => {
-    p.hand = [...hands[i]];
+  game.players.forEach((player, i) => {
+    player.hand = [...hands[i]];
   });
   return {
     ...game,
@@ -24,7 +26,7 @@ export function gameFixture(
     round: 1,
     count: hands[0].length,
     phase: "bidding",
-    order: game.players.map((p) => p.id),
+    order: game.players.map((player) => player.id),
     deadline: 40_100,
   };
 }

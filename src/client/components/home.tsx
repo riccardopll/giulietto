@@ -1,5 +1,5 @@
 import { ChevronRight, Link, Loader2, Play, Trophy, Users } from "lucide-react";
-import { toast } from "sonner";
+import { toast } from "../toast";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { PlayingCard } from "./playing-card";

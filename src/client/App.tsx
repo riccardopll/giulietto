@@ -1,5 +1,4 @@
 import { useEffect, useEffectEvent, useState } from "react";
-import { Toaster } from "sonner";
 import { defaultAvatar } from "../shared/avatars";
 import { AceSelection } from "./components/ace-selection";
 import { Avatar } from "./components/avatar";
@@ -12,6 +11,7 @@ import { TableHeader } from "./components/table-header";
 import { ActionDialog } from "./components/ui/action-dialog";
 import { Button } from "./components/ui/button";
 import { PageHeader, Wordmark } from "./components/ui/page-header";
+import { Toaster } from "./toast";
 import { useGameSession, type PreviewSession } from "./use-game-session";
 import { usePlayerStats } from "./use-player-stats";
 
@@ -110,7 +110,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           cancelLabel="Stay"
           actionLabel={busy ? "Leaving…" : "Leave table"}
           busy={busy}
-          onSubmit={() => table.act("leave")}
+          onSubmit={() => table.act({ action: "leave" })}
         />
         {!game ? (
           page === "home" ? (
@@ -119,7 +119,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               ready={table.ready}
               busy={busy}
               onCodeChange={table.setCode}
-              onAction={table.act}
+              onAction={(action) => table.act({ action })}
               onLeaderboard={() => navigate("leaderboard")}
             />
           ) : (
@@ -149,8 +149,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 busy={busy}
                 copied={table.copied}
                 onCopy={table.copyInvite}
-                onStart={() => void table.act("start")}
-                onSettings={(startingLives) => table.act("settings", { startingLives })}
+                onStart={() => void table.act({ action: "start" })}
+                onSettings={(startingLives) => table.act({ action: "settings", startingLives })}
                 onRename={table.renameSeat}
               />
             ) : result ? (
@@ -161,8 +161,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 busy={busy}
                 pendingCard={table.pendingCard}
                 preview={isPreview}
-                onEmote={(emote) => void table.act("emote", { emote })}
-                onBid={(bid) => void table.act("bid", { bid })}
+                onEmote={(emote) => void table.act({ action: "emote", emote })}
+                onBid={(bid) => void table.act({ action: "bid", bid })}
                 onPlay={table.play}
               />
             )}
@@ -174,17 +174,10 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             if (!open) table.setAce(null);
           }}
           disabled={busy}
-          onSelect={(mode) => table.act("play", { card: table.ace, mode })}
+          onSelect={(mode) => table.act({ action: "play", card: table.ace ?? -1, mode })}
         />
       </div>
-      <Toaster
-        position="top-center"
-        theme="light"
-        closeButton
-        duration={4500}
-        offset="max(16px, env(safe-area-inset-top))"
-        mobileOffset="max(16px, env(safe-area-inset-top))"
-      />
+      <Toaster />
     </>
   );
 }

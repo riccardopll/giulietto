@@ -1,6 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
-import { toast } from "sonner";
-import { TABLE_ACTIONS } from "../shared/actions";
+import { toast } from "./toast";
+import { isTableCommand, type EntryCommand, type TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
 import { GameConnection } from "./game-connection";
 import { GameRequestError, requestGame } from "./game-request";
@@ -15,16 +15,15 @@ import {
 export type PreviewSession = {
   state: GameView;
   exitControl?: ReactNode;
-  command: (action: string, extra: Record<string, unknown>) => void;
+  command: (input: TableCommand) => void;
   reset: () => void;
 };
 
 function showError(message: string) {
-  if (message) toast.error(message, { id: "game-error", duration: 4500 });
+  if (message) toast.error(message, { id: "game-error" });
   else toast.dismiss("game-error");
 }
 
-/** Owns the table lifecycle: guest session, transport, retries, history entries, and errors. */
 export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const isPreview = !!preview;
   const [session] = useState(() =>
@@ -123,7 +122,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     };
   }, [game?.code, isPreview, session.token]);
   useEffect(() => {
-    if (connection) toast.error(connection, { id: "connection-error", duration: 4500 });
+    if (connection) toast.error(connection, { id: "connection-error" });
     else toast.dismiss("connection-error");
   }, [connection]);
   useEffect(() => {
@@ -162,13 +161,13 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     }
   }, [game?.code, game?.matchId]);
 
-  async function act(action: string, extra: Record<string, unknown> = {}) {
+  async function act(input: EntryCommand | TableCommand) {
     if (preview) {
       try {
-        if (action === "leave") {
+        if (input.action === "leave") {
           setLeaveOpen(false);
           preview.reset();
-        } else preview.command(action, extra);
+        } else if (isTableCommand(input)) preview.command(input);
         setAce(null);
       } catch (error) {
         showError((error as Error).message);
@@ -178,27 +177,22 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     if (!ready || busyRef.current) return;
     setBusy(true);
     showError("");
-    if (action === "play") setPendingCard(Number(extra.card));
+    if (input.action === "play") setPendingCard(input.card ?? -1);
     try {
-      if (action === "leave") transport.current?.stop();
+      if (input.action === "leave") transport.current?.stop();
       let s: GameView;
       if (
         gameRef.current &&
         transport.current &&
-        action !== "leave" &&
-        TABLE_ACTIONS.includes(action)
+        input.action !== "leave" &&
+        isTableCommand(input)
       ) {
-        s = await transport.current.command(action, extra);
+        s = await transport.current.command(input);
       } else {
-        const command = {
-          action,
-          name: name || "Guest",
-          code: gameRef.current?.code || code,
-          ...extra,
-        };
+        const command = { name: name || "Guest", code: gameRef.current?.code || code, ...input };
         const payload = JSON.stringify(command);
         // Reuse mutation IDs after failures; a fresh join must restore expired membership.
-        if (action === "join" || httpAttempt.current?.payload !== payload)
+        if (input.action === "join" || httpAttempt.current?.payload !== payload)
           httpAttempt.current = { payload, commandId: crypto.randomUUID() };
         s = await requestGame(session.token, {
           ...command,
@@ -206,12 +200,12 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
         });
         httpAttempt.current = null;
       }
-      if (action === "leave") reset();
+      if (input.action === "leave") reset();
       else accept(s);
       setAce(null);
     } catch (e) {
       if (e instanceof GameRequestError && !e.retryable) httpAttempt.current = null;
-      if (action === "leave") reset();
+      if (input.action === "leave") reset();
       else showError((e as Error).message);
     } finally {
       setBusy(false);
@@ -241,15 +235,15 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   }
   async function renameSeat(next: string) {
     if (preview) {
-      preview.command("rename", { name: next });
+      preview.command({ action: "rename", name: next });
       return true;
     }
-    await act("rename", { name: next });
+    await act({ action: "rename", name: next });
     return gameRef.current?.viewerName === next.trim();
   }
   function play(card: number | null) {
     if (game?.canChooseAce && (card === null || card === 31)) setAce(card ?? -1);
-    else void act("play", { card: card ?? -1 });
+    else void act({ action: "play", card: card ?? -1 });
   }
   async function copyInvite() {
     const link = `${location.origin}/?table=${game!.code}`;

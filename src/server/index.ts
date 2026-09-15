@@ -1,4 +1,4 @@
-import { ENTRY_ACTIONS } from "../shared/actions";
+import { isEntryCommand } from "../shared/commands";
 import { ensureProfile, saveProfile } from "./player-profile";
 import { playerStats } from "./player-stats";
 import type { Env } from "./env";
@@ -35,7 +35,7 @@ export default {
       const protocols = req.headers
         .get("sec-websocket-protocol")
         ?.split(",")
-        .map((s) => s.trim());
+        .map((protocol) => protocol.trim());
       const token = socket
         ? protocols?.[0] === "giulietto"
           ? protocols[1]
@@ -52,9 +52,9 @@ export default {
           { status: 429 },
         );
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
-      const id = Array.from(new Uint8Array(digest), (n) => n.toString(16).padStart(2, "0")).join(
-        "",
-      );
+      const id = Array.from(new Uint8Array(digest), (byte) =>
+        byte.toString(16).padStart(2, "0"),
+      ).join("");
       if (stats)
         return Response.json(await playerStats(env.DB, id), {
           headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
@@ -74,12 +74,11 @@ export default {
             headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
           });
         body = command(value);
-        if (ENTRY_ACTIONS.includes(body.action))
-          Object.assign(body, await ensureProfile(env.DB, id, body.name));
+        if (isEntryCommand(body)) Object.assign(body, await ensureProfile(env.DB, id, body.name));
       }
       const headers = new Headers({ "x-player-id": id });
       let response;
-      if (body && ["create", "match"].includes(body.action)) {
+      if (body && (body.action === "create" || body.action === "match")) {
         response = await env.MATCHMAKER.getByName("public-v1").fetch("https://internal/", {
           method: "POST",
           headers,

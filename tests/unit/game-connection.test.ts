@@ -59,7 +59,7 @@ test("rejoins with the current name and replays an unacknowledged command only a
   const first = Socket.sockets[0];
   first.open();
   first.receive({ type: "state", state: { ...state(), viewerName: "bot_2" } });
-  const pending = connection.command("bid", { bid: 0 });
+  const pending = connection.command({ action: "bid", bid: 0 });
   const message = first.send.mock.calls[0][0];
   first.disconnect();
   await vi.advanceTimersByTimeAsync(500);
@@ -117,7 +117,7 @@ test.each([
   Socket.sockets[0].disconnect();
   await vi.advanceTimersByTimeAsync(500);
   expect(status).toHaveBeenLastCalledWith(error);
-  await expect(connection.command("bid", { bid: 0 })).rejects.toThrow(error);
+  await expect(connection.command({ action: "bid", bid: 0 })).rejects.toThrow(error);
   await vi.advanceTimersByTimeAsync(60000);
   expect(request).toHaveBeenCalledTimes(1);
   expect(Socket.sockets).toHaveLength(1);

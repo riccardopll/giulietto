@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { toast } from "sonner";
+import { toast } from "../toast";
 import { ArrowLeft, Pencil, PlayingCard, Target, Timer } from "lucide-react";
 import type { Profile, StatsResponse } from "../../shared/player-stats";
 import { type AvatarId } from "../../shared/avatars";

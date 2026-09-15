@@ -1,12 +1,12 @@
-import { ENTRY_ACTIONS, TABLE_ACTIONS } from "../shared/actions";
 import { isAvatar } from "../shared/avatars";
+import type { Command, EntryCommand, TableCommand } from "../shared/commands";
 import { sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
   bid,
   deal,
   play,
-  player,
+  makePlayer,
   tick,
   MIN_STARTING_LIVES,
   MAX_STARTING_LIVES,
@@ -14,89 +14,125 @@ import {
   findPlayer,
 } from "../shared/game";
 
-export type Command = Record<string, unknown> & { action: string; commandId: string };
+function integer(value: unknown, message: string) {
+  if (typeof value !== "number" || !Number.isInteger(value)) throw new GameError(message);
+  return value;
+}
+function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
+  const name = typeof input.name === "string" ? input.name : undefined;
+  const avatar = isAvatar(input.avatar) ? input.avatar : undefined;
+  switch (input.action) {
+    case "create":
+    case "match":
+      return { action: input.action, name, avatar };
+    case "join":
+      return { action: "join", name, avatar, matchmaking: input.matchmaking === true };
+    case "rename":
+      if (typeof input.name !== "string") throw new GameError("Enter a display name.");
+      return { action: "rename", name: displayName(input.name) };
+    case "settings": {
+      const lives = input.startingLives;
+      if (
+        typeof lives !== "number" ||
+        !Number.isInteger(lives) ||
+        lives < MIN_STARTING_LIVES ||
+        lives > MAX_STARTING_LIVES
+      )
+        throw new GameError(
+          `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
+        );
+      return { action: "settings", startingLives: lives };
+    }
+    case "start":
+    case "leave":
+      return { action: input.action };
+    case "bid":
+      return { action: "bid", bid: integer(input.bid, "Enter a valid prediction.") };
+    case "play":
+      return {
+        action: "play",
+        card: input.card === undefined ? undefined : integer(input.card, "Choose a valid card."),
+        mode: input.mode === "high" || input.mode === "low" ? input.mode : undefined,
+      };
+    case "emote":
+      if (input.emote !== "chicken" && input.emote !== "perso")
+        throw new GameError("Unknown emote.");
+      return { action: "emote", emote: input.emote };
+    default:
+      throw new GameError("Unknown action.");
+  }
+}
 export function command(value: unknown): Command {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new GameError("Invalid request.");
-  const b = value as Record<string, unknown>;
-  if (![...ENTRY_ACTIONS, ...TABLE_ACTIONS].includes(String(b.action)))
-    throw new GameError("Unknown action.");
-  if (typeof b.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(b.commandId))
+  const input = value as Record<string, unknown>;
+  const parsed = fields(input);
+  if (typeof input.commandId !== "string" || !/^[0-9a-f-]{36}$/i.test(input.commandId))
     throw new GameError("Invalid command ID.");
-  if (b.action === "bid" && (typeof b.bid !== "number" || !Number.isInteger(b.bid)))
-    throw new GameError("Enter a valid prediction.");
-  return b as Command;
+  return {
+    ...parsed,
+    commandId: input.commandId,
+    ...(typeof input.code === "string" ? { code: input.code } : {}),
+  };
 }
-export function join(g: Game, id: string, name: string, now: number, matchmaking = false) {
-  const seated = findPlayer(g, id);
-  if (matchmaking && g.phase !== "lobby" && !seated)
+export function join(game: Game, id: string, name: string, now: number, matchmaking = false) {
+  const seated = findPlayer(game, id);
+  if (matchmaking && game.phase !== "lobby" && !seated)
     throw new GameError("This table is no longer available.");
-  const existing = seated ?? g.spectators?.find((p) => p.id === id);
+  const existing = seated ?? game.spectators?.find((spectator) => spectator.id === id);
   if (existing) {
     existing.seen = now;
     return;
   }
-  if (g.phase !== "lobby") {
-    (g.spectators ??= []).push({ id, name, seen: now });
+  if (game.phase !== "lobby") {
+    (game.spectators ??= []).push({ id, name, seen: now });
     return;
   }
-  if (g.players.length >= 6) throw new GameError("This table is full.");
-  g.players.push({ ...player(id, name, now), lives: g.startingLives });
-  if (!g.host) g.host = id;
-  tick(g, now);
+  if (game.players.length >= 6) throw new GameError("This table is full.");
+  game.players.push({ ...makePlayer(id, name, now), lives: game.startingLives });
+  if (!game.host) game.host = id;
+  tick(game, now);
 }
-export function apply(g: Game, id: string, b: Command, now: number) {
-  if (b.action === "join") {
-    join(g, id, displayName(b.name), now, b.matchmaking === true);
-    const seated = findPlayer(g, id);
-    if (seated && isAvatar(b.avatar)) seated.avatar = b.avatar;
-    if (seated && g.phase === "lobby") seated.name = displayName(b.name);
+export function apply(game: Game, id: string, input: Command, now: number) {
+  if (input.action === "join") {
+    join(game, id, displayName(input.name), now, input.matchmaking);
+    const seated = findPlayer(game, id);
+    if (seated && input.avatar) seated.avatar = input.avatar;
+    if (seated && game.phase === "lobby") seated.name = displayName(input.name);
     return;
   }
-  const spectator = g.spectators?.find((p) => p.id === id);
+  const spectator = game.spectators?.find((spectator) => spectator.id === id);
   if (spectator) {
-    if (b.action !== "leave") throw new GameError("Spectators cannot play or change the game.");
-    g.spectators = g.spectators!.filter((p) => p.id !== id);
+    if (input.action !== "leave") throw new GameError("Spectators cannot play or change the game.");
+    game.spectators = game.spectators!.filter((spectator) => spectator.id !== id);
     return;
   }
-  const p = findPlayer(g, id);
-  if (!p) throw new GameError("Join this table first.");
-  p.seen = now;
-  if (b.action === "rename") {
-    if (g.phase !== "lobby") throw new GameError("Names can only change in the lobby.");
-    if (typeof b.name !== "string") throw new GameError("Enter a display name.");
-    p.name = displayName(b.name);
-  } else if (b.action === "emote") {
-    sendEmote(g, id, b.emote, now);
-  } else if (b.action === "settings") {
-    if (g.host !== id) throw new GameError("Only the host can change starting lives.");
-    if (g.phase !== "lobby")
+  const player = findPlayer(game, id);
+  if (!player) throw new GameError("Join this table first.");
+  player.seen = now;
+  if (input.action === "rename") {
+    if (game.phase !== "lobby") throw new GameError("Names can only change in the lobby.");
+    player.name = input.name;
+  } else if (input.action === "emote") {
+    sendEmote(game, id, input.emote, now);
+  } else if (input.action === "settings") {
+    if (game.host !== id) throw new GameError("Only the host can change starting lives.");
+    if (game.phase !== "lobby")
       throw new GameError("Starting lives cannot change after the game starts.");
-    const lives = b.startingLives;
-    if (
-      typeof lives !== "number" ||
-      !Number.isInteger(lives) ||
-      lives < MIN_STARTING_LIVES ||
-      lives > MAX_STARTING_LIVES
-    )
-      throw new GameError(
-        `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
-      );
-    g.startingLives = lives;
-    for (const member of g.players) member.lives = lives;
-  } else if (b.action === "start") {
-    if (g.host !== id) throw new GameError("Only the host can start.");
-    if (g.phase !== "lobby" || g.players.length < 2)
+    game.startingLives = input.startingLives;
+    for (const member of game.players) member.lives = input.startingLives;
+  } else if (input.action === "start") {
+    if (game.host !== id) throw new GameError("Only the host can start.");
+    if (game.phase !== "lobby" || game.players.length < 2)
       throw new GameError("You need at least two players.");
-    deal(g, now);
-  } else if (b.action === "bid") bid(g, id, b.bid as number, now);
-  else if (b.action === "play") {
-    if (g.count !== 1 && (typeof b.card !== "number" || !Number.isInteger(b.card)))
-      throw new GameError("Choose a valid card.");
-    play(g, id, g.count === 1 ? p.hand[0] : (b.card as number), b.mode, now);
-  } else if (b.action === "leave" && g.phase === "lobby") {
-    g.players = g.players.filter((p) => p.id !== id);
-    if (g.host === id) g.host = g.players[0]?.id ?? "";
+    deal(game, now);
+  } else if (input.action === "bid") bid(game, id, input.bid, now);
+  else if (input.action === "play") {
+    if (game.count !== 1 && input.card === undefined) throw new GameError("Choose a valid card.");
+    play(game, id, game.count === 1 ? player.hand[0] : input.card!, input.mode, now);
+  } else if (input.action === "leave" && game.phase === "lobby") {
+    game.players = game.players.filter((member) => member.id !== id);
+    if (game.host === id) game.host = game.players[0]?.id ?? "";
   }
 }
 export function displayName(value: unknown) {

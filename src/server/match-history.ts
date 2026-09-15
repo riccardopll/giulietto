@@ -1,21 +1,21 @@
 import type { Game } from "../shared/game";
 
 /** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
-export function historyStatements(db: D1Database, g: Game, eventCount: number) {
+export function historyStatements(db: D1Database, game: Game, eventCount: number) {
   const guard = "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=?)";
   const uncounted =
     "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=? AND stats_counted=0)";
-  const guardValues = [g.matchId!, g.revision];
-  const participants = JSON.stringify(g.players);
-  const finished = g.phase === "finished";
-  const endedAt = finished ? g.finishedAt! : null;
-  const status = finished ? (g.winner ? "completed" : "abandoned") : "active";
+  const guardValues = [game.matchId!, game.revision];
+  const participants = JSON.stringify(game.players);
+  const finished = game.phase === "finished";
+  const endedAt = finished ? game.finishedAt! : null;
+  const status = finished ? (game.winner ? "completed" : "abandoned") : "active";
   return [
     db
       .prepare(`INSERT INTO players(id,display_name,created_at,last_seen_at)
       SELECT json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),?,json_extract(p.value,'$.seen')
       FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
-      .bind(g.startedAt!, participants),
+      .bind(game.startedAt!, participants),
     db
       .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,event_count)
       VALUES(?,?,?,?,?,?,?,?,?,?,?)
@@ -24,16 +24,16 @@ export function historyStatements(db: D1Database, g: Game, eventCount: number) {
         event_count=excluded.event_count
       WHERE matches.history_revision<excluded.history_revision AND matches.completed_at IS NULL`)
       .bind(
-        g.matchId!,
-        g.code,
+        game.matchId!,
+        game.code,
         status,
-        g.public ? 1 : 0,
-        g.players.length,
-        g.startedAt!,
+        game.public ? 1 : 0,
+        game.players.length,
+        game.startedAt!,
         endedAt,
-        g.winner,
-        g.round,
-        g.revision,
+        game.winner,
+        game.round,
+        game.revision,
         eventCount,
       ),
     db
@@ -51,15 +51,15 @@ export function historyStatements(db: D1Database, g: Game, eventCount: number) {
         exact_predictions=excluded.exact_predictions,prediction_error=excluded.prediction_error,
         finalized_at=excluded.finalized_at WHERE match_results.finalized_at IS NULL`)
       .bind(
-        g.matchId!,
+        game.matchId!,
         finished ? 1 : 0,
-        g.winner,
-        g.winner,
+        game.winner,
+        game.winner,
         endedAt,
         participants,
         ...guardValues,
       ),
-    ...(finished && g.winner
+    ...(finished && game.winner
       ? [
           db
             .prepare(`UPDATE match_results AS r SET
@@ -81,7 +81,7 @@ export function historyStatements(db: D1Database, g: Game, eventCount: number) {
           ) AS totals
           WHERE r.match_id=? AND r.player_id=totals.player_id
             AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL AND ${uncounted}`)
-            .bind(g.matchId!, g.matchId!, ...guardValues),
+            .bind(game.matchId!, game.matchId!, ...guardValues),
           db
             .prepare(`INSERT INTO player_stats(player_id,matches,wins,aces_of_coins_played,
             prediction_total,prediction_count,play_time_ms,timed_plays,prediction_time_ms,timed_predictions)
@@ -103,7 +103,7 @@ export function historyStatements(db: D1Database, g: Game, eventCount: number) {
               timed_plays=player_stats.timed_plays+excluded.timed_plays,
               prediction_time_ms=player_stats.prediction_time_ms+excluded.prediction_time_ms,
               timed_predictions=player_stats.timed_predictions+excluded.timed_predictions`)
-            .bind(g.matchId!, ...guardValues),
+            .bind(game.matchId!, ...guardValues),
           db
             .prepare(
               "UPDATE matches SET stats_counted=1 WHERE id=? AND history_revision=? AND status='completed' AND stats_counted=0",

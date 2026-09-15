@@ -1,10 +1,11 @@
+import type { TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
 import { GameRequestError, requestGame } from "./game-request";
 type Pending = {
   message: string;
   resolve: (state: GameView) => void;
   reject: (error: Error) => void;
-  timeout: ReturnType<typeof setTimeout>;
+  timeout: number;
 };
 
 /** Retries keep the same command ID; the room acknowledges each mutation only once. */
@@ -12,8 +13,8 @@ export class GameConnection {
   private socket?: WebSocket;
   private stopped = false;
   private attempt = 0;
-  private retry?: ReturnType<typeof setTimeout>;
-  private heartbeat?: ReturnType<typeof setInterval>;
+  private retry?: number;
+  private heartbeat?: number;
   private joining?: AbortController;
   private synced = false;
   private closedReason = "Connection closed.";
@@ -113,10 +114,10 @@ export class GameConnection {
       this.joining = undefined;
     }
   }
-  command(action: string, extra: Record<string, unknown>) {
+  command(input: TableCommand) {
     if (this.stopped) return Promise.reject(new Error(this.closedReason));
     const commandId = crypto.randomUUID();
-    const message = JSON.stringify({ ...extra, action, commandId });
+    const message = JSON.stringify({ ...input, commandId });
     return new Promise<GameView>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pending.delete(commandId);

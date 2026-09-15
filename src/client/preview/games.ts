@@ -6,7 +6,7 @@ import {
   MAX_STARTING_LIVES,
   MIN_STARTING_LIVES,
   play,
-  player,
+  makePlayer,
   tick,
   type Game,
   findPlayer,
@@ -43,7 +43,6 @@ export function normalizePreview(options: PreviewOptions): Required<PreviewOptio
     { length: people },
     (_, index) => options.seatStates?.[index] ?? "active",
   );
-  // A round needs at least two active players.
   let active = seatStates.filter((state) => state === "active").length;
   for (let index = 0; active < 2; index++) {
     if (seatStates[index] !== "active") {
@@ -86,7 +85,7 @@ export function makePreview(input: PreviewOptions): Game {
   const options = normalizePreview(input);
   const { people, phase, longNames, cards, seatStates, startingLives } = options;
   const players = Array.from({ length: people }, (_, i) =>
-    player(
+    makePlayer(
       `preview-${people}-${(i + 1) * 7919}`,
       longNames
         ? i % 2 === 0
