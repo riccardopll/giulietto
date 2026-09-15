@@ -183,7 +183,7 @@ function Sheet({
           <Button
             variant="ghost"
             size="icon"
-            className="ml-auto size-11 rounded-lg text-primary"
+            className="ml-auto size-11 rounded-lg text-muted-foreground"
             aria-label="Close chat"
           >
             <X className="size-5" />
