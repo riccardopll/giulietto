@@ -2,6 +2,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 import { defaultAvatar } from "../shared/avatars";
 import { AceSelection } from "./components/ace-selection";
 import { Avatar } from "./components/avatar";
+import { useChat } from "./components/chat";
 import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { MatchBoard } from "./components/match-board";
@@ -27,6 +28,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
   const [page, setPage] = useState(readPage);
   const table = useGameSession(preview, () => setPage("home"));
   const { game, busy } = table;
+  const chat = useChat(game);
   const account = usePlayerStats(table.token, !game && !isPreview, (profile) =>
     table.rename(profile.name),
   );
@@ -110,7 +112,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           cancelLabel="Stay"
           actionLabel={busy ? "Leaving…" : "Leave table"}
           busy={busy}
-          onSubmit={() => table.act({ action: "leave" })}
+          onSubmit={() => void table.act({ action: "leave" })}
         />
         {!game ? (
           page === "home" ? (
@@ -119,7 +121,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               ready={table.ready}
               busy={busy}
               onCodeChange={table.setCode}
-              onAction={(action) => table.act({ action })}
+              onAction={(action) => void table.act({ action })}
               onLeaderboard={() => navigate("leaderboard")}
             />
           ) : (
@@ -161,6 +163,8 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 busy={busy}
                 pendingCard={table.pendingCard}
                 preview={isPreview}
+                chat={chat}
+                onChat={(text) => table.act({ action: "chat", text })}
                 onEmote={(emote) => void table.act({ action: "emote", emote })}
                 onBid={(bid) => void table.act({ action: "bid", bid })}
                 onPlay={table.play}
@@ -174,7 +178,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             if (!open) table.setAce(null);
           }}
           disabled={busy}
-          onSelect={(mode) => table.act({ action: "play", card: table.ace ?? -1, mode })}
+          onSelect={(mode) => void table.act({ action: "play", card: table.ace ?? -1, mode })}
         />
       </div>
       <Toaster />

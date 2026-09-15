@@ -128,6 +128,31 @@ test("WebSockets send each player their own hand and broadcast accepted moves", 
     sentAt: expect.any(Number),
   });
   await expect.poll(() => sockets[1].latest()?.spectators?.[0]?.emote?.id).toBe("chicken");
+  const beforeChat = sockets[1].latest()!;
+  expect((await sockets[0].command({ action: "chat", text: " hello  table " })).type).toBe("ack");
+  const chatted = await api.state(spectator, { action: "chat", text: "hi from the stands", code });
+  expect(chatted.chat).toEqual([
+    {
+      id: 1,
+      sender: sockets[0].latest()!.you,
+      name: "bot_1",
+      text: "hello table",
+      sentAt: expect.any(Number),
+    },
+    {
+      id: 2,
+      sender: chatted.you,
+      name: "bot_3",
+      text: "hi from the stands",
+      sentAt: expect.any(Number),
+    },
+  ]);
+  expect(chatted.turn).toBe(beforeChat.turn);
+  expect(chatted.deadline).toBe(beforeChat.deadline);
+  await expect
+    .poll(() => sockets[1].latest()?.chat?.map((message) => message.text))
+    .toEqual(["hello table", "hi from the stands"]);
+  expect((await sockets[1].command({ action: "chat", text: "   " })).type).toBe("error");
 
   const byId = new Map(sockets.map((socket) => [socket.latest()!.you, socket]));
   for (const id of sockets[0].latest()!.order) {

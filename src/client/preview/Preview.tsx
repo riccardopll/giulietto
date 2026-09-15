@@ -4,9 +4,10 @@ import { Dialog } from "radix-ui";
 import App from "../App";
 import { AceSelection } from "../components/ace-selection";
 import type { TableCommand } from "../../shared/commands";
+import { sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
-import { bid, deal, play, view, type Game } from "../../shared/game";
+import { bid, deal, inPlay, play, view, type Game } from "../../shared/game";
 import {
   advancePreview,
   makePreview,
@@ -145,12 +146,16 @@ export function Preview() {
     setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people]) }));
   }
 
-  const nextMove = useEffectEvent(step);
+  const shortcuts = useEffectEvent((key: string) => {
+    if (key === "n") step();
+    else configure();
+  });
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
+      const key = event.key.toLowerCase();
       if (
-        event.key.toLowerCase() !== "n" ||
+        (key !== "n" && key !== "r") ||
         event.defaultPrevented ||
         event.repeat ||
         event.isComposing ||
@@ -167,7 +172,7 @@ export function Preview() {
       )
         return;
       event.preventDefault();
-      nextMove();
+      shortcuts(key);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -230,29 +235,51 @@ export function Preview() {
 
   function command(input: TableCommand) {
     const now = Date.now();
-    if (viewer === -1) {
-      if (input.action !== "emote") return;
-      const watcher = { ...spectator };
-      sendEmote({ ...entry.game, spectators: [watcher] }, watcher.id, input.emote, now);
-      setSpectatorEmote(watcher.emote);
-      return;
-    }
     const game = structuredClone(entry.game);
-    const id = game.players[viewer].id;
-    if (input.action === "rename" && game.phase === "lobby")
-      game.players[viewer].name = input.name.trim().slice(0, 20);
-    else if (input.action === "settings" && game.phase === "lobby") {
-      game.startingLives = input.startingLives;
-      for (const player of game.players) player.lives = input.startingLives;
-    } else if (input.action === "start" && game.phase === "lobby") deal(game, now);
-    else if (input.action === "emote") sendEmote(game, id, input.emote, now);
-    else if (input.action === "bid") bid(game, id, input.bid, now);
-    else if (input.action === "play") {
-      const card = input.card ?? -1;
-      play(game, id, card === -1 ? game.players[viewer].hand[0] : card, input.mode, now);
-    } else return;
+    if (viewer === -1) {
+      const watcher = { ...spectator };
+      game.spectators = [watcher];
+      if (input.action === "emote") {
+        sendEmote(game, watcher.id, input.emote, now);
+        setSpectatorEmote(watcher.emote);
+        return;
+      }
+      if (input.action !== "chat") return;
+      sendChat(game, watcher.id, input.text, now);
+      delete game.spectators;
+    } else {
+      const id = game.players[viewer].id;
+      if (input.action === "rename" && game.phase === "lobby")
+        game.players[viewer].name = input.name.trim().slice(0, 20);
+      else if (input.action === "settings" && game.phase === "lobby") {
+        game.startingLives = input.startingLives;
+        for (const player of game.players) player.lives = input.startingLives;
+      } else if (input.action === "start" && game.phase === "lobby") deal(game, now);
+      else if (input.action === "emote") sendEmote(game, id, input.emote, now);
+      else if (input.action === "chat") sendChat(game, id, input.text, now);
+      else if (input.action === "bid") bid(game, id, input.bid, now);
+      else if (input.action === "play") {
+        const card = input.card ?? -1;
+        play(game, id, card === -1 ? game.players[viewer].hand[0] : card, input.mode, now);
+      } else return;
+    }
     game.revision++;
     setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+  }
+
+  const botLines = [
+    "Anyone else holding nothing but coins?",
+    "That prediction was brave.",
+    "gg, one more after this?",
+    "The ace decides it again.",
+  ];
+  function sendBotMessage() {
+    const game = structuredClone(entry.game);
+    const sender = game.players.find((_, index) => index !== viewer)!;
+    sendChat(game, sender.id, botLines[(game.chat?.length ?? 0) % botLines.length], Date.now());
+    game.revision++;
+    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    setControlsOpen(false);
   }
 
   function show(patch: Partial<PreviewOptions>) {
@@ -461,6 +488,14 @@ export function Preview() {
           >
             Test ace selection
           </Button>
+          <Button
+            variant="outline"
+            className="h-11 w-full"
+            disabled={!inPlay(entry.game)}
+            onClick={sendBotMessage}
+          >
+            Send message
+          </Button>
           <div className="grid grid-cols-3 gap-2">
             <Button
               className="h-11 px-2 text-xs"
@@ -483,8 +518,17 @@ export function Preview() {
                 N
               </kbd>
             </Button>
-            <Button variant="outline" className="h-11 px-2 text-xs" onClick={() => configure()}>
+            <Button
+              variant="outline"
+              className="h-11 gap-1 px-2 text-xs"
+              onClick={() => configure()}
+              aria-keyshortcuts="r"
+              title="Reset table (R)"
+            >
               Reset table
+              <kbd aria-hidden="true" className="font-mono text-[10px] text-muted-foreground">
+                R
+              </kbd>
             </Button>
           </div>
         </Dialog.Content>

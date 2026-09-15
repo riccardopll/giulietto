@@ -161,6 +161,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     }
   }, [game?.code, game?.matchId]);
 
+  /** Resolves to true once the table accepted the command. */
   async function act(input: EntryCommand | TableCommand) {
     if (preview) {
       try {
@@ -169,12 +170,13 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
           preview.reset();
         } else if (isTableCommand(input)) preview.command(input);
         setAce(null);
+        return true;
       } catch (error) {
         showError((error as Error).message);
+        return false;
       }
-      return;
     }
-    if (!ready || busyRef.current) return;
+    if (!ready || busyRef.current) return false;
     setBusy(true);
     showError("");
     if (input.action === "play") setPendingCard(input.card ?? -1);
@@ -203,10 +205,12 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       if (input.action === "leave") reset();
       else accept(s);
       setAce(null);
+      return true;
     } catch (e) {
       if (e instanceof GameRequestError && !e.retryable) httpAttempt.current = null;
       if (input.action === "leave") reset();
       else showError((e as Error).message);
+      return false;
     } finally {
       setBusy(false);
       setPendingCard(null);

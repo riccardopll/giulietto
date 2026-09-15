@@ -43,6 +43,29 @@ test("three players complete a game, including round results and elimination", a
     players[1].page.getByRole("status", { name: "bot_1 sent the chicken emote" }),
   ).toBeHidden();
   await expect(players[0].page.getByRole("button", { name: "Emotes", exact: true })).toBeEnabled();
+  await players[0].page.getByRole("button", { name: "Chat", exact: true }).click();
+  const hostChat = players[0].page.getByRole("dialog", { name: "Chat", exact: true });
+  await expect(hostChat.getByRole("log", { name: "Messages" })).toContainText("No messages yet.");
+  await hostChat.getByLabel("Message", { exact: true }).fill("good luck all");
+  await hostChat.getByRole("button", { name: "Send message" }).click();
+  await expect(hostChat.getByRole("log", { name: "Messages" })).toContainText("You good luck all");
+  await expect(hostChat.getByLabel("Message", { exact: true })).toHaveValue("");
+  await players[1].page.getByRole("button", { name: "Chat, 1 unread", exact: true }).click();
+  const guestChat = players[1].page.getByRole("dialog", { name: "Chat", exact: true });
+  await expect(guestChat.getByRole("log", { name: "Messages" })).toContainText(
+    "bot_1 good luck all",
+  );
+  await guestChat.getByLabel("Message", { exact: true }).fill("thanks");
+  await guestChat.getByLabel("Message", { exact: true }).press("Enter");
+  await expect(hostChat.getByRole("log", { name: "Messages" })).toContainText("bot_2 thanks");
+  await guestChat.getByRole("button", { name: "Close chat" }).click();
+  await expect(guestChat).toBeHidden();
+  await expect(players[1].page.getByRole("button", { name: "Chat", exact: true })).toBeVisible();
+  await players[0].page.keyboard.press("Escape");
+  await expect(hostChat).toBeHidden();
+  await expect(
+    players[2].page.getByRole("button", { name: "Chat, 2 unread", exact: true }),
+  ).toBeVisible();
   const winner = players[0].state!.you;
 
   for (let round = 1; round <= 2; round++) {
@@ -87,6 +110,16 @@ test("three players complete a game, including round results and elimination", a
           page.getByRole("status", { name: "bot_3 sent the perso emote" }),
         ).toBeVisible();
       }
+      // Messages and the unread count outlive the results screen.
+      await players[2].page.getByRole("button", { name: "Chat, 2 unread", exact: true }).click();
+      const spectatorChat = players[2].page.getByRole("dialog", { name: "Chat", exact: true });
+      await expect(spectatorChat.getByRole("log", { name: "Messages" })).toContainText(
+        "bot_2 thanks",
+      );
+      await spectatorChat.getByRole("button", { name: "Close chat" }).click();
+      await expect(
+        players[2].page.getByRole("button", { name: "Chat", exact: true }),
+      ).toBeVisible();
     }
   }
 

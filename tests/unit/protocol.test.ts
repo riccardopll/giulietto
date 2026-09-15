@@ -88,10 +88,18 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
       ).toThrow("Spectators cannot");
     }
     const emote = { action: "emote", emote: "chicken", commandId: crypto.randomUUID() } as const;
+    const chat = { action: "chat", text: "hi", commandId: crypto.randomUUID() } as const;
     if (["bidding", "playing", "trick"].includes(phase)) {
       apply(game, "watcher", emote, 400);
+      apply(game, "watcher", chat, 401);
       expect(game.spectators?.[0].emote).toEqual({ id: "chicken", sentAt: 400 });
-    } else expect(() => apply(game, "watcher", emote, 400)).toThrow("during play");
+      expect(game.chat).toEqual([
+        { id: 1, sender: "watcher", name: "Observer", text: "hi", sentAt: 401 },
+      ]);
+    } else {
+      expect(() => apply(game, "watcher", emote, 400)).toThrow("during play");
+      expect(() => apply(game, "watcher", chat, 401)).toThrow("during play");
+    }
     apply(game, "watcher", { action: "leave", commandId: crypto.randomUUID() }, 500);
     expect(() => view(game, "watcher")).toThrow();
   },
@@ -153,6 +161,8 @@ test.each([
   [{ action: "settings", startingLives: 9 }, "Choose a whole number"],
   [{ action: "rename" }, "Enter a display name."],
   [{ action: "emote", emote: "unknown" }, "Unknown emote."],
+  [{ action: "chat", text: "   " }, "Type a message."],
+  [{ action: "chat", text: "x".repeat(201) }, "within 200 characters"],
   [{ action: "cheat" }, "Unknown action."],
   [{ action: "start", commandId: "nope" }, "Invalid command ID."],
 ])("rejects %o with a readable error", (input, message) => {
@@ -171,6 +181,11 @@ test("normalizes accepted commands and drops unknown fields", () => {
     card: 31,
     mode: "low",
     code: "ABCDEFGH",
+    commandId,
+  });
+  expect(command({ action: "chat", text: " good\n luck ", commandId })).toEqual({
+    action: "chat",
+    text: "good luck",
     commandId,
   });
   expect(command({ action: "join", name: "bot_2", avatar: "king-cups", commandId })).toEqual({

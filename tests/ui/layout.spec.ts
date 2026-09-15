@@ -117,6 +117,25 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.clock.runFor(1600);
   await expect(perso).toHaveCount(0);
 
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const chat = page.getByRole("dialog", { name: "Chat", exact: true });
+  const composer = chat.getByLabel("Message", { exact: true });
+  await expect(composer).toBeFocused();
+  await composer.fill("Room for a chat on the smallest phone?");
+  await chat.getByRole("button", { name: "Send message" }).click();
+  await expect(chat.getByRole("log", { name: "Messages" })).toContainText(
+    "You Room for a chat on the smallest phone?",
+  );
+  await expect(composer).toHaveValue("");
+  await expect.poll(() => chat.boundingBox()).toEqual({ x: 0, y: 0, width: 320, height: 568 });
+  const sendBox = (await chat.getByRole("button", { name: "Send message" }).boundingBox())!;
+  expect(sendBox.y + sendBox.height).toBeLessThanOrEqual(568);
+  expect(sendBox.height).toBeGreaterThanOrEqual(44);
+  await screenshot(page, testInfo, "chat-sheet", { animations: "disabled" });
+  await chat.getByRole("button", { name: "Close chat" }).click();
+  await expect(chat).toBeHidden();
+  await expect(page.getByRole("button", { name: "Chat", exact: true })).toBeEnabled();
+
   await page.goto("/preview?people=6&cards=6&phase=playing&completedTricks=2");
   await expect(page.locator(".hand-card")).toHaveCount(4);
   const handGap = await page
@@ -144,6 +163,13 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await screenshot(page, testInfo, "desktop-emote-menu");
   await page.keyboard.press("Escape");
   await expect(page.locator("[data-you] .seat-identity")).toBeVisible();
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const desktopChat = page.getByRole("dialog", { name: "Chat", exact: true });
+  await expect(desktopChat.getByLabel("Message", { exact: true })).toBeFocused();
+  await expect.poll(async () => (await desktopChat.boundingBox())!.width).toBeLessThanOrEqual(448);
+  await screenshot(page, testInfo, "desktop-chat", { animations: "disabled" });
+  await page.keyboard.press("Escape");
+  await expect(desktopChat).toBeHidden();
   await page.getByRole("button", { name: "Preview settings", exact: true }).click();
   await page.getByRole("button", { name: "Test ace selection", exact: true }).click();
   const aceDialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
@@ -174,4 +200,12 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     .toBe(true);
   await page.clock.runFor(300);
   await screenshot(page, testInfo, "spectator-reaction");
+  await page.getByRole("button", { name: "Chat", exact: true }).click();
+  const spectatorChat = page.getByRole("dialog", { name: "Chat", exact: true });
+  await spectatorChat.getByLabel("Message", { exact: true }).fill("Watching from the stands");
+  await spectatorChat.getByLabel("Message", { exact: true }).press("Enter");
+  await expect(spectatorChat.getByRole("log", { name: "Messages" })).toContainText(
+    "You Watching from the stands",
+  );
+  await screenshot(page, testInfo, "spectator-chat", { animations: "disabled" });
 });

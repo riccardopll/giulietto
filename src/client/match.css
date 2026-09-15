@@ -141,6 +141,26 @@
     transform: translateY(3px) scale(0.9);
   }
 }
+@keyframes digit-pop {
+  0% {
+    opacity: 0;
+    scale: 0.5;
+    rotate: -14deg;
+  }
+  45% {
+    opacity: 1;
+    scale: 1.12;
+    rotate: 4deg;
+  }
+  70% {
+    scale: 0.96;
+    rotate: -2deg;
+  }
+  100% {
+    scale: 1;
+    rotate: 0deg;
+  }
+}
 @keyframes reaction-slide {
   0% {
     opacity: 0;
