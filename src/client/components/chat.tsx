@@ -166,15 +166,26 @@ function Sheet({
                   : "self-start rounded-bl-md bg-secondary text-foreground",
               )}
             >
-              <strong
+              {!own && (
+                <strong className="block text-xs font-semibold text-secondary-foreground">
+                  {message.name}
+                </strong>
+              )}{" "}
+              <span className="text-base leading-snug">{message.text}</span>
+              <time
+                dateTime={new Date(message.sentAt).toISOString()}
                 className={cn(
-                  "block text-xs font-semibold",
-                  own ? "text-primary" : "text-secondary-foreground",
+                  "text-[10px] whitespace-nowrap",
+                  own ? "text-primary/70" : "text-muted-foreground",
                 )}
               >
-                {own ? "You" : message.name}
-              </strong>{" "}
-              <span className="text-base leading-snug">{message.text}</span>
+                {"\u00A0\u00A0"}
+                {new Date(message.sentAt).toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hourCycle: "h23",
+                })}
+              </time>
             </li>
           );
         })}
