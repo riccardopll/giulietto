@@ -1,5 +1,6 @@
 import { isAvatar } from "../shared/avatars";
 import type { Command, EntryCommand, TableCommand } from "../shared/commands";
+import { chatText, sendChat } from "../shared/chat";
 import { sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
@@ -58,6 +59,8 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
       if (input.emote !== "chicken" && input.emote !== "perso")
         throw new GameError("Unknown emote.");
       return { action: "emote", emote: input.emote };
+    case "chat":
+      return { action: "chat", text: chatText(input.text) };
     default:
       throw new GameError("Unknown action.");
   }
@@ -105,6 +108,7 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   if (spectator) {
     spectator.seen = now;
     if (input.action === "emote") sendEmote(game, id, input.emote, now);
+    else if (input.action === "chat") sendChat(game, id, input.text, now);
     else if (input.action === "leave")
       game.spectators = game.spectators!.filter((spectator) => spectator.id !== id);
     else throw new GameError("Spectators cannot play or change the game.");
@@ -118,6 +122,8 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     player.name = input.name;
   } else if (input.action === "emote") {
     sendEmote(game, id, input.emote, now);
+  } else if (input.action === "chat") {
+    sendChat(game, id, input.text, now);
   } else if (input.action === "settings") {
     if (game.host !== id) throw new GameError("Only the host can change starting lives.");
     if (game.phase !== "lobby")

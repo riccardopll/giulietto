@@ -1,6 +1,7 @@
 import { defaultAvatar, type AvatarId } from "./avatars";
 import { GameError } from "./game-error";
 import type { Emote } from "./emotes";
+import type { ChatMessage } from "./chat";
 export type RoundStats = {
   roundsPlayed: number;
   tricksWon: number;
@@ -42,6 +43,7 @@ export type Game = {
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
   spectators?: Spectator[];
+  chat?: ChatMessage[];
   order: string[];
   round: number;
   count: number;
@@ -97,6 +99,9 @@ export function makePlayer(id: string, name: string, now: number): Player {
 }
 export function findPlayer<T extends { id: string }>(game: { players: T[] }, id: string) {
   return game.players.find((player) => player.id === id);
+}
+export function inPlay(game: { phase: Game["phase"] }) {
+  return game.phase === "bidding" || game.phase === "playing" || game.phase === "trick";
 }
 export function strength(play: Play) {
   return play.card === 31 ? (play.mode === "low" ? 0 : 41) : play.card;

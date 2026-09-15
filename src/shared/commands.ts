@@ -11,6 +11,7 @@ export type TableCommand =
   | { action: "bid"; bid: number }
   | { action: "play"; card?: number; mode?: "high" | "low" }
   | { action: "emote"; emote: Emote["id"] }
+  | { action: "chat"; text: string }
   | { action: "leave" };
 /** A validated request. Commands sent over HTTP name their table with `code`. */
 export type Command = (EntryCommand | TableCommand) & { commandId: string; code?: string };

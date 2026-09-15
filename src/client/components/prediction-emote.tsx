@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { EMOTE_DURATION_MS } from "../../shared/emotes";
 import { Bubble } from "./bubble";
 
@@ -12,7 +12,12 @@ const digits = [
   "M29 4L24 13C14 7 10 14 10 20C22 12 33 20 33 30C33 39 27 44 17 44C5 44 0 36 0 23C0 8 7 0 18 0C23 0 26 1 29 4ZM17 25C9 25 10 35 17 35S24 25 17 25Z",
 ];
 
+// Depth is drawn as stacked copies between the face and its offset base.
+const depth = { x: 1.5, y: 4 };
+const layers = [1, 0.75, 0.5, 0.25];
+
 export function PredictionEmote({ bid, name }: { bid: number | null; name: string }) {
+  const id = useId();
   const previous = useRef(bid);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
@@ -23,25 +28,71 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
     const timer = setTimeout(() => setVisible(false), EMOTE_DURATION_MS);
     return () => clearTimeout(timer);
   }, [bid]);
-  return visible && bid !== null ? (
+  if (!visible || bid === null) return null;
+  const digit = digits[bid];
+  const offset = (step: number) => `translate(${depth.x * step} ${depth.y * step})`;
+  return (
     <Bubble label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}>
       <svg
-        className="prediction-digit absolute bottom-1 left-1/2 h-[50px] w-12 -translate-x-1/2 overflow-visible"
+        className="prediction-digit absolute bottom-1 left-1/2 h-[50px] w-12 origin-bottom -translate-x-1/2 overflow-visible animate-[digit-pop_.55s_cubic-bezier(.2,.8,.2,1)_both]"
         viewBox="0 0 48 56"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
+        <defs>
+          <linearGradient id={`${id}-face`} x1=".15" y1="0" x2=".55" y2="1">
+            <stop
+              offset="0"
+              style={{ stopColor: "color-mix(in oklab, var(--color-gold), var(--color-card) 60%)" }}
+            />
+            <stop offset=".4" style={{ stopColor: "var(--color-gold)" }} />
+            <stop
+              offset="1"
+              style={{
+                stopColor: "color-mix(in oklab, var(--color-gold), var(--color-bronze) 70%)",
+              }}
+            />
+          </linearGradient>
+          <clipPath id={`${id}-face-clip`} clipRule="evenodd">
+            <path d={digit} />
+          </clipPath>
+        </defs>
         <g
-          className="stroke-foreground"
-          transform="translate(7 4) rotate(-7 17 22)"
+          transform="translate(7 4) rotate(-7 17 22) translate(17 22) scale(.9) translate(-17 -22)"
           fillRule="evenodd"
-          strokeWidth="4"
           strokeLinejoin="round"
         >
-          <path d={digits[bid]} transform="translate(1.5 4)" className="fill-bronze" />
-          <path d={digits[bid]} className="fill-gold" />
+          {[...layers, 0].map((step) => (
+            <path
+              key={`outline-${step}`}
+              d={digit}
+              transform={offset(step)}
+              className="fill-foreground stroke-foreground"
+              strokeWidth="5"
+            />
+          ))}
+          {layers.map((step) => (
+            <path
+              key={`side-${step}`}
+              d={digit}
+              transform={offset(step)}
+              style={{
+                fill: "color-mix(in oklab, var(--color-bronze), var(--color-foreground) 45%)",
+              }}
+            />
+          ))}
+          <path
+            d={digit}
+            fill={`url(#${id}-face)`}
+            className="stroke-foreground"
+            strokeWidth="1.5"
+          />
+          <g clipPath={`url(#${id}-face-clip)`} className="fill-card" opacity=".85">
+            <ellipse cx="9" cy="8" rx="4.5" ry="2.5" transform="rotate(-25 9 8)" />
+            <ellipse cx="25" cy="5.5" rx="2.5" ry="1.6" transform="rotate(-25 25 5.5)" />
+          </g>
         </g>
       </svg>
     </Bubble>
-  ) : null;
+  );
 }

@@ -17,7 +17,7 @@ function LobbyOptions({
   lives: number;
   host: boolean;
   busy: boolean;
-  save: (lives: number) => Promise<void>;
+  save: (lives: number) => Promise<unknown>;
 }) {
   const [draft, setDraft] = useState<number | null>(null);
   const [queued, setQueued] = useState<number | null>(null);
@@ -94,7 +94,7 @@ export function Lobby({
   copied: boolean;
   onCopy: () => void;
   onStart: () => void;
-  onSettings: (startingLives: number) => Promise<void>;
+  onSettings: (startingLives: number) => Promise<unknown>;
   onRename: (name: string) => Promise<boolean>;
 }) {
   const [editing, setEditing] = useState(false);
