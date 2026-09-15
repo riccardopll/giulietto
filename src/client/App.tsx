@@ -2,7 +2,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 import { defaultAvatar } from "../shared/avatars";
 import { AceSelection } from "./components/ace-selection";
 import { Avatar } from "./components/avatar";
-import { useChat } from "./components/chat";
+import { ChatSheet, useChat } from "./components/chat";
 import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { MatchBoard } from "./components/match-board";
@@ -156,7 +156,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onRename={table.renameSeat}
               />
             ) : result ? (
-              <ResultsPanel game={game} preview={isPreview} onReset={table.reset} />
+              <ResultsPanel game={game} preview={isPreview} chat={chat} onReset={table.reset} />
             ) : (
               <MatchBoard
                 game={game}
@@ -164,13 +164,21 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 pendingCard={table.pendingCard}
                 preview={isPreview}
                 chat={chat}
-                onChat={(text) => table.act({ action: "chat", text })}
                 onEmote={(emote) => void table.act({ action: "emote", emote })}
                 onBid={(bid) => void table.act({ action: "bid", bid })}
                 onPlay={table.play}
               />
             )}
           </main>
+        )}
+        {game && (
+          <ChatSheet
+            open={chat.open}
+            onOpenChange={chat.setOpen}
+            game={game}
+            busy={busy}
+            onSend={(text) => table.act({ action: "chat", text })}
+          />
         )}
         <AceSelection
           open={table.ace !== null && !!game?.canChooseAce}

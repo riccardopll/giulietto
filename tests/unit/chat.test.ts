@@ -28,10 +28,13 @@ test("anyone at the table chats during play and messages keep their order", () =
   const withoutChat = structuredClone(game);
   delete withoutChat.chat;
   expect(withoutChat).toEqual(before);
-  for (const phase of ["lobby", "results", "finished"] as const) {
+  game.phase = "results";
+  sendChat(game, "p1", "gg", 2000);
+  expect(game.chat?.at(-1)).toMatchObject({ sender: "p1", text: "gg" });
+  for (const phase of ["lobby", "finished"] as const) {
     game.phase = phase;
-    expect(() => sendChat(game, "p1", "hi", 2000)).toThrow("during play");
-    expect(() => sendChat(game, "watcher", "hi", 2000)).toThrow("during play");
+    expect(() => sendChat(game, "p1", "hi", 2000)).toThrow("until the table closes");
+    expect(() => sendChat(game, "watcher", "hi", 2000)).toThrow("until the table closes");
   }
 });
 

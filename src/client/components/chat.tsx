@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+  type RefObject,
+} from "react";
 import { Dialog } from "radix-ui";
 import { MessageCircle, SendHorizontal, X } from "lucide-react";
-import { CHAT_MAX_LENGTH } from "../../shared/chat";
-import { inPlay, type GameView } from "../../shared/game";
+import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
+import type { GameView } from "../../shared/game";
 import { cn } from "../utils";
 import { overlayClass } from "./ui/action-dialog";
 import { Button } from "./ui/button";
@@ -13,8 +21,8 @@ export type ChatState = { open: boolean; setOpen: (open: boolean) => void; unrea
 /** Sheet state kept above the board, so unread counts survive the results screen. */
 export function useChat(game: GameView | null): ChatState {
   const code = game?.code;
-  // The sheet belongs to one round of play and closes when the board leaves.
-  const key = game && inPlay(game) ? `${game.code}:${game.round}` : null;
+  // The sheet belongs to one round, results included, and closes when the next one is dealt.
+  const key = game && chatOpen(game) ? `${game.code}:${game.round}` : null;
   const latest = game?.chat?.at(-1)?.id ?? 0;
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [seen, setSeen] = useState({ code, id: 0 });
@@ -25,16 +33,64 @@ export function useChat(game: GameView | null): ChatState {
   return { open, setOpen: (next) => setOpenKey(next ? key : null), unread };
 }
 
-export function ChatButton({ unread, onClick }: { unread: number; onClick: () => void }) {
+/** Where the chat button last stood, so it can slide to its next spot when the screen changes. */
+let lastSpot: { rect: DOMRect; at: number } | undefined;
+
+function useSlideFromLastSpot(ref: RefObject<HTMLButtonElement | null>) {
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    const from = lastSpot;
+    lastSpot = undefined;
+    if (from && performance.now() - from.at < 1000) {
+      const to = element.getBoundingClientRect();
+      const dx = from.rect.left - to.left;
+      const dy = from.rect.top - to.top;
+      if (dx || dy)
+        element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], {
+          duration: 450,
+          easing: "cubic-bezier(.2,.8,.2,1)",
+        });
+    }
+    return () => {
+      lastSpot = { rect: element.getBoundingClientRect(), at: performance.now() };
+    };
+  }, [ref]);
+}
+
+/** Opens the chat; a tab on the table's edge during play, a plain button on the results screen. */
+export function ChatButton({
+  unread,
+  onClick,
+  edge = false,
+  className,
+}: {
+  unread: number;
+  onClick: () => void;
+  edge?: boolean;
+  className?: string;
+}) {
+  const ref = useRef<HTMLButtonElement>(null);
+  useSlideFromLastSpot(ref);
   return (
     <Button
+      ref={ref}
       variant="ghost"
       size="icon"
-      className="pointer-events-auto absolute left-[2%] top-1/2 h-11 w-11 shrink-0 -translate-y-1/2 rounded-none bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring"
+      className={cn(
+        "h-11 w-11 shrink-0 bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring",
+        edge ? "rounded-none" : "rounded-lg",
+        className,
+      )}
       aria-label={unread ? `Chat, ${unread} unread` : "Chat"}
       onClick={onClick}
     >
-      <span className="absolute inset-y-0 left-0 grid w-8 place-items-center rounded-r-2xl bg-background shadow-sm">
+      <span
+        className={cn(
+          "grid place-items-center",
+          edge ? "absolute inset-y-0 left-0 w-8 rounded-r-2xl bg-background shadow-sm" : "relative",
+        )}
+      >
         <MessageCircle className="size-6" aria-hidden="true" />
         {unread > 0 && (
           <span

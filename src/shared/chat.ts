@@ -11,6 +11,11 @@ export type ChatMessage = {
   sentAt: number;
 };
 
+/** Chat runs from the first deal to the end of the match, including round results. */
+export function chatOpen(game: { phase: Game["phase"] }) {
+  return inPlay(game) || game.phase === "results";
+}
+
 export function chatText(value: unknown) {
   const text = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
   if (!text) throw new GameError("Type a message.");
@@ -22,7 +27,7 @@ export function chatText(value: unknown) {
 export function sendChat(game: Game, id: string, text: string, now: number) {
   const sender = findPlayer(game, id) ?? game.spectators?.find((spectator) => spectator.id === id);
   if (!sender) throw new GameError("Join this table first.");
-  if (!inPlay(game)) throw new GameError("Chat is available during play.");
+  if (!chatOpen(game)) throw new GameError("Chat is available until the table closes.");
   const chat = (game.chat ??= []);
   chat.push({ id: (chat.at(-1)?.id ?? 0) + 1, sender: id, name: sender.name, text, sentAt: now });
   if (chat.length > CHAT_HISTORY) chat.splice(0, chat.length - CHAT_HISTORY);
