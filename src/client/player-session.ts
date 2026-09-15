@@ -41,7 +41,7 @@ export function storeRoom(code: string | null) {
 }
 
 export function restorePlayer() {
-  const savedToken = readCookie(tokenKey) || readStored(tokenKey);
+  const savedToken = readCookie(tokenKey);
   // The server derives the public player ID from this private credential.
   const token =
     savedToken && /^[0-9a-f-]{36,80}$/i.test(savedToken)
@@ -49,16 +49,9 @@ export function restorePlayer() {
       : Array.from(crypto.getRandomValues(new Uint8Array(32)), (n) =>
           n.toString(16).padStart(2, "0"),
         ).join("");
-  const name = (readCookie(nameKey) ?? readStored(nameKey) ?? "").trim().slice(0, 20);
+  const name = (readCookie(nameKey) ?? "").trim().slice(0, 20);
   writeCookie(tokenKey, token);
   savePlayerName(name);
-  try {
-    // Move existing guests to cookies without changing their player ID.
-    localStorage.removeItem(tokenKey);
-    localStorage.removeItem(nameKey);
-  } catch {
-    // Cookies are sufficient to remember the player.
-  }
   return { token, name };
 }
 

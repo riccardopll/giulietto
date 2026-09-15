@@ -8,10 +8,7 @@ beforeEach(() => {
   cookies = new Map();
   writable = true;
   vi.stubGlobal("location", { protocol: "https:" });
-  vi.stubGlobal("localStorage", {
-    getItem: () => null,
-    removeItem: () => {},
-  });
+  vi.stubGlobal("localStorage", { getItem: () => null });
   vi.stubGlobal("document", {
     get cookie() {
       return [...cookies].map(([key, value]) => `${key}=${value}`).join("; ");
@@ -31,9 +28,6 @@ test("restores the cookie identity when local storage is unavailable", () => {
   cookies.set("giulietto-name", "bot%5F1");
   vi.stubGlobal("localStorage", {
     getItem: () => {
-      throw new Error("Storage unavailable");
-    },
-    removeItem: () => {
       throw new Error("Storage unavailable");
     },
   });
@@ -75,7 +69,6 @@ test("prefers the invite over a saved table and keeps the player identity", () =
   vi.stubGlobal("location", { protocol: "https:", search: "?table=abcdefgh" });
   vi.stubGlobal("localStorage", {
     getItem: (key: string) => (key === "giulietto-room" ? "JKLMNPQR" : null),
-    removeItem: () => {},
   });
   expect(restoreSession()).toMatchObject({ token, name: "bot_1", joinCode: "ABCDEFGH" });
   vi.stubGlobal("location", { protocol: "https:", search: "" });
