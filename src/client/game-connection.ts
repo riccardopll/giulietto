@@ -21,9 +21,8 @@ export class GameConnection {
   private heartbeat?: number;
   private reply?: number;
   private joining?: AbortController;
+  /** Set once the current socket delivers a snapshot; cleared when a new socket opens. */
   private synced = false;
-  /** A socket that synced proves membership, so the next reconnect skips the HTTP join. */
-  private direct = false;
   private closedReason = "Connection closed.";
   private pending = new Map<string, Pending>();
   private wake = () => {
@@ -97,8 +96,6 @@ export class GameConnection {
       clearTimeout(this.reply);
       this.reply = undefined;
       if (this.stopped) return;
-      this.direct = this.synced;
-      this.synced = false;
       if (event.code === 4001 || event.code === 4002) {
         this.closedReason = event.reason || "Connection closed.";
         this.status(this.closedReason);
@@ -120,8 +117,8 @@ export class GameConnection {
   }
   private async rejoin() {
     if (this.stopped) return;
-    if (this.direct) {
-      this.direct = false;
+    // A socket that synced proves membership, so reconnect without the HTTP join.
+    if (this.synced) {
       this.connect();
       return;
     }
