@@ -88,7 +88,9 @@ export class GameTable extends DurableObject<Env> {
     }
   }
   private broadcast(game: Game) {
-    for (const ws of this.ctx.getWebSockets()) this.snapshot(ws, game);
+    // Sockets stay listed until their close event runs; sending to them fails.
+    for (const ws of this.ctx.getWebSockets())
+      if (ws.readyState === WebSocket.OPEN) this.snapshot(ws, game);
   }
   private due(room: Room) {
     const game = room.game;
@@ -187,23 +189,34 @@ export class GameTable extends DurableObject<Env> {
     const duplicate = this.ctx.storage.sql
       .exec("SELECT 1 FROM receipts WHERE player=? AND command=?", id, input.commandId)
       .toArray().length;
+    let persist: (() => Promise<void>) | undefined;
     if (!duplicate) {
       const game = structuredClone(room.game);
       apply(game, id, input, Date.now());
       if (input.action === "rename") {
-        await this.env.DB.prepare("UPDATE players SET display_name=? WHERE id=?")
-          .bind(findPlayer(game, id)!.name, id)
-          .run();
+        // D1 runs after the table unblocks so a slow write cannot stall other players.
+        const name = findPlayer(game, id)!.name;
+        persist = async () => {
+          try {
+            await this.env.DB.prepare("UPDATE players SET display_name=? WHERE id=?")
+              .bind(name, id)
+              .run();
+          } catch (error) {
+            console.error("Profile rename failed", error);
+          }
+        };
       }
       room = await this.save(room, game, { id, commandId: input.commandId });
     }
     return {
       state: input.action === "leave" ? { ok: true } : this.view(room.game, id),
       duplicate: !!duplicate,
+      persist,
     };
   }
   async fetch(req: Request) {
-    return this.ctx.blockConcurrencyWhile(async () => {
+    let persist: (() => Promise<void>) | undefined;
+    const response = await this.ctx.blockConcurrencyWhile(async () => {
       const url = new URL(req.url);
       const code = url.pathname.split("/")[1];
       const id = req.headers.get("x-player-id")!;
@@ -258,8 +271,9 @@ export class GameTable extends DurableObject<Env> {
           });
         }
         if (req.method === "GET") return Response.json(this.view(room.game, id));
-        const { state } = await this.execute(room, id, command(await req.json()));
-        return Response.json(state);
+        const result = await this.execute(room, id, command(await req.json()));
+        persist = result.persist;
+        return Response.json(result.state);
       } catch (error) {
         const response = failure(error);
         this.logConnection("request_failed", attachment, {
@@ -271,8 +285,11 @@ export class GameTable extends DurableObject<Env> {
         return response;
       }
     });
+    await persist?.();
+    return response;
   }
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    let persist: (() => Promise<void>) | undefined;
     await this.ctx.blockConcurrencyWhile(async () => {
       let commandId: string | undefined;
       let action: string | undefined;
@@ -311,9 +328,10 @@ export class GameTable extends DurableObject<Env> {
         if (!isTableCommand(input)) throw new GameError("Invalid room command.");
         const room = this.read();
         if (!room) throw new GameError("Table expired.");
-        const { state, duplicate } = await this.execute(await this.advance(room), id, input);
-        this.send(ws, { type: "ack", commandId, state });
-        outcome = duplicate ? "duplicate" : "accepted";
+        const result = await this.execute(await this.advance(room), id, input);
+        persist = result.persist;
+        this.send(ws, { type: "ack", commandId, state: result.state });
+        outcome = result.duplicate ? "duplicate" : "accepted";
       } catch (error) {
         const response = failure(error);
         const body = (await response.json()) as { error: string };
@@ -321,21 +339,25 @@ export class GameTable extends DurableObject<Env> {
         reason = body.error;
         this.send(ws, { type: "error", commandId, ...body });
       } finally {
-        const game = this.read()?.game;
-        console.log({
-          message: "websocket_command",
-          commandId: commandId ?? null,
-          action: action ?? null,
-          playerId: playerId ?? null,
-          connectionId: (ws.deserializeAttachment() as Attachment).connectionId ?? null,
-          roomCode: game?.code ?? null,
-          matchId: game?.matchId ?? null,
-          revision: game?.revision ?? null,
-          outcome,
-          ...(reason ? { reason } : {}),
-        });
+        // Accepted commands are already recorded as match events.
+        if (outcome !== "accepted") {
+          const game = this.read()?.game;
+          console.log({
+            message: "websocket_command",
+            commandId: commandId ?? null,
+            action: action ?? null,
+            playerId: playerId ?? null,
+            connectionId: (ws.deserializeAttachment() as Attachment).connectionId ?? null,
+            roomCode: game?.code ?? null,
+            matchId: game?.matchId ?? null,
+            revision: game?.revision ?? null,
+            outcome,
+            ...(reason ? { reason } : {}),
+          });
+        }
       }
     });
+    await persist?.();
   }
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean) {
     this.logConnection("closed", ws.deserializeAttachment() as Attachment, {

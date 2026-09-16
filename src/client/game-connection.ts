@@ -8,6 +8,10 @@ type Pending = {
   timeout: number;
 };
 
+const PING_MS = 10000;
+/** Every send expects a reply; a silent socket is treated as dead this soon. */
+const REPLY_MS = 5000;
+
 /** Retries keep the same command ID; the room acknowledges each mutation only once. */
 export class GameConnection {
   private socket?: WebSocket;
@@ -15,11 +19,21 @@ export class GameConnection {
   private attempt = 0;
   private retry?: number;
   private heartbeat?: number;
+  private reply?: number;
   private joining?: AbortController;
+  /** Set once the current socket delivers a snapshot; cleared when a new socket opens. */
   private synced = false;
   private closedReason = "Connection closed.";
   private pending = new Map<string, Pending>();
-  private lastMessage = Date.now();
+  private wake = () => {
+    if (this.stopped || (typeof document !== "undefined" && document.visibilityState === "hidden"))
+      return;
+    if (this.retry !== undefined) {
+      clearTimeout(this.retry);
+      this.retry = undefined;
+      void this.rejoin();
+    } else if (this.socket?.readyState === WebSocket.OPEN) this.send(this.socket, "ping");
+  };
   constructor(
     private code: string,
     private token: string,
@@ -27,7 +41,16 @@ export class GameConnection {
     private accept: (state: GameView) => void,
     private status: (message: string) => void,
   ) {
+    if (typeof document !== "undefined") document.addEventListener("visibilitychange", this.wake);
+    if (typeof window !== "undefined") window.addEventListener("online", this.wake);
     this.connect();
+  }
+  private send(ws: WebSocket, message: string) {
+    ws.send(message);
+    this.reply ??= setTimeout(() => {
+      this.reply = undefined;
+      ws.close(4000, "No reply");
+    }, REPLY_MS);
   }
   private connect() {
     if (this.stopped) return;
@@ -39,19 +62,15 @@ export class GameConnection {
     this.status("Connecting…");
     ws.onopen = () => {
       if (this.stopped || this.socket !== ws) return;
-      this.lastMessage = Date.now();
       this.heartbeat = setInterval(() => {
-        if (Date.now() - this.lastMessage > 45000) {
-          ws.close(4000, "Heartbeat timed out");
-          return;
-        }
-        if (ws.readyState === WebSocket.OPEN) ws.send("ping");
-      }, 20000);
+        if (ws.readyState === WebSocket.OPEN) this.send(ws, "ping");
+      }, PING_MS);
       // The server sends a current snapshot before we replay unacknowledged commands.
     };
     ws.onmessage = (event) => {
       if (this.stopped || this.socket !== ws) return;
-      this.lastMessage = Date.now();
+      clearTimeout(this.reply);
+      this.reply = undefined;
       if (event.data === "pong") return;
       const message = JSON.parse(event.data);
       if (message.type === "state") {
@@ -61,7 +80,7 @@ export class GameConnection {
         this.attempt = 0;
         if (!this.synced) {
           this.synced = true;
-          for (const p of this.pending.values()) ws.send(p.message);
+          for (const p of this.pending.values()) this.send(ws, p.message);
         }
       } else if (message.type === "ack" || message.type === "error") {
         const p = this.pending.get(message.commandId);
@@ -74,8 +93,9 @@ export class GameConnection {
     };
     ws.onclose = (event) => {
       clearInterval(this.heartbeat);
+      clearTimeout(this.reply);
+      this.reply = undefined;
       if (this.stopped) return;
-      this.synced = false;
       if (event.code === 4001 || event.code === 4002) {
         this.closedReason = event.reason || "Connection closed.";
         this.status(this.closedReason);
@@ -90,10 +110,18 @@ export class GameConnection {
     if (this.stopped) return;
     this.status("Connection lost. Reconnecting…");
     const delay = Math.min(10000, 500 * 2 ** this.attempt++) + Math.random() * 250;
-    this.retry = setTimeout(() => void this.rejoin(), delay);
+    this.retry = setTimeout(() => {
+      this.retry = undefined;
+      void this.rejoin();
+    }, delay);
   }
   private async rejoin() {
     if (this.stopped) return;
+    // A socket that synced proves membership, so reconnect without the HTTP join.
+    if (this.synced) {
+      this.connect();
+      return;
+    }
     const controller = (this.joining = new AbortController());
     try {
       await requestGame(
@@ -124,13 +152,18 @@ export class GameConnection {
         reject(new Error("Connection interrupted. Check the table state before trying again."));
       }, 30000);
       this.pending.set(commandId, { message, resolve, reject, timeout });
-      if (this.synced && this.socket?.readyState === WebSocket.OPEN) this.socket.send(message);
+      if (this.synced && this.socket?.readyState === WebSocket.OPEN)
+        this.send(this.socket, message);
     });
   }
   stop() {
     this.stopped = true;
     clearTimeout(this.retry);
     clearInterval(this.heartbeat);
+    clearTimeout(this.reply);
+    if (typeof document !== "undefined")
+      document.removeEventListener("visibilitychange", this.wake);
+    if (typeof window !== "undefined") window.removeEventListener("online", this.wake);
     this.joining?.abort();
     this.socket?.close(1000, "Leaving table");
     for (const p of this.pending.values()) {
