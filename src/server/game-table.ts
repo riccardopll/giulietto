@@ -339,19 +339,22 @@ export class GameTable extends DurableObject<Env> {
         reason = body.error;
         this.send(ws, { type: "error", commandId, ...body });
       } finally {
-        const game = this.read()?.game;
-        console.log({
-          message: "websocket_command",
-          commandId: commandId ?? null,
-          action: action ?? null,
-          playerId: playerId ?? null,
-          connectionId: (ws.deserializeAttachment() as Attachment).connectionId ?? null,
-          roomCode: game?.code ?? null,
-          matchId: game?.matchId ?? null,
-          revision: game?.revision ?? null,
-          outcome,
-          ...(reason ? { reason } : {}),
-        });
+        // Accepted commands are already recorded as match events.
+        if (outcome !== "accepted") {
+          const game = this.read()?.game;
+          console.log({
+            message: "websocket_command",
+            commandId: commandId ?? null,
+            action: action ?? null,
+            playerId: playerId ?? null,
+            connectionId: (ws.deserializeAttachment() as Attachment).connectionId ?? null,
+            roomCode: game?.code ?? null,
+            matchId: game?.matchId ?? null,
+            revision: game?.revision ?? null,
+            outcome,
+            ...(reason ? { reason } : {}),
+          });
+        }
       }
     });
     await persist?.();
