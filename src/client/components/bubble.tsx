@@ -5,7 +5,13 @@ import { cn } from "../utils";
 export type Side = "left" | "right";
 type Tail = "bottom" | Side;
 
-function bubbleArtwork(children: ReactNode, tail: Tail | undefined, className: string) {
+/** `front` artwork overlaps the bottom edge instead of sitting behind it. */
+function bubbleArtwork(
+  children: ReactNode,
+  tail: Tail | undefined,
+  className: string,
+  front = false,
+) {
   // Bottom edge, left to right. Side tails leave the bottom edge and point outward.
   const bottom =
     tail === "bottom"
@@ -34,14 +40,25 @@ function bubbleArtwork(children: ReactNode, tail: Tail | undefined, className: s
           strokeWidth="2.5"
           strokeLinejoin="round"
         />
+        {front &&
+          tail === "bottom" && (
+            // Artwork resting on the edge needs a line under it where the tail opens.
+            <path d="M12.5 43.75H23" className="stroke-foreground" strokeWidth="2.5" />
+          )}
       </svg>
       {children}
-      {tail && (
-        // The tailed bottom edge is redrawn over the artwork so the emote sits inside the bubble.
-        <svg className={svgClass} viewBox="0 0 60 45" fill="none" aria-hidden="true">
-          <path d={bottom} className="stroke-foreground" strokeWidth="2.5" strokeLinejoin="round" />
-        </svg>
-      )}
+      {tail &&
+        !front && (
+          // The tailed bottom edge is redrawn over the artwork so the emote sits inside the bubble.
+          <svg className={svgClass} viewBox="0 0 60 45" fill="none" aria-hidden="true">
+            <path
+              d={bottom}
+              className="stroke-foreground"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
     </span>
   );
 }
@@ -51,7 +68,15 @@ export function MenuBubble({ children }: { children: ReactNode }) {
 }
 
 /** A reaction rising above a seat. */
-export function Bubble({ children, label }: { children: ReactNode; label: string }) {
+export function Bubble({
+  children,
+  label,
+  front,
+}: {
+  children: ReactNode;
+  label: string;
+  front?: boolean;
+}) {
   return (
     <span
       role="status"
@@ -59,7 +84,7 @@ export function Bubble({ children, label }: { children: ReactNode; label: string
       className="seat-bubble pointer-events-none block origin-bottom shrink-0 overflow-visible pb-2.5 animate-[emote-bubble_ease-out_both]"
       style={{ animationDuration: `${EMOTE_DURATION_MS}ms` }}
     >
-      {bubbleArtwork(children, "bottom", "origin-bottom scale-90")}
+      {bubbleArtwork(children, "bottom", "origin-bottom scale-90", front)}
     </span>
   );
 }
@@ -70,10 +95,12 @@ export function SideBubble({
   label,
   side,
   top,
+  front,
 }: {
   children: ReactNode;
   label: string;
   side: Side;
+  front?: boolean;
   /** Resting height as a percentage of the rail. */
   top: number;
 }) {
@@ -89,7 +116,12 @@ export function SideBubble({
       )}
       style={{ top: `${top}%`, animationDuration: `${EMOTE_DURATION_MS}ms` }}
     >
-      {bubbleArtwork(children, side, "absolute bottom-0 left-0 origin-bottom-left scale-[.6]")}
+      {bubbleArtwork(
+        children,
+        side,
+        "absolute bottom-0 left-0 origin-bottom-left scale-[.6]",
+        front,
+      )}
     </span>
   );
 }
