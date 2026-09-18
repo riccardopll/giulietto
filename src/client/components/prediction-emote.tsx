@@ -12,7 +12,6 @@ const digits = [
   "M29 4L24 13C14 7 10 14 10 20C22 12 33 20 33 30C33 39 27 44 17 44C5 44 0 36 0 23C0 8 7 0 18 0C23 0 26 1 29 4ZM17 25C9 25 10 35 17 35S24 25 17 25Z",
 ];
 
-// Depth is drawn as stacked copies between the face and its offset base.
 const depth = { x: 1.5, y: 4 };
 const layers = [1, 0.75, 0.5, 0.25];
 

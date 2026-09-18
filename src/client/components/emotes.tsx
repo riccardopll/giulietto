@@ -8,7 +8,7 @@ import { Bubble, MenuBubble, SideBubble, type Side } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
 import { cn } from "../utils";
 
-function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
+export function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
   const [expired, setExpired] = useState<number>();
   const remaining = sentAt === undefined ? 0 : duration - (serverTime - sentAt);
   useEffect(() => {
@@ -107,10 +107,6 @@ function placement(emote: Emote): { side: Side; top: number } {
   };
 }
 
-/**
- * Reactions from spectators and eliminated players, each at its own spot along the edges.
- * Drawn above the chat and emote buttons so a bubble is never cut off by them.
- */
 export function ReactionRail({ game }: { game: GameView }) {
   const reactions = [
     ...(game.spectators ?? []),
@@ -165,7 +161,9 @@ export function EmotePicker({
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
-          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center rounded-l-2xl bg-background shadow-sm">
+          <span className="absolute inset-y-0 right-0 grid w-8 place-items-center drop-shadow-sm">
+            {/* The button sits at 98% of the table width; the mask trims this to the rim's curve. */}
+            <span className="table-edge absolute inset-y-0 left-0 -right-2 -z-1 rounded-l-2xl bg-background [mask-position:calc(32px_-_98cqw)_50%]" />
             <Smile className="size-6" aria-hidden="true" />
           </span>
         </Button>

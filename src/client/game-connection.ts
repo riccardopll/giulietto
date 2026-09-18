@@ -9,7 +9,6 @@ type Pending = {
 };
 
 const PING_MS = 10000;
-/** Every send expects a reply; a silent socket is treated as dead this soon. */
 const REPLY_MS = 5000;
 
 /** Retries keep the same command ID; the room acknowledges each mutation only once. */
@@ -21,7 +20,6 @@ export class GameConnection {
   private heartbeat?: number;
   private reply?: number;
   private joining?: AbortController;
-  /** Set once the current socket delivers a snapshot; cleared when a new socket opens. */
   private synced = false;
   private closedReason = "Connection closed.";
   private pending = new Map<string, Pending>();

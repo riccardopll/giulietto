@@ -153,7 +153,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   }, [isPreview]);
   useEffect(() => {
     if (!game?.code) return;
-    // Warm the deck in the lobby and retry when a match starts, without delaying play.
     for (let i = 0; i <= 40; i++) {
       const img = new Image();
       img.fetchPriority = "low";
@@ -161,7 +160,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     }
   }, [game?.code, game?.matchId]);
 
-  /** Resolves to true once the table accepted the command. */
   async function act(input: EntryCommand | TableCommand) {
     if (preview) {
       try {

@@ -13,7 +13,6 @@ export type TableCommand =
   | { action: "emote"; emote: Emote["id"] }
   | { action: "chat"; text: string }
   | { action: "leave" };
-/** A validated request. Commands sent over HTTP name their table with `code`. */
 export type Command = (EntryCommand | TableCommand) & { commandId: string; code?: string };
 
 export function isEntryCommand(input: EntryCommand | TableCommand): input is EntryCommand {

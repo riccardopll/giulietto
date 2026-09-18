@@ -228,7 +228,6 @@ export function Preview() {
     { ...entry.game, spectators: [spectator] },
     viewer === -1 ? spectator.id : entry.game.players[viewer].id,
   );
-  // Keep the countdown frozen between moves, like the rest of the preview.
   snapshot.deadline =
     snapshot.serverTime +
     (snapshot.phase === "results" ? 12000 : snapshot.phase === "trick" ? 2600 : 40000);

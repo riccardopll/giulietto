@@ -48,12 +48,10 @@ test("stats use finalized history once, preserve identity, and rank players by w
     averagePrediction: null,
     averageDecisionMs: null,
   });
-  // An abandoned match adds no participation or win credit.
   game.matchId = "abandoned";
   game.winner = null;
   await deliver();
   expect((await read()).player.matches).toBe(1);
-  // Participation can lead XP while another player leads wins.
   for (let i = 0; i < 4; i++) {
     game.matchId = `next-${i}`;
     game.players = game.players.filter((p) => p.id !== id);

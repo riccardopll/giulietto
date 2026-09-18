@@ -18,7 +18,6 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-/** Errors share one top-down stack; a repeated id replaces its toast in place. */
 export const toast = {
   error(
     message: string,

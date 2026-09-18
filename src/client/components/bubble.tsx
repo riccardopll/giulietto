@@ -12,7 +12,6 @@ function bubbleArtwork(
   className: string,
   front = false,
 ) {
-  // Bottom edge, left to right. Side tails leave the bottom edge and point outward.
   const bottom =
     tail === "bottom"
       ? "M1.25 32.5Q1.25 43.75 12.5 43.75L10 52L23 43.75H47.5Q58.75 43.75 58.75 32.5"
@@ -67,7 +66,6 @@ export function MenuBubble({ children }: { children: ReactNode }) {
   return bubbleArtwork(children, undefined, "origin-bottom scale-90");
 }
 
-/** A reaction rising above a seat. */
 export function Bubble({
   children,
   label,
@@ -89,7 +87,6 @@ export function Bubble({
   );
 }
 
-/** A smaller reaction from the sidelines, sliding in from one edge with its tail pointing out. */
 export function SideBubble({
   children,
   label,

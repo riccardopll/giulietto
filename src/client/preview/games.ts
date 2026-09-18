@@ -118,7 +118,6 @@ export function makePreview(input: PreviewOptions): Game {
   }
   game.round = 6 * options.cycle + 6 - cards;
   deal(game, Date.now());
-  // Use a stable seat order so repeated resets are easy to compare.
   game.players.sort((a, b) => seatOrder.indexOf(a.id) - seatOrder.indexOf(b.id));
   game.players.forEach((p, i) => {
     const state = seatStates[i];

@@ -3,7 +3,6 @@ import type { GameView } from "../../src/shared/game";
 
 export type Player = { page: Page; state?: GameView };
 
-/** Mirrors the table state a page receives over its own WebSocket. */
 export function observe(page: Page): Player {
   const player: Player = { page };
   page.on("websocket", (socket) => {
@@ -34,7 +33,6 @@ export async function screenshot(
   await testInfo.attach(name, { path, contentType: "image/png" });
 }
 
-/** Three named players seated in one private lobby, the host first. */
 export const test = base.extend<{ players: Player[] }>({
   players: async ({ page: hostPage, browser, baseURL, viewport, reducedMotion }, use) => {
     const players: Player[] = [];

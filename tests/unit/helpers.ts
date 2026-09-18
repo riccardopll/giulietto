@@ -7,7 +7,6 @@ export function lobbyFixture(people = 3): Game {
   return { ...makeGame("ABCDEFGH", players[0], false), players };
 }
 
-/** Known hands and seats let rule tests avoid depending on a shuffled deal. */
 export function gameFixture(
   hands: number[][] = [
     [1, 2],

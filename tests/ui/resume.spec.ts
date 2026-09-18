@@ -59,7 +59,6 @@ test("reloading and reconnecting during play restore the player and hand and all
   await expect(hand.getByRole("button")).toHaveCount(dealt.length);
   expect(await labels()).toEqual(dealt);
 
-  // A synced player reconnects straight to the socket without another join request.
   const joins: string[] = [];
   returning.page.on("request", (request) => {
     if (request.method() === "POST" && request.postDataJSON()?.action === "join")

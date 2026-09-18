@@ -18,10 +18,8 @@ import { Input } from "./ui/input";
 
 export type ChatState = { open: boolean; setOpen: (open: boolean) => void; unread: number };
 
-/** Sheet state kept above the board and results screen, so both outlive the switch between them. */
 export function useChat(game: GameView | null): ChatState {
   const code = game?.code;
-  // The sheet belongs to one round, results included, and closes when the next one is dealt.
   const key = game && chatOpen(game) ? `${game.code}:${game.round}` : null;
   const latest = game?.chat?.at(-1)?.id ?? 0;
   const [openKey, setOpenKey] = useState<string | null>(null);
@@ -33,7 +31,6 @@ export function useChat(game: GameView | null): ChatState {
   return { open, setOpen: (next) => setOpenKey(next ? key : null), unread };
 }
 
-/** Where the chat button last stood, so it can slide to its next spot when the screen changes. */
 let lastSpot: { rect: DOMRect; at: number } | undefined;
 
 function useSlideFromLastSpot(ref: RefObject<HTMLButtonElement | null>) {
@@ -58,7 +55,6 @@ function useSlideFromLastSpot(ref: RefObject<HTMLButtonElement | null>) {
   }, [ref]);
 }
 
-/** Opens the chat; a tab on the table's edge during play, a plain button on the results screen. */
 export function ChatButton({
   unread,
   onClick,
@@ -88,9 +84,13 @@ export function ChatButton({
       <span
         className={cn(
           "grid place-items-center",
-          edge ? "absolute inset-y-0 left-0 w-8 rounded-r-2xl bg-background shadow-sm" : "relative",
+          edge ? "absolute inset-y-0 left-0 w-8 drop-shadow-sm" : "relative",
         )}
       >
+        {edge && (
+          // The button sits at 2% of the table width; the mask trims this to the rim's curve.
+          <span className="table-edge absolute inset-y-0 right-0 -left-2 -z-1 rounded-r-2xl bg-background [mask-position:calc(8px_-_2cqw)_50%]" />
+        )}
         <MessageCircleMore className="size-6" aria-hidden="true" />
         {unread > 0 && (
           <span
@@ -105,7 +105,6 @@ export function ChatButton({
   );
 }
 
-/** Tracks the visible area so the composer stays above a phone keyboard. */
 function useVisualViewport() {
   const [box, setBox] = useState<{ top: number; height: number }>();
   useEffect(() => {
@@ -143,7 +142,6 @@ function Sheet({
     if (pinned.current && list.current) list.current.scrollTop = list.current.scrollHeight;
   };
   useEffect(showLatest, [latest]);
-  // The list shrinks when the keyboard opens; keep the newest messages in view.
   useEffect(() => {
     if (!list.current) return;
     const observer = new ResizeObserver(showLatest);
