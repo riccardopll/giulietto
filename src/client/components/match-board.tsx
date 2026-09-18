@@ -1,18 +1,19 @@
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
 import { Target } from "lucide-react";
-import type { Emote } from "../../shared/emotes";
+import { EMOTE_DURATION_MS, type Emote } from "../../shared/emotes";
 import { findPlayer, type GameView } from "../../shared/game";
 import { tableOrder } from "../table-order";
 import { cn } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
-import { EmotePicker, ReactionRail } from "./emotes";
+import { EmotePicker, ReactionRail, useRecent } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
 import { TableSurface, tableOutline } from "./table-surface";
 import { Button } from "./ui/button";
 import { MatchEventFeed } from "./match-event-feed";
 
-function PredictionTally({ game }: { game: GameView }) {
+function PredictionTally({ game, emote }: { game: GameView; emote?: Emote }) {
+  const emoting = useRecent(emote?.sentAt, game.serverTime, EMOTE_DURATION_MS);
   const predicted = game.players.reduce((total, player) => total + (player.bid ?? 0), 0);
   const delta = predicted - game.count;
   // The pill keeps its last value while it shrinks away at zero.
@@ -21,7 +22,10 @@ function PredictionTally({ game }: { game: GameView }) {
   const balance = delta > 0 ? `${delta} over` : delta < 0 ? `${-delta} under` : "even with";
   return (
     <div
-      className="prediction-tally absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm @min-2xl/board:text-base"
+      className={cn(
+        "prediction-tally absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm transition-[opacity,translate] duration-300 ease-out @min-2xl/board:text-base",
+        emoting && "translate-y-2 opacity-0",
+      )}
       role="status"
       aria-label={`${predicted} ${predicted === 1 ? "trick" : "tricks"} predicted, ${balance} the ${game.count} ${game.count === 1 ? "card" : "cards"}`}
     >
@@ -201,7 +205,7 @@ export function MatchBoard({
       >
         <TableSurface />
         <div className="pointer-events-none relative z-10 col-span-full row-start-2 row-end-5 min-h-0 [container-type:size]">
-          <PredictionTally game={game} />
+          <PredictionTally game={game} emote={handPlayer?.lives ? handPlayer.emote : undefined} />
         </div>
         <div className="pointer-events-none relative z-40 col-span-full row-start-2 row-end-5 min-h-0 [container-type:size]">
           <ChatButton

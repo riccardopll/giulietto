@@ -8,7 +8,7 @@ import { Bubble, MenuBubble, SideBubble, type Side } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
 import { cn } from "../utils";
 
-function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
+export function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
   const [expired, setExpired] = useState<number>();
   const remaining = sentAt === undefined ? 0 : duration - (serverTime - sentAt);
   useEffect(() => {
