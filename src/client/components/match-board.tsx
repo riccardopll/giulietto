@@ -23,8 +23,8 @@ function PredictionTally({ game, emote }: { game: GameView; emote?: Emote }) {
   return (
     <div
       className={cn(
-        "prediction-tally absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm transition-[opacity,translate] duration-300 ease-out @min-2xl/board:text-base",
-        emoting && "translate-y-2 opacity-0",
+        "prediction-tally absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm transition-opacity duration-300 ease-out @min-2xl/board:text-base",
+        emoting && "opacity-0",
       )}
       role="status"
       aria-label={`${predicted} ${predicted === 1 ? "trick" : "tricks"} predicted, ${balance} the ${game.count} ${game.count === 1 ? "card" : "cards"}`}
