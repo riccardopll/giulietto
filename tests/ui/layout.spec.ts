@@ -76,7 +76,6 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   for (const hand of await page.locator('[data-side="bottom"] .seat-hand').all())
     await expect(hand).toBeVisible();
   await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
-  await expect(page.getByRole("button", { name: "Empty emote slot 1" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Send Perso emote" })).toBeEnabled();
   const menu = await page.getByRole("dialog", { name: "Emotes", exact: true }).boundingBox();
   const handTop = await page

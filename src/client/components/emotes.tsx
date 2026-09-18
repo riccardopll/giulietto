@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Popover } from "radix-ui";
-import { Lock, Smile } from "lucide-react";
-import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, type Emote } from "../../shared/emotes";
+import { Smile } from "lucide-react";
+import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, EMOTE_IDS, type Emote } from "../../shared/emotes";
 import type { GameView } from "../../shared/game";
 import { Button } from "./ui/button";
 import { Bubble, MenuBubble, SideBubble, type Side } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
+import { cn } from "../utils";
 
 function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
   const [expired, setExpired] = useState<number>();
@@ -18,47 +19,41 @@ function useRecent(sentAt: number | undefined, serverTime: number, duration: num
   return sentAt !== undefined && expired !== sentAt && remaining > 0;
 }
 
-function Chicken({ animated = false }: { animated?: boolean }) {
+/** Placement of each emote's artwork inside the 60x45 bubble. */
+const EMOTES: Record<Emote["id"], { label: string; box: string; clip?: string; front?: boolean }> =
+  {
+    chicken: {
+      label: "Send chicken emote",
+      clip: "[clip-path:inset(-30px_0_2.5px_0)]",
+      box: "-bottom-[7.5px] left-1/2 h-[84.375px] w-[62.5px] -translate-x-[60%]",
+    },
+    perso: {
+      label: "Send Perso emote",
+      box: "-left-6 -top-[32.55px] h-[90px] w-[108px]",
+    },
+    goblin: {
+      label: "Send goblin emote",
+      clip: "[clip-path:inset(-30px_-12px_2.5px_-12px)]",
+      box: "-bottom-[1.5px] left-1/2 h-[53.7px] w-[76px] -translate-x-1/2",
+      front: true,
+    },
+  };
+
+function EmoteArt({ id, animated = false }: { id: Emote["id"]; animated?: boolean }) {
+  const { box, clip } = EMOTES[id];
+  const still = `/emotes/${id}-still.webp`;
   return (
-    <span className="absolute inset-0 [clip-path:inset(-30px_0_2.5px_0)]">
-      <span className="absolute -bottom-[7.5px] left-1/2 h-[84.375px] w-[62.5px] -translate-x-[60%]">
+    <span className={cn("absolute inset-0", clip)}>
+      <span className={cn("absolute", box)}>
         {animated ? (
-          <AnimatedWebp src="/emotes/chicken.webp" poster="/emotes/chicken-still.webp" />
+          <AnimatedWebp src={`/emotes/${id}.webp`} poster={still} />
         ) : (
-          <img
-            src="/emotes/chicken-still.webp"
-            alt=""
-            className="size-full object-contain"
-            draggable={false}
-          />
+          <img src={still} alt="" className="size-full object-contain" draggable={false} />
         )}
       </span>
     </span>
   );
 }
-
-function Perso({ animated = false }: { animated?: boolean }) {
-  return (
-    <span className="absolute -left-6 -top-[32.55px] h-[90px] w-[108px]">
-      {animated ? (
-        <AnimatedWebp src="/emotes/perso.webp" poster="/emotes/perso-still.webp" />
-      ) : (
-        <img
-          src="/emotes/perso-still.webp"
-          alt=""
-          className="size-full object-contain"
-          draggable={false}
-        />
-      )}
-    </span>
-  );
-}
-
-const art: Record<Emote["id"], typeof Chicken> = { chicken: Chicken, perso: Perso };
-const emotes: { id: Emote["id"]; label: string }[] = [
-  { id: "chicken", label: "Send chicken emote" },
-  { id: "perso", label: "Send Perso emote" },
-];
 
 export function EmoteBubble({
   emote,
@@ -71,10 +66,13 @@ export function EmoteBubble({
 }) {
   const visible = useRecent(emote?.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!emote || !visible) return null;
-  const Art = art[emote.id];
   return (
-    <Bubble key={emote.sentAt} label={`${name} sent the ${emote.id} emote`}>
-      <Art animated />
+    <Bubble
+      key={emote.sentAt}
+      label={`${name} sent the ${emote.id} emote`}
+      front={EMOTES[emote.id].front}
+    >
+      <EmoteArt id={emote.id} animated />
     </Bubble>
   );
 }
@@ -90,10 +88,13 @@ function SideReaction({
 }) {
   const visible = useRecent(emote.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!visible) return null;
-  const Art = art[emote.id];
   return (
-    <SideBubble label={`${name} sent the ${emote.id} emote`} {...placement(emote)}>
-      <Art animated />
+    <SideBubble
+      label={`${name} sent the ${emote.id} emote`}
+      front={EMOTES[emote.id].front}
+      {...placement(emote)}
+    >
+      <EmoteArt id={emote.id} animated />
     </SideBubble>
   );
 }
@@ -151,8 +152,7 @@ export function EmotePicker({
   onSend: (emote: Emote["id"]) => void;
 }) {
   useEffect(() => {
-    void preloadWebp("/emotes/chicken.webp").catch(() => {});
-    void preloadWebp("/emotes/perso.webp").catch(() => {});
+    for (const id of EMOTE_IDS) void preloadWebp(`/emotes/${id}.webp`).catch(() => {});
   }, []);
   const coolingDown = useRecent(emote?.sentAt, serverTime, EMOTE_COOLDOWN_MS);
   return (
@@ -179,40 +179,25 @@ export function EmotePicker({
           collisionPadding={12}
           aria-label="Emotes"
           onOpenAutoFocus={(event) => event.preventDefault()}
-          className="z-50 grid w-auto grid-cols-3 gap-1 sm:gap-3 bg-transparent p-2"
+          className="z-50 grid w-auto grid-cols-3 gap-4 bg-transparent p-2"
         >
-          {emotes.map(({ id, label }) => {
-            const Art = art[id];
-            return (
-              <button
-                key={id}
-                type="button"
-                className="block"
-                aria-label={label}
-                onClick={() => {
-                  if (disabled || coolingDown) return;
-                  onSend(id);
-                  onOpenChange(false);
-                }}
-              >
-                <MenuBubble>
-                  <Art />
-                </MenuBubble>
-              </button>
-            );
-          })}
-          <button
-            type="button"
-            disabled
-            aria-label="Empty emote slot 1"
-            className="block opacity-60"
-          >
-            <MenuBubble>
-              <span className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                <Lock className="size-5" aria-hidden="true" />
-              </span>
-            </MenuBubble>
-          </button>
+          {EMOTE_IDS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              className="block"
+              aria-label={EMOTES[id].label}
+              onClick={() => {
+                if (disabled || coolingDown) return;
+                onSend(id);
+                onOpenChange(false);
+              }}
+            >
+              <MenuBubble>
+                <EmoteArt id={id} />
+              </MenuBubble>
+            </button>
+          ))}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

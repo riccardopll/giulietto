@@ -23,10 +23,10 @@ separate.
 
 ## Emotes
 
-Match `public/emotes/chicken.webp` and `public/emotes/perso.webp`: berry pink,
-dark plum shadows, cream highlights, thick outlines, readable silhouettes, and
-connected cursive lettering over a white, dark-outlined speech bubble with a
-visible tail.
+Keep thick outlines and readable silhouettes at the displayed size. Drawn
+emotes should lean on the palette of `public/emotes/chicken.webp` and
+`public/emotes/perso.webp`; imported artwork such as `public/emotes/goblin.webp`
+keeps its own colours.
 
 Active motion lasts about 1.5 seconds: entrance, reaction, still hold. No
 continuous idle effects. Do not distort lettering.

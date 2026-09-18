@@ -1,7 +1,7 @@
 import { isAvatar } from "../shared/avatars";
 import type { Command, EntryCommand, TableCommand } from "../shared/commands";
 import { chatText, sendChat } from "../shared/chat";
-import { sendEmote } from "../shared/emotes";
+import { EMOTE_IDS, sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
   bid,
@@ -55,10 +55,11 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
         card: input.card === undefined ? undefined : integer(input.card, "Choose a valid card."),
         mode: input.mode === "high" || input.mode === "low" ? input.mode : undefined,
       };
-    case "emote":
-      if (input.emote !== "chicken" && input.emote !== "perso")
-        throw new GameError("Unknown emote.");
-      return { action: "emote", emote: input.emote };
+    case "emote": {
+      const emote = EMOTE_IDS.find((id) => id === input.emote);
+      if (!emote) throw new GameError("Unknown emote.");
+      return { action: "emote", emote };
+    }
     case "chat":
       return { action: "chat", text: chatText(input.text) };
     default:
