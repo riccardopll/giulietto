@@ -8,6 +8,7 @@ import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
 import { bid, deal, play, view, type Game } from "../../shared/game";
+import type { BotWeights } from "../../shared/bot";
 import {
   advancePreview,
   makePreview,
@@ -96,20 +97,20 @@ function readSettings() {
   };
 }
 
-function nextEntry(old: Entry): Entry {
+function nextEntry(old: Entry, weights: BotWeights): Entry {
   const finished = old.game.phase === "finished";
   return {
     ...old,
-    game: finished ? makePreview(old.options) : advancePreview(old.game),
+    game: finished ? makePreview(old.options, weights) : advancePreview(old.game, weights),
     reset: old.reset + Number(finished),
   };
 }
 
-export function Preview() {
+/** Every seat but the viewer's is played by the bot; autoplay lets it play the viewer's too. */
+export function Preview({ weights }: { weights: BotWeights }) {
   const [initial] = useState(readSettings);
   const [people, setPeople] = useState(initial.options.people);
   const [viewer, setViewer] = useState(initial.viewer);
-  const [running, setRunning] = useState(true);
   const [controlsOpen, setControlsOpen] = useState(false);
   const [aceOpen, setAceOpen] = useState(false);
   const [eliminationSeat, setEliminationSeat] = useState(0);
@@ -118,7 +119,7 @@ export function Preview() {
     Object.fromEntries(
       counts.map((people) => {
         const options = normalizePreview({ ...initial.options, people });
-        return [people, { options, game: makePreview(options), reset: 0 }];
+        return [people, { options, game: makePreview(options, weights), reset: 0 }];
       }),
     ),
   );
@@ -133,17 +134,18 @@ export function Preview() {
   const hasTrick = options.phase === "playing" || options.phase === "blind";
 
   function configure(patch: Partial<PreviewOptions> = {}) {
-    setRunning(false);
     setTables((tables) => {
       const old = tables[people];
       const options = normalizePreview({ ...old.options, ...patch });
-      return { ...tables, [people]: { options, game: makePreview(options), reset: old.reset + 1 } };
+      return {
+        ...tables,
+        [people]: { options, game: makePreview(options, weights), reset: old.reset + 1 },
+      };
     });
   }
 
   function step() {
-    setRunning(false);
-    setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people]) }));
+    setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], weights) }));
   }
 
   const shortcuts = useEffectEvent((key: string) => {
@@ -178,24 +180,29 @@ export function Preview() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
+  // Bot seats move on their own; the viewer's seat waits for the controls.
   useEffect(() => {
-    if (!running || entry.game.phase === "lobby") return;
-    const timer = setInterval(() => {
-      setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people]) }));
-    }, 1800);
-    return () => clearInterval(timer);
-  }, [running, people, entry.game.phase]);
+    const game = entry.game;
+    if (game.phase === "lobby" || game.phase === "finished") return;
+    const acting = game.phase === "bidding" || game.phase === "playing";
+    const viewerId = viewer === -1 ? null : game.players[viewer]?.id;
+    if (acting && game.order[game.turn] === viewerId) return;
+    const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? 3000 : 900;
+    const timer = setTimeout(() => {
+      setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], weights) }));
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [entry.game, viewer, people, weights]);
 
   const navigate = useEffectEvent(() => {
     const { options, viewer } = readSettings();
     setPeople(options.people);
     setViewer(viewer);
-    setRunning(false);
     setTables((tables) => ({
       ...tables,
       [options.people]: {
         options,
-        game: makePreview(options),
+        game: makePreview(options, weights),
         reset: tables[options.people].reset + 1,
       },
     }));
@@ -298,7 +305,6 @@ export function Preview() {
       onChange: (value) => {
         setPeople(Number(value));
         setViewer(0);
-        setRunning(false);
       },
     },
     {
@@ -337,7 +343,6 @@ export function Preview() {
       ],
       onChange: (value) => {
         setViewer(Number(value));
-        setRunning(false);
       },
     },
     {
@@ -480,7 +485,6 @@ export function Preview() {
             variant="outline"
             className="h-11 w-full"
             onClick={() => {
-              setRunning(false);
               setControlsOpen(false);
               setAceOpen(true);
             }}
@@ -495,15 +499,7 @@ export function Preview() {
           >
             Send message
           </Button>
-          <div className="grid grid-cols-3 gap-2">
-            <Button
-              className="h-11 px-2 text-xs"
-              onClick={() => setRunning(!running)}
-              aria-pressed={running}
-              disabled={entry.game.phase === "lobby"}
-            >
-              {running ? "Pause" : "Autoplay"}
-            </Button>
+          <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
               className="h-11 gap-1 px-2 text-xs"

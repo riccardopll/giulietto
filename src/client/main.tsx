@@ -4,8 +4,11 @@ import "./globals.css";
 
 const root = createRoot(document.getElementById("root")!);
 if (import.meta.env.DEV && location.pathname === "/preview") {
-  const { Preview } = await import("./preview/Preview");
-  root.render(<Preview />);
+  const [{ Preview }, weights] = await Promise.all([
+    import("./preview/Preview"),
+    fetch("/bot/weights.json").then((response) => response.json()),
+  ]);
+  root.render(<Preview weights={weights} />);
 } else {
   root.render(<App />);
 }

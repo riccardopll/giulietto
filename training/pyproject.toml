@@ -1,0 +1,30 @@
+[project]
+name = "giulietto-training"
+version = "0.1.0"
+description = "Self-play training for the Giulietto bot"
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.0", "torch>=2.4"]
+
+[dependency-groups]
+dev = ["poethepoet>=0.30", "pytest>=8", "ruff>=0.8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.poe.tasks]
+test = "pytest -q"
+lint = "ruff check ."
+fmt = "ruff format ."
+check = ["lint", "test"]
+fixtures = "python -m giulietto.fixtures"
+train = "python -m giulietto.train"
+compare = "python -m giulietto.compare"
+export = "python -m giulietto.export"
