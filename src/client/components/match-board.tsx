@@ -1,14 +1,58 @@
 import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
+import { Target } from "lucide-react";
 import type { Emote } from "../../shared/emotes";
 import { findPlayer, type GameView } from "../../shared/game";
 import { tableOrder } from "../table-order";
+import { cn } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { EmotePicker, ReactionRail } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
-import { TableSurface } from "./table-surface";
+import { TableSurface, tableOutline } from "./table-surface";
 import { Button } from "./ui/button";
 import { MatchEventFeed } from "./match-event-feed";
+
+function PredictionTally({ game }: { game: GameView }) {
+  const predicted = game.players.reduce((total, player) => total + (player.bid ?? 0), 0);
+  const delta = predicted - game.count;
+  // The pill keeps its last value while it shrinks away at zero.
+  const [pill, setPill] = useState(delta);
+  if (delta !== 0 && delta !== pill) setPill(delta);
+  const balance = delta > 0 ? `${delta} over` : delta < 0 ? `${-delta} under` : "even with";
+  return (
+    <div
+      className="prediction-tally absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm @min-2xl/board:text-base"
+      role="status"
+      aria-label={`${predicted} ${predicted === 1 ? "trick" : "tricks"} predicted, ${balance} the ${game.count} ${game.count === 1 ? "card" : "cards"}`}
+    >
+      {/* The outline's bottom centre is at 95% of the table height; the mask trims this to the rim's curve. */}
+      <span
+        className="table-edge absolute inset-x-0 top-0 -bottom-4 -z-1 rounded-t-xl bg-background [mask-position:left_50%_bottom_calc(16px_-_5cqh)]"
+        aria-hidden="true"
+      />
+      <Target className="mr-1 size-5 text-foreground/60" strokeWidth={1.5} aria-hidden="true" />
+      <span aria-hidden="true">{predicted}</span>
+      <span
+        className={cn(
+          "grid transition-[grid-template-columns,opacity] duration-300 ease-out",
+          delta ? "grid-cols-[1fr]" : "grid-cols-[0fr] opacity-0",
+        )}
+        aria-hidden="true"
+      >
+        <span className="min-w-0 overflow-hidden">
+          <span
+            className={cn(
+              "ml-1 block rounded-full bg-destructive px-1.5 text-xs leading-5 whitespace-nowrap text-primary-foreground transition-[scale] duration-300 ease-out @min-2xl/board:text-sm",
+              !delta && "scale-50",
+            )}
+          >
+            {pill > 0 ? `+${pill}` : `−${-pill}`}
+          </span>
+        </span>
+      </span>
+    </div>
+  );
+}
 
 export function MatchBoard({
   game,
@@ -152,10 +196,14 @@ export function MatchBoard({
       <section
         className="table-arena relative isolate grid min-h-0 w-full grid-cols-6 gap-x-2 grid-rows-[4.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_4.5rem]
           @min-2xl/board:grid-rows-[5.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_5.5rem]"
+        style={{ "--table-outline": tableOutline } as CSSProperties}
         aria-label="Game table"
       >
         <TableSurface />
-        <div className="pointer-events-none relative z-40 col-span-full row-start-2 row-end-5 min-h-0">
+        <div className="pointer-events-none relative z-10 col-span-full row-start-2 row-end-5 min-h-0 [container-type:size]">
+          <PredictionTally game={game} />
+        </div>
+        <div className="pointer-events-none relative z-40 col-span-full row-start-2 row-end-5 min-h-0 [container-type:size]">
           <ChatButton
             edge
             className="pointer-events-auto absolute left-[2%] top-1/2 -translate-y-1/2"

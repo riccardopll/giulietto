@@ -4,6 +4,11 @@ import { useId } from "react";
 const contour =
   "M .02 .5 C .02 .20 .16 .025 .28 .025 C .38 .025 .40 .05 .5 .05 C .60 .05 .62 .025 .72 .025 C .84 .025 .98 .20 .98 .5 C .98 .80 .84 .975 .72 .975 C .62 .975 .60 .95 .5 .95 C .40 .95 .38 .975 .28 .975 C .16 .975 .02 .80 .02 .5 Z";
 
+/** The table outline as a mask image, for tabs that sit on the rim. */
+export const tableOutline = `url("data:image/svg+xml,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" preserveAspectRatio="none"><path d="${contour}"/></svg>`,
+)}")`;
+
 export function TableSurface() {
   const id = useId();
   const clip = `${id}-felt`;

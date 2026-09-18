@@ -88,9 +88,13 @@ export function ChatButton({
       <span
         className={cn(
           "grid place-items-center",
-          edge ? "absolute inset-y-0 left-0 w-8 rounded-r-2xl bg-background shadow-sm" : "relative",
+          edge ? "absolute inset-y-0 left-0 w-8 drop-shadow-sm" : "relative",
         )}
       >
+        {edge && (
+          // The button sits at 2% of the table width; the mask trims this to the rim's curve.
+          <span className="table-edge absolute inset-y-0 right-0 -left-2 -z-1 rounded-r-2xl bg-background [mask-position:calc(8px_-_2cqw)_50%]" />
+        )}
         <MessageCircleMore className="size-6" aria-hidden="true" />
         {unread > 0 && (
           <span

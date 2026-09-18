@@ -101,6 +101,13 @@
     background: var(--color-primary);
   }
 }
+/* Trims a tab to the table outline. The nearest size container must be the table, and the tab
+   sets mask-position so the outline lands on the table. */
+@utility table-edge {
+  mask-image: var(--table-outline);
+  mask-size: 100cqw 100cqh;
+  mask-repeat: no-repeat;
+}
 @utility safe-area {
   padding: env(safe-area-inset-top) max(var(--page-gutter, 0.5rem), env(safe-area-inset-right))
     max(var(--page-bottom, 0.5rem), env(safe-area-inset-bottom))
