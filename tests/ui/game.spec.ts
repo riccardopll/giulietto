@@ -110,7 +110,6 @@ test("three players complete a game, including round results and elimination", a
           page.getByRole("status", { name: "bot_3 sent the perso emote" }),
         ).toBeVisible();
       }
-      // Messages and the unread count outlive the results screen.
       await players[2].page.getByRole("button", { name: "Chat, 2 unread", exact: true }).click();
       const spectatorChat = players[2].page.getByRole("dialog", { name: "Chat", exact: true });
       await expect(spectatorChat.getByRole("log", { name: "Messages" })).toContainText(

@@ -9,7 +9,6 @@ import { Button } from "./ui/button";
 
 const cellClass = "px-1 py-3 text-center align-middle whitespace-normal wrap-anywhere sm:px-2";
 
-/** Seconds until the deadline on the server clock; frozen previews read the snapshot only. */
 function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
   const [clock, setClock] = useState({ deadline, serverTime, elapsed: 0 });
   if (clock.deadline !== deadline || clock.serverTime !== serverTime)

@@ -11,7 +11,6 @@ export type ChatMessage = {
   sentAt: number;
 };
 
-/** Chat runs from the first deal to the end of the match, including round results. */
 export function chatOpen(game: { phase: Game["phase"] }) {
   return inPlay(game) || game.phase === "results";
 }

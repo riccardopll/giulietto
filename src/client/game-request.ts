@@ -1,7 +1,6 @@
 import type { EntryCommand, TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
 
-/** Commands sent over HTTP name the table and the guest alongside the action. */
 export type HttpCommand = (EntryCommand | TableCommand) & {
   code?: string;
   name?: string;

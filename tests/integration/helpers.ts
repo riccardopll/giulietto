@@ -80,7 +80,6 @@ async function connect(player: Guest, code: string) {
 
 export const api = { post, get, state, connect };
 
-/** Structured console output from the worker for the rest of the current test. */
 export function captureLogs() {
   const logs: Record<string, unknown>[] = [];
   vi.spyOn(console, "log").mockImplementation((entry: unknown) => {

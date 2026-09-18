@@ -107,10 +107,6 @@ function placement(emote: Emote): { side: Side; top: number } {
   };
 }
 
-/**
- * Reactions from spectators and eliminated players, each at its own spot along the edges.
- * Drawn above the chat and emote buttons so a bubble is never cut off by them.
- */
 export function ReactionRail({ game }: { game: GameView }) {
   const reactions = [
     ...(game.spectators ?? []),

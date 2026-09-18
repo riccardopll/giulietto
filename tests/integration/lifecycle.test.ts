@@ -6,7 +6,6 @@ const DAY = 86_400_000;
 
 afterEach(() => vi.useRealTimers());
 
-/** Moves the room's clock and runs its alarm, the way the runtime would at that time. */
 async function alarmAt(code: string, time: number) {
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(time);
