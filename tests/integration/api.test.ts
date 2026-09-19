@@ -426,8 +426,14 @@ test.each([
       ctx.storage.kv.put("room", room);
     });
     await evictDurableObject(stub);
-    const restored = await api.state(host, { action: "join", code });
+    const restored = (await (await api.get(host, code)).json()) as GameView;
     expect(restored.turnSeconds).toBe(turnSeconds ?? 30);
+    const stored = await runInDurableObject(
+      stub,
+      (_instance, ctx) => (ctx.storage.kv.get("room") as { game: Game }).game,
+    );
+    expect(stored.turnSeconds).toBe(restored.turnSeconds);
+    expect(stored.deadline).toBe(restored.deadline);
     const active = phase === "lobby" ? await api.state(host, { action: "start", code }) : restored;
     expect(active.deadline).toBe(active.startedAt! + (turnSeconds ?? 30) * 1000);
   },

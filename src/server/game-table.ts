@@ -52,15 +52,19 @@ export class GameTable extends DurableObject<Env> {
       occurred_at INTEGER NOT NULL, payload TEXT NOT NULL
     )`);
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
+    ctx.blockConcurrencyWhile(async () => {
+      const room = this.read();
+      if (room && room.game.turnSeconds === undefined) {
+        room.game.turnSeconds = DEFAULT_TURN_SECONDS;
+        if (room.game.phase === "bidding" || room.game.phase === "playing")
+          room.game.deadline -= (40 - DEFAULT_TURN_SECONDS) * 1000;
+        ctx.storage.kv.put("room", room);
+        await this.schedule(room);
+      }
+    });
   }
   private read() {
-    const room = this.ctx.storage.kv.get("room") as Room | undefined;
-    if (room && room.game.turnSeconds === undefined) {
-      room.game.turnSeconds = DEFAULT_TURN_SECONDS;
-      if (room.game.phase === "bidding" || room.game.phase === "playing")
-        room.game.deadline -= (40 - DEFAULT_TURN_SECONDS) * 1000;
-    }
-    return room;
+    return this.ctx.storage.kv.get("room") as Room | undefined;
   }
   private logConnection(
     event: string,
