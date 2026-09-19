@@ -1,10 +1,4 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": [
-    "dist/**",
-    ".wrangler/**",
-    "package-lock.json",
-    "public/**",
-    "tests/unit/.generated/**"
-  ]
+  "ignorePatterns": ["dist/**", ".wrangler/**", "package-lock.json", "public/**"]
 }

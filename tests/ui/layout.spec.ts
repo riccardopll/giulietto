@@ -70,7 +70,6 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
 
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
-  // Bots bid on their own after this, so match only the viewer's bubble.
   const prediction = page.getByRole("status", { name: "W".repeat(19) + "1 predicts 0 tricks" });
   await expect(prediction.locator(".prediction-digit")).toBeVisible();
   await page.getByRole("button", { name: "Emotes", exact: true }).click();

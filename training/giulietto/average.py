@@ -1,5 +1,3 @@
-"""Average checkpoints fine-tuned from the same initialization; validate before export."""
-
 from __future__ import annotations
 
 import argparse

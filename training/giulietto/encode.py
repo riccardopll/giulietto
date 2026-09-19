@@ -1,8 +1,3 @@
-"""Observation and action encoding. Mirrored in src/shared/bot.ts; keep both in sync.
-
-Seats are relative: index 0 is the acting seat, then the others in table order.
-"""
-
 from __future__ import annotations
 
 import numpy as np
@@ -32,9 +27,9 @@ SEAT_VISIBLE_BASE = GLOBAL_BASE + GLOBAL_FEATURES
 HISTORY_BASE = SEAT_VISIBLE_BASE + MAX_PLAYERS
 OBS_SIZE = HISTORY_BASE + MAX_COUNT * MAX_PLAYERS * 3
 
-ACTION_ACE_LOW = DECK  # 40
-ACTION_BID = DECK + 1  # 41..47
-ACTIONS = ACTION_BID + MAX_COUNT + 1  # 48
+ACTION_ACE_LOW = DECK
+ACTION_BID = DECK + 1
+ACTIONS = ACTION_BID + MAX_COUNT + 1
 
 
 def encode(game: Game, me: int) -> np.ndarray:
@@ -123,7 +118,6 @@ def legal_actions(game: Game, me: int) -> np.ndarray:
 
 
 def decode(action: int) -> tuple[str, int, bool]:
-    """Returns (kind, value, low): kind is 'bid' or 'play'."""
     if action >= ACTION_BID:
         return "bid", action - ACTION_BID, False
     if action == ACTION_ACE_LOW:

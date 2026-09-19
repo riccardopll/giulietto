@@ -1,5 +1,3 @@
-"""Round-robin on matched deals with both seat allocations, including odd table sizes."""
-
 from __future__ import annotations
 
 import argparse

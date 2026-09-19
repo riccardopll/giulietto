@@ -1,5 +1,3 @@
-"""Fixed opponents that only use information available to the acting player."""
-
 from __future__ import annotations
 
 from .encode import ACTION_ACE_LOW, ACTION_BID

@@ -64,7 +64,6 @@ export function normalizePreview(options: PreviewOptions): Required<PreviewOptio
   };
 }
 
-/** Advances one move: the bot decides for the seat in turn. */
 export function advancePreview(source: Game, weights: BotWeights): Game {
   if (source.phase === "lobby") return source;
   const game = structuredClone(source);

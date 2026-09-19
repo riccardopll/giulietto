@@ -12,7 +12,6 @@ coverage/
 test-results/
 playwright-report/
 .vitest/
-tests/parity/.generated/
 /tmp/
 /temp/
 *.tmp

@@ -1,5 +1,3 @@
-"""Complete matches with per-seat trajectories, including elimination and revival."""
-
 from __future__ import annotations
 
 from collections.abc import Callable

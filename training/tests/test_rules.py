@@ -130,7 +130,7 @@ def test_encoding_shapes_and_legal_actions():
 def test_naive_bids_equal_share_and_plays_lowest_card():
     game = make_game(4)
     deal(game, Shuffle())
-    assert naive_action(game, game.actor()) == ACTION_BID + 2  # round(6 / 4) = 2
+    assert naive_action(game, game.actor()) == ACTION_BID + 2
     for seat in game.order:
         bid(game, seat, naive_action(game, seat) - ACTION_BID)
     assert naive_action(game, game.actor()) == game.players[game.actor()].hand[0] - 1

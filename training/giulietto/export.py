@@ -1,8 +1,3 @@
-"""Write a checkpoint as weights JSON.
-
-`uv run poe export runs/x/state.pt ../public/bot/weights.json`
-"""
-
 from __future__ import annotations
 
 import argparse

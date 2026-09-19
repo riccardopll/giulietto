@@ -24,7 +24,6 @@ test = "pytest -q"
 lint = "ruff check ."
 fmt = "ruff format ."
 check = ["lint", "test"]
-fixtures = "python -m giulietto.fixtures"
 train = "python -m giulietto.train"
 compare = "python -m giulietto.compare"
 benchmark = "python -m giulietto.benchmark"

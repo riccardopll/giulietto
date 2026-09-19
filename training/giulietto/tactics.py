@@ -1,5 +1,3 @@
-"""Exact blind-ace endgames where either choice immediately ends the match."""
-
 from __future__ import annotations
 
 import numpy as np

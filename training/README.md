@@ -1,8 +1,9 @@
 # Bot training
 
 `public/bot/weights.json` is the only versioned model artifact. It runs in the
-development preview; live tables do not have bot seats. Keep checkpoints, reference
-models, benchmark reports, plots, and generated fixtures out of Git. Store new
+development preview; live tables do not have bot seats. Training runs separately;
+the game consumes only the exported weights. Keep checkpoints, reference
+models, benchmark reports, and plots out of Git. Store new
 experiment outputs under `training/runs/`.
 
 Run from `training/` with uv:
@@ -25,8 +26,7 @@ Keep these constraints when changing training:
   an all-out round revives everyone.
 - Optimize undiscounted match wins. Life-based potential shaping must telescope
   to `win - initial potential`, including revivals and terminal states.
-- Observe only the acting player's information. Keep Python rules, encoding, and
-  inference aligned with TypeScript through generated parity fixtures.
+- Observe only the acting player's information.
 - Keep a fixed opponent and historical policies. Evaluate greedy deployment play
   on paired deals with rotated seats, equal settings, and deal-cluster intervals.
 - Select on development deals, then evaluate the exact JSON export on fresh deals

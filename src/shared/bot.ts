@@ -1,5 +1,3 @@
-// Observation encoding and inference for the trained bot.
-// Mirrors training/giulietto/encode.py and model.py; keep both in sync.
 import { strength, type Play } from "./game";
 
 const DECK = 40;
@@ -132,7 +130,6 @@ function isBlind(view: BotView) {
   return view.count === 1 && ["bidding", "playing", "trick"].includes(view.phase);
 }
 
-/** In the blind round the own card is hidden; only the ace choice remains a decision. */
 export function legalActions(view: BotView): number[] {
   if (actorOf(view) !== view.you) return [];
   if (view.phase === "bidding") return view.legalBids.map((value) => ACTION_BID + value);
@@ -174,7 +171,6 @@ export function decode(action: number): BotMove {
   return { action: "play", card: action + 1, ...(action + 1 === ACE ? { mode: "high" } : {}) };
 }
 
-/** Picks the best legal move, or samples one when `random` is given. */
 export function botMove(view: BotView, weights: BotWeights, random?: () => number): BotMove | null {
   const legal = legalActions(view);
   if (!legal.length)

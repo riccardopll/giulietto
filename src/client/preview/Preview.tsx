@@ -106,7 +106,6 @@ function nextEntry(old: Entry, weights: BotWeights): Entry {
   };
 }
 
-/** Every seat but the viewer's is played by the bot. */
 export function Preview({ weights }: { weights: BotWeights }) {
   const [initial] = useState(readSettings);
   const [people, setPeople] = useState(initial.options.people);
@@ -180,7 +179,6 @@ export function Preview({ weights }: { weights: BotWeights }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Bot seats move on their own; the viewer's seat waits for the controls.
   useEffect(() => {
     const game = entry.game;
     if (game.phase === "lobby" || game.phase === "finished") return;

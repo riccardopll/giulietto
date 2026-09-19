@@ -1,10 +1,3 @@
-"""Port of src/shared/game.ts. A seat is a player's index in `players` after the
-first deal shuffles the table; ids stay p0..pN-1 like the TypeScript tests.
-
-The shuffle protocol mirrors the TypeScript rejection sampling so a seeded
-generator produces the same deals on both sides (see fixtures.py).
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -68,8 +61,6 @@ def strength(play: Play) -> int:
 
 
 class Xorshift:
-    """xorshift32 with the TypeScript rejection loop from game.ts shuffle()."""
-
     def __init__(self, seed: int):
         self.x = seed & 0xFFFFFFFF or 1
 
@@ -165,7 +156,6 @@ def play(game: Game, seat: int, card: int, low: bool = False) -> None:
 
 
 def score(game: Game) -> list[int]:
-    """Apply round results. Returns lives lost per seat (0 for inactive seats)."""
     lost = [0] * len(game.players)
     for seat in game.order:
         player = game.players[seat]
@@ -186,10 +176,6 @@ def score(game: Game) -> list[int]:
 
 
 def advance(game: Game, rng) -> list[int] | None:
-    """Run the automatic transitions after a completed trick or round.
-
-    Returns lives lost per seat when a round was scored, else None.
-    """
     lost = None
     while game.phase in (TRICK, RESULTS):
         if game.phase == TRICK:

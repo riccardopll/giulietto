@@ -1,5 +1,3 @@
-"""Fixed round-search opponent: sampled hidden hands and heuristic continuations."""
-
 from __future__ import annotations
 
 import hashlib

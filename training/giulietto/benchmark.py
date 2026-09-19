@@ -1,5 +1,3 @@
-"""Paired deals, rotated seats, and confidence intervals clustered by deal."""
-
 from __future__ import annotations
 
 import argparse
@@ -28,7 +26,6 @@ def interval(samples: list[float], seed: int = 0) -> list[float]:
 
 
 def aggregate(results: list[dict], seed: int = 0) -> dict:
-    """Weight table settings equally and resample independent deals within each setting."""
     rng = np.random.default_rng(seed)
     means = []
     for result in results:
@@ -113,12 +110,10 @@ def fingerprint(path: Path) -> str:
 
 
 def setting_seed(seed: int, players: int, lives: int) -> int:
-    """Independent deal streams across settings, shared by policies within a setting."""
     return seed + 1000 * players + 10 * lives
 
 
 def paired_difference(candidate: list[dict], reference: list[dict]) -> dict:
-    """Compare two policies against the same opponents on the same deal clusters."""
 
     def key(row):
         return row["players"], row["lives"], row["format"], row.get("opponent")

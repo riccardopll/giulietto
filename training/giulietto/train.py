@@ -1,5 +1,3 @@
-"""PPO over complete matches; compare candidates on separate, fixed validation deals."""
-
 from __future__ import annotations
 
 import argparse
@@ -281,7 +279,6 @@ def main() -> None:
                 if len(hall) < args.hall:
                     hall.append(candidate)
                 else:
-                    # Reservoir of past policies; the original reference stays fixed at index zero.
                     slot = int(rng.integers(snapshots))
                     if slot < args.hall - 1:
                         hall[slot + 1] = candidate

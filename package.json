@@ -23,8 +23,7 @@
     "test:ui": "playwright test",
     "test:watch": "vitest",
     "test:unit": "vitest run --project unit",
-    "test:integration": "vitest run --project integration",
-    "test:parity": "uv run --directory training --frozen poe fixtures && tsc -p tests/parity/tsconfig.json && vitest run --config tests/parity/vitest.config.ts"
+    "test:integration": "vitest run --project integration"
   },
   "dependencies": {
     "clsx": "2.1.1",

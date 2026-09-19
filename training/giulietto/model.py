@@ -30,7 +30,6 @@ class Policy(nn.Module):
     def act(
         self, obs: np.ndarray, mask: np.ndarray, device: torch.device, greedy: bool = False
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Returns (actions, log probs, values) for a batch."""
         o = torch.as_tensor(obs, device=device)
         m = torch.as_tensor(mask, device=device)
         logits, values = self(o, m)
@@ -44,7 +43,6 @@ class Policy(nn.Module):
         return actions.cpu().numpy(), logp.cpu().numpy(), values.cpu().numpy()
 
     def export(self) -> dict:
-        """Weights as plain lists, rounded, for src/shared/bot.ts."""
 
         def matrix(layer: nn.Linear) -> dict:
             return {

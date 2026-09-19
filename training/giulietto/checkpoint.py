@@ -36,7 +36,6 @@ def load(path: Path, device: torch.device) -> Policy:
 
 
 def initialize(net: Policy, source: Policy) -> None:
-    """Preserve the policy when adding observations; start the new value objective afresh."""
     old = source.state_dict()
     weights = net.state_dict()
     hidden = source.body[0].out_features
