@@ -32,7 +32,7 @@ from .rules import (
     play,
 )
 
-OUT = Path(__file__).resolve().parents[2] / "tests" / "unit" / ".generated"
+OUT = Path(__file__).resolve().parents[2] / "tests" / "parity" / ".generated"
 
 
 def pid(game: Game, seat: int | None) -> str | None:

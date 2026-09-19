@@ -14,10 +14,7 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "typecheck": "tsc -p tsconfig.client.json && tsc -p tsconfig.server.json && tsc -p tsconfig.test.json && tsc -p tsconfig.node.json",
-    "pretypecheck": "npm run test:fixtures",
     "test": "vitest run",
-    "pretest": "npm run test:fixtures",
-    "test:fixtures": "uv run --directory training --frozen poe fixtures",
     "check": "npm run lint && npm run fmt:check && npm run typecheck && npm test && npm run build",
     "db:migrate:local": "wrangler d1 migrations apply DB --local",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
@@ -25,10 +22,9 @@
     "logs": "node scripts/logs.mjs",
     "test:ui": "playwright test",
     "test:watch": "vitest",
-    "pretest:watch": "npm run test:fixtures",
     "test:unit": "vitest run --project unit",
-    "pretest:unit": "npm run test:fixtures",
-    "test:integration": "vitest run --project integration"
+    "test:integration": "vitest run --project integration",
+    "test:parity": "uv run --directory training --frozen poe fixtures && tsc -p tests/parity/tsconfig.json && vitest run --config tests/parity/vitest.config.ts"
   },
   "dependencies": {
     "clsx": "2.1.1",

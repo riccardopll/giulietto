@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { bid, deal, play, tick, type Game } from "../../src/shared/game";
-import { lobbyFixture, seedRandom } from "./helpers";
+import { lobbyFixture, seedRandom } from "../unit/helpers";
 import fixture from "./.generated/rules.json";
 
 type Action = { bid?: number; card?: number; mode?: string };

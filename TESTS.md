@@ -1,8 +1,12 @@
 # Testing
 
-Install Node and uv. `npm run check` and the unit-test commands generate Python
-parity fixtures in `tests/unit/.generated/`; do not commit these files.
-Run `uv run --directory training --frozen poe check` for the training tests.
+`npm run check` requires Node only, as does CI.
+
+For training changes, install uv and run
+`uv run --directory training --frozen poe check` and `npm run test:parity` locally.
+The parity command generates ignored fixtures in `tests/parity/.generated/`, then
+checks Python/TypeScript rules, encoding, and inference. Run it after changing
+shared rules, bot encoding, or release weights; do not commit the fixtures.
 
 Run UI tests locally after changes to player flows, layout, or the UI tests
 themselves. After layout changes, inspect the screenshots and open `/preview`
