@@ -42,6 +42,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
       players: after.players.map((player, seat) => ({
         id: player.id,
         name: player.name,
+        bot: player.bot ?? false,
         seat,
         hand: player.hand,
         lives: player.lives,
@@ -91,9 +92,16 @@ export function eventStatements(db: D1Database, game: Game, events: GameEvent[])
   return [
     // Events may be delivered over several bounded batches before finalizing the summary.
     db
-      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at)
-      VALUES(?,?,'active',?,?,?) ON CONFLICT(id) DO NOTHING`)
-      .bind(game.matchId!, game.code, game.public ? 1 : 0, game.players.length, game.startedAt!),
+      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,has_bots)
+      VALUES(?,?,'active',?,?,?,?) ON CONFLICT(id) DO NOTHING`)
+      .bind(
+        game.matchId!,
+        game.code,
+        game.public ? 1 : 0,
+        game.players.length,
+        game.startedAt!,
+        game.players.some((player) => player.bot) ? 1 : 0,
+      ),
     db
       .prepare(`INSERT INTO match_events(match_id,sequence,revision,round,type,player_id,source,command_id,occurred_at,payload)
       SELECT json_extract(value,'$.match_id'),json_extract(value,'$.sequence'),

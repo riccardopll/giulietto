@@ -12,6 +12,7 @@ export type Player = {
   avatar: AvatarId;
   id: string;
   name: string;
+  bot?: boolean;
   lives: number;
   hand: number[];
   bid: number | null;
@@ -246,8 +247,9 @@ export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
       (spectator) => connected?.has(spectator.id) || now - spectator.seen < SPECTATOR_RETENTION_MS,
     );
   if (game.phase === "lobby") {
-    game.players = game.players.filter((player) => now - player.seen < 120000);
-    if (!findPlayer(game, game.host)) game.host = game.players[0]?.id ?? "";
+    game.players = game.players.filter((player) => player.bot || now - player.seen < 120000);
+    if (!findPlayer(game, game.host))
+      game.host = game.players.find((player) => !player.bot)?.id ?? "";
     return;
   }
   if (!game.deadline || now < game.deadline) return;
@@ -278,14 +280,16 @@ export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
     viewerName: (me ?? spectator)!.name,
     spectatorCount: [
       ...(game.spectators ?? []),
-      ...game.players.filter((player) => game.phase !== "lobby" && player.lives <= 0),
+      ...game.players.filter(
+        (player) => !player.bot && game.phase !== "lobby" && player.lives <= 0,
+      ),
     ].filter((watcher) => !connected || connected.has(watcher.id)).length,
     spectating: !me || (game.phase !== "lobby" && me.lives <= 0),
     canChooseAce:
       active && game.phase === "playing" && game.order[game.turn] === id && me.hand.includes(31),
     players: game.players.map((player) => ({
       ...player,
-      connected: connected?.has(player.id) ?? true,
+      connected: player.bot || (connected?.has(player.id) ?? true),
       hand: player.hand.map((card) =>
         active && ((!blind && player.id === id) || (blind && player.id !== id)) ? card : null,
       ),

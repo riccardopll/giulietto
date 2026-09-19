@@ -2,6 +2,8 @@ import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { isTableCommand, type Command } from "../shared/commands";
 import { GameError } from "../shared/game-error";
+import { createBot } from "../shared/bot";
+import weights from "../../public/bot/weights.json";
 import {
   makeGame,
   makePlayer,
@@ -9,6 +11,7 @@ import {
   view,
   SPECTATOR_RETENTION_MS,
   TABLE_RETENTION_MS,
+  TURN_MS,
   type Game,
   findPlayer,
 } from "../shared/game";
@@ -25,6 +28,15 @@ type Room = {
   deliveredSequence: number;
 };
 type Attachment = { id: string; roomCode: string; connectionId?: string };
+
+const bot = createBot(weights);
+
+function botTurnAt(game: Game) {
+  return (game.phase === "bidding" || game.phase === "playing") &&
+    findPlayer(game, game.order[game.turn])?.bot
+    ? game.deadline - TURN_MS + 800
+    : Infinity;
+}
 
 export class GameTable extends DurableObject<Env> {
   private rates = new Map<string, { start: number; count: number }>();
@@ -98,12 +110,13 @@ export class GameTable extends DurableObject<Env> {
     const connected = this.connected();
     return Math.min(
       ...(game.phase === "lobby" ? game.players : [])
-        .filter((player) => !connected.has(player.id))
+        .filter((player) => !player.bot && !connected.has(player.id))
         .map((player) => player.seen + 120000),
       ...(game.spectators ?? [])
         .filter((spectator) => !connected.has(spectator.id))
         .map((spectator) => spectator.seen + SPECTATOR_RETENTION_MS),
       game.deadline || Infinity,
+      botTurnAt(game),
       room.updated + TABLE_RETENTION_MS,
     );
   }
@@ -169,6 +182,13 @@ export class GameTable extends DurableObject<Env> {
       );
       for (const player of game.players)
         if (ids.has(player.id) && now - player.seen >= 60000) player.seen = now;
+    }
+    if (botTurnAt(game) <= now) {
+      const id = game.order[game.turn];
+      const move = bot(view(game, id));
+      if (!move) throw new Error("Bot has no legal move.");
+      apply(game, id, { ...move, commandId: crypto.randomUUID() }, now);
+      return this.save(room, game, undefined, { source: "system" });
     }
     tick(game, now, this.connected());
     return JSON.stringify(game) === JSON.stringify(room.game)

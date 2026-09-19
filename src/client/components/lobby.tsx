@@ -1,6 +1,6 @@
 import { Avatar } from "./avatar";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowRight, Check, Link, Pencil } from "lucide-react";
+import { ArrowRight, Bot, Check, Link, Pencil, X } from "lucide-react";
 import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type GameView } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
@@ -88,6 +88,8 @@ export function Lobby({
   onStart,
   onSettings,
   onRename,
+  onAddBot,
+  onRemoveBot,
 }: {
   game: GameView;
   busy: boolean;
@@ -96,6 +98,8 @@ export function Lobby({
   onStart: () => void;
   onSettings: (startingLives: number) => Promise<unknown>;
   onRename: (name: string) => Promise<boolean>;
+  onAddBot?: () => void;
+  onRemoveBot: (playerId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -155,6 +159,18 @@ export function Lobby({
                     </Button>
                   )}
                   <Lives n={game.startingLives} />
+                  {player.bot && game.host === game.you && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-11 shrink-0"
+                      aria-label={`Remove ${player.name}`}
+                      disabled={busy}
+                      onClick={() => onRemoveBot(player.id)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>
@@ -164,7 +180,18 @@ export function Lobby({
                   >
                     +
                   </div>
-                  <span className="text-sm">Open seat</span>
+                  <span className="flex-1 text-sm">Open seat</span>
+                  {game.host === game.you && (
+                    <Button
+                      variant="outline"
+                      className="min-h-11"
+                      disabled={busy || !onAddBot}
+                      onClick={onAddBot}
+                    >
+                      <Bot />
+                      Add bot
+                    </Button>
+                  )}
                 </>
               )}
             </li>

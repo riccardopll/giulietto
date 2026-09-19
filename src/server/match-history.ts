@@ -12,16 +12,16 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
   const status = finished ? (game.winner ? "completed" : "abandoned") : "active";
   return [
     db
-      .prepare(`INSERT INTO players(id,display_name,created_at,last_seen_at)
-      SELECT json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),?,json_extract(p.value,'$.seen')
+      .prepare(`INSERT INTO players(id,display_name,created_at,last_seen_at,is_bot)
+      SELECT json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),?,json_extract(p.value,'$.seen'),COALESCE(json_extract(p.value,'$.bot'),0)
       FROM json_each(?) p WHERE true ON CONFLICT(id) DO UPDATE SET last_seen_at=excluded.last_seen_at WHERE excluded.last_seen_at>=players.last_seen_at`)
       .bind(game.startedAt!, participants),
     db
-      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,event_count)
-      VALUES(?,?,?,?,?,?,?,?,?,?,?)
+      .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,completed_at,winner_id,rounds,history_revision,event_count,has_bots)
+      VALUES(?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT(id) DO UPDATE SET status=excluded.status,completed_at=excluded.completed_at,
         winner_id=excluded.winner_id,rounds=excluded.rounds,player_count=excluded.player_count,history_revision=excluded.history_revision,
-        event_count=excluded.event_count
+        event_count=excluded.event_count,has_bots=excluded.has_bots
       WHERE matches.history_revision<excluded.history_revision AND matches.completed_at IS NULL`)
       .bind(
         game.matchId!,
@@ -35,6 +35,7 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
         game.round,
         game.revision,
         eventCount,
+        game.players.some((player) => player.bot) ? 1 : 0,
       ),
     db
       .prepare(`INSERT INTO match_results(match_id,player_id,display_name,outcome,lives,
@@ -91,6 +92,7 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
               COALESCE(prediction_time_ms,0),COALESCE(timed_predictions,0)
             FROM match_results WHERE match_id=? AND outcome IN ('won','lost')
               AND finalized_at IS NOT NULL AND ${uncounted}
+              AND EXISTS (SELECT 1 FROM players p WHERE p.id=match_results.player_id AND p.is_bot=0)
             ON CONFLICT(player_id) DO UPDATE SET
               matches=player_stats.matches+excluded.matches,
               wins=player_stats.wins+excluded.wins,
