@@ -156,7 +156,7 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     if (input.action === "addBot") {
       if (game.players.length >= 6) throw new GameError("This table is full.");
       const names = botNames
-        .map((name) => `BOT: ${name}`)
+        .map((name) => `BOT ${name}`)
         .filter((name) => !game.players.some((member) => member.name === name));
       const name = names[Math.floor(Math.random() * names.length)];
       game.players.push({
