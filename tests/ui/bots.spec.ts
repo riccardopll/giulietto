@@ -43,4 +43,5 @@ test("a host fills seats with bots and plays against them online", async ({ page
   expect(
     host.state!.players.filter((player) => player.bot).every((player) => player.connected),
   ).toBe(true);
+  await screenshot(page, testInfo, "bot-table");
 });

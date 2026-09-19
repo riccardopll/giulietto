@@ -135,7 +135,25 @@ export function Lobby({
             >
               {player ? (
                 <>
-                  <Avatar avatar={player.avatar} id={player.id} className="size-9" />
+                  {player.bot && game.host === game.you ? (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="-m-1 size-11 rounded-full"
+                      aria-label={`Remove ${player.name}`}
+                      disabled={busy}
+                      onClick={() => onRemoveBot(player.id)}
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  ) : (
+                    <Avatar
+                      avatar={player.avatar}
+                      bot={player.bot}
+                      id={player.id}
+                      className="size-9"
+                    />
+                  )}
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="flex min-w-0 items-center gap-1">
                       <strong className="min-w-0 text-sm wrap-anywhere text-foreground">
@@ -161,20 +179,6 @@ export function Lobby({
                     {player.id === game.host && <span className="text-xs">Host</span>}
                   </div>
                   <Lives n={game.startingLives} />
-                  <div className="size-11 shrink-0">
-                    {player.bot && game.host === game.you && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-11"
-                        aria-label={`Remove ${player.name}`}
-                        disabled={busy}
-                        onClick={() => onRemoveBot(player.id)}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    )}
-                  </div>
                 </>
               ) : (
                 <>
