@@ -10,6 +10,8 @@ import {
   makePlayer,
   tick,
   MIN_STARTING_LIVES,
+  MIN_TURN_SECONDS,
+  MAX_TURN_SECONDS,
   MAX_STARTING_LIVES,
   type Game,
   findPlayer,
@@ -34,17 +36,18 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
       if (typeof input.name !== "string") throw new GameError("Enter a display name.");
       return { action: "rename", name: displayName(input.name) };
     case "settings": {
-      const lives = input.startingLives;
-      if (
-        typeof lives !== "number" ||
-        !Number.isInteger(lives) ||
-        lives < MIN_STARTING_LIVES ||
-        lives > MAX_STARTING_LIVES
-      )
+      const option = input.option;
+      if (option !== "startingLives" && option !== "turnSeconds")
+        throw new GameError("Choose a lobby option.");
+      const lives = option === "startingLives";
+      const min = lives ? MIN_STARTING_LIVES : MIN_TURN_SECONDS;
+      const max = lives ? MAX_STARTING_LIVES : MAX_TURN_SECONDS;
+      const value = input.value;
+      if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max)
         throw new GameError(
-          `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
+          `Choose a whole number from ${min} to ${max} for ${lives ? "starting lives" : "move time"}.`,
         );
-      return { action: "settings", startingLives: lives };
+      return { action: "settings", option, value };
     }
     case "start":
     case "addBot":
@@ -132,11 +135,12 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   } else if (input.action === "chat") {
     sendChat(game, id, input.text, now);
   } else if (input.action === "settings") {
-    if (game.host !== id) throw new GameError("Only the host can change starting lives.");
+    if (game.host !== id) throw new GameError("Only the host can change lobby options.");
     if (game.phase !== "lobby")
-      throw new GameError("Starting lives cannot change after the game starts.");
-    game.startingLives = input.startingLives;
-    for (const member of game.players) member.lives = input.startingLives;
+      throw new GameError("Lobby options cannot change after the game starts.");
+    game[input.option] = input.value;
+    if (input.option === "startingLives")
+      for (const member of game.players) member.lives = input.value;
   } else if (input.action === "addBot" || input.action === "removeBot") {
     if (game.host !== id) throw new GameError("Only the host can add or remove bots.");
     if (game.phase !== "lobby") throw new GameError("Bots can only change in the lobby.");

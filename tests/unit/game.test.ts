@@ -221,3 +221,34 @@ describe("hand privacy", () => {
     }
   });
 });
+
+test("uses the configured move time across turns and the shorter pauses between tricks and rounds", () => {
+  const game = gameFixture([
+    [1, 2],
+    [11, 12],
+  ]);
+  game.turnSeconds = 10;
+  bid(game, "p0", 0, 100);
+  expect(game.deadline).toBe(10100);
+  bid(game, "p1", 0, 200);
+  expect(game.deadline).toBe(10200);
+  play(game, "p0", 1, undefined, 300);
+  expect(game.deadline).toBe(10300);
+  play(game, "p1", 11, undefined, 400);
+  expect(game.deadline).toBe(2000);
+  tick(game, 1999);
+  expect(game.phase).toBe("trick");
+  tick(game, 2000);
+  expect(game.phase).toBe("playing");
+  expect(game.deadline).toBe(12000);
+  play(game, "p1", 12, undefined, 2100);
+  play(game, "p0", 2, undefined, 2200);
+  tick(game, 3800);
+  expect(game.phase).toBe("results");
+  expect(game.deadline).toBe(9800);
+  tick(game, 9799);
+  expect(game.phase).toBe("results");
+  tick(game, 9800);
+  expect(game.phase).toBe("bidding");
+  expect(game.deadline).toBe(19800);
+});

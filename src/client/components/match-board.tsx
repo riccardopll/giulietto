@@ -179,6 +179,7 @@ export function MatchBoard({
           current={seating.current === id}
           activeTurn={game.phase === "playing" && seating.current === id && player.lives > 0}
           deadline={game.deadline}
+          turnSeconds={game.turnSeconds}
           serverTime={game.serverTime}
           round={game.round}
           status={status}

@@ -29,6 +29,11 @@ test("three players complete a game, including round results and elimination", a
   await screenshot(players[0].page, testInfo, "lobby", { fullPage: true });
   await players[0].page.getByRole("slider", { name: "Starting lives" }).press("Home");
   await synced(players, (state) => state.startingLives === 1);
+  const moveTime = players[0].page.getByRole("slider", { name: "Move time" });
+  await expect(moveTime).toHaveValue("30");
+  await expect(players[1].page.getByRole("slider", { name: "Move time" })).toBeDisabled();
+  await moveTime.press("ArrowLeft");
+  await synced(players, (state) => state.turnSeconds === 25);
   await start(players);
   await expect(
     players[0].page.getByRole("status", { name: "0 spectators", exact: true }),

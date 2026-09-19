@@ -4,9 +4,10 @@ import type { Emote } from "./emotes";
 export type EntryCommand =
   | { action: "create" | "match"; name?: string; avatar?: AvatarId }
   | { action: "join"; name?: string; avatar?: AvatarId; matchmaking?: boolean };
+export type LobbyOption = "startingLives" | "turnSeconds";
 export type TableCommand =
   | { action: "rename"; name: string }
-  | { action: "settings"; startingLives: number }
+  | { action: "settings"; option: LobbyOption; value: number }
   | { action: "start" }
   | { action: "addBot" }
   | { action: "removeBot"; playerId: string }

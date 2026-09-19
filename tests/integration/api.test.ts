@@ -1,5 +1,5 @@
-import { findPlayer, type GameView } from "../../src/shared/game";
-import { SELF, env } from "cloudflare:test";
+import { findPlayer, type Game, type GameView } from "../../src/shared/game";
+import { SELF, env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, test } from "vitest";
 import { api, captureLogs, guest } from "./helpers";
 
@@ -30,32 +30,72 @@ for (const { visibility, action } of [
   { visibility: "private", action: "create" },
   { visibility: "public", action: "match" },
 ]) {
-  test(`a ${visibility} lobby lets only its host configure lives and start the game`, async () => {
+  test(`a ${visibility} lobby lets only its host configure lives and move time and start the game`, async () => {
     const host = guest(1);
     const other = guest(2);
     const created = await api.state(host, { action });
     const { code } = created;
-    expect(created).toMatchObject({ phase: "lobby", startingLives: 3, host: created.you });
+    expect(created).toMatchObject({
+      phase: "lobby",
+      startingLives: 3,
+      turnSeconds: 30,
+      host: created.you,
+    });
     expect((await api.post(host, { action: "start", code })).status).toBe(400);
     await api.state(other, { action: "join", code });
 
     for (const action of ["settings", "start"]) {
-      expect((await api.post(other, { action, code, startingLives: 5 })).status).toBe(400);
+      expect(
+        (await api.post(other, { action, code, option: "startingLives", value: 5 })).status,
+      ).toBe(400);
     }
     for (const startingLives of [0, 6, 1.5, "5"]) {
-      expect((await api.post(host, { action: "settings", code, startingLives })).status).toBe(400);
+      expect(
+        (
+          await api.post(host, {
+            action: "settings",
+            code,
+            option: "startingLives",
+            value: startingLives,
+          })
+        ).status,
+      ).toBe(400);
     }
-    const configured = await api.state(host, { action: "settings", code, startingLives: 5 });
+    for (const turnSeconds of [0, 4, 61, 5.5, "35", null]) {
+      expect(
+        (
+          await api.post(host, {
+            action: "settings",
+            code,
+            option: "turnSeconds",
+            value: turnSeconds,
+          })
+        ).status,
+      ).toBe(400);
+    }
+    await api.state(host, { action: "settings", code, option: "startingLives", value: 5 });
+    const configured = await api.state(host, {
+      action: "settings",
+      option: "turnSeconds",
+      value: 20,
+      code,
+    });
     expect(configured.startingLives).toBe(5);
+    expect(configured.turnSeconds).toBe(20);
     const joined = await api.state(guest(3), { action: "join", code });
     expect(joined.players.map((player) => player.lives)).toEqual([5, 5, 5]);
 
     const started = await api.state(host, { action: "start", code });
     expect(started.phase).toBe("bidding");
+    expect(started.turnSeconds).toBe(20);
+    expect(started.deadline).toBe(started.startedAt! + 20000);
     expect(started.players.every((player) => player.lives === 5 && player.hand.length === 6)).toBe(
       true,
     );
-    expect((await api.post(host, { action: "settings", code, startingLives: 1 })).status).toBe(400);
+    expect(
+      (await api.post(host, { action: "settings", code, option: "startingLives", value: 1 }))
+        .status,
+    ).toBe(400);
   });
 }
 
@@ -363,3 +403,38 @@ test("sockets close on floods, oversized messages, and a fourth tab", async () =
   expect(await first.closed).toMatchObject({ code: 4002 });
   expect((await latest.command({ action: "rename", name: "bot_3" })).type).toBe("ack");
 });
+
+test.each([
+  { turnSeconds: undefined, phase: "lobby" },
+  { turnSeconds: undefined, phase: "bidding" },
+  { turnSeconds: undefined, phase: "playing" },
+  { turnSeconds: 20, phase: "bidding" },
+] as const)(
+  "restores $phase tables with move time $turnSeconds",
+  async ({ turnSeconds, phase }) => {
+    const host = guest(1);
+    const { code } = await api.state(host, { action: "create" });
+    await api.state(guest(2), { action: "join", code });
+    if (phase !== "lobby") await api.state(host, { action: "start", code });
+    const stub = env.ROOMS.getByName(code);
+    await runInDurableObject(stub, (_instance, ctx) => {
+      const room = ctx.storage.kv.get("room") as { game: Game };
+      room.game.phase = phase;
+      if (phase !== "lobby") room.game.deadline = room.game.startedAt! + (turnSeconds ?? 40) * 1000;
+      if (turnSeconds === undefined) Reflect.deleteProperty(room.game, "turnSeconds");
+      else room.game.turnSeconds = turnSeconds;
+      ctx.storage.kv.put("room", room);
+    });
+    await evictDurableObject(stub);
+    const restored = (await (await api.get(host, code)).json()) as GameView;
+    expect(restored.turnSeconds).toBe(turnSeconds ?? 30);
+    const stored = await runInDurableObject(
+      stub,
+      (_instance, ctx) => (ctx.storage.kv.get("room") as { game: Game }).game,
+    );
+    expect(stored.turnSeconds).toBe(restored.turnSeconds);
+    expect(stored.deadline).toBe(restored.deadline);
+    const active = phase === "lobby" ? await api.state(host, { action: "start", code }) : restored;
+    expect(active.deadline).toBe(active.startedAt! + (turnSeconds ?? 30) * 1000);
+  },
+);

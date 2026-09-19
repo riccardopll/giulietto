@@ -7,7 +7,15 @@ import type { TableCommand } from "../../shared/commands";
 import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
-import { bid, deal, play, view, type Game } from "../../shared/game";
+import {
+  bid,
+  deal,
+  play,
+  view,
+  ROUND_PAUSE_MS,
+  TRICK_PAUSE_MS,
+  type Game,
+} from "../../shared/game";
 import type { Bot } from "../../shared/bot";
 import {
   advancePreview,
@@ -235,7 +243,11 @@ export function Preview({ bot }: { bot: Bot }) {
   );
   snapshot.deadline =
     snapshot.serverTime +
-    (snapshot.phase === "results" ? 12000 : snapshot.phase === "trick" ? 2600 : 40000);
+    (snapshot.phase === "results"
+      ? ROUND_PAUSE_MS
+      : snapshot.phase === "trick"
+        ? TRICK_PAUSE_MS
+        : snapshot.turnSeconds * 1000);
 
   function command(input: TableCommand) {
     const now = Date.now();
@@ -256,8 +268,9 @@ export function Preview({ bot }: { bot: Bot }) {
       if (input.action === "rename" && game.phase === "lobby")
         game.players[viewer].name = input.name.trim().slice(0, 20);
       else if (input.action === "settings" && game.phase === "lobby") {
-        game.startingLives = input.startingLives;
-        for (const player of game.players) player.lives = input.startingLives;
+        game[input.option] = input.value;
+        if (input.option === "startingLives")
+          for (const player of game.players) player.lives = input.value;
       } else if (input.action === "start" && game.phase === "lobby") deal(game, now);
       else if (input.action === "emote") sendEmote(game, id, input.emote, now);
       else if (input.action === "chat") sendChat(game, id, input.text, now);
