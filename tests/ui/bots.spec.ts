@@ -10,15 +10,15 @@ test("a host fills seats with bots and plays against them online", async ({ page
   const add = page.getByRole("button", { name: "Add bot", exact: true });
   await expect(add).toHaveCount(5);
   await add.first().click();
-  await expect(page.getByRole("button", { name: /^Remove BOT / })).toHaveCount(1);
-  await page.getByRole("button", { name: /^Remove BOT / }).click();
+  await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(1);
+  await page.getByRole("button", { name: /^Remove / }).click();
   await expect(add).toHaveCount(5);
   for (let i = 0; i < 2; i++) {
     await add.first().click();
     await expect(add).toHaveCount(4 - i);
   }
   await page.reload();
-  await expect(page.getByRole("button", { name: /^Remove BOT / })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(2);
   await expect(page.getByText("Connecting…", { exact: true })).toBeHidden();
   await screenshot(page, testInfo, "bot-lobby", { fullPage: true });
   await page.getByRole("button", { name: "Start game", exact: true }).click();

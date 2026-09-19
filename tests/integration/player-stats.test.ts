@@ -15,7 +15,7 @@ test.each([false, true])(
   "records bot participation from identity, not display names (%s)",
   async (bot) => {
     const game = gameFixture();
-    game.players[1].name = "BOT Tutorial";
+    game.players[1].name = "Tutorial";
     game.players[1].bot = bot;
     await db.batch(eventStatements(db, game, []));
     expect(

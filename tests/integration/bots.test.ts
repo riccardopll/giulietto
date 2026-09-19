@@ -45,7 +45,8 @@ test("only the lobby host manages bots, with unique names, seat limits, and retr
   const bots = game.players.filter((player) => player.bot);
   expect(bots).toHaveLength(4);
   expect(new Set(bots.map((player) => player.name)).size).toBe(4);
-  expect(bots.every((player) => player.name.startsWith("BOT "))).toBe(true);
+  for (const { name } of bots)
+    expect(["Vannacci", "Tutorial", "Perso", "Pippa", "Netanyahu", "Slayer 1.90"]).toContain(name);
   expect((await api.post(host, { action: "addBot", code })).status).toBe(400);
   await api.state(host, { action: "start", code });
   expect((await api.post(host, { action: "addBot", code })).status).toBe(400);

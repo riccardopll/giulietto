@@ -15,20 +15,7 @@ import {
   findPlayer,
 } from "../shared/game";
 
-const botNames = [
-  "Vannacci",
-  "Tutorial",
-  "El Matador",
-  "Asso",
-  "Zero",
-  "Briscola",
-  "Il Barone",
-  "Scaramanzia",
-  "Senza Pietà",
-  "Il Notaio",
-  "Tre di Coppe",
-  "Il Professore",
-];
+const botNames = ["Vannacci", "Tutorial", "Perso", "Pippa", "Netanyahu", "Slayer 1.90"];
 
 function integer(value: unknown, message: string) {
   if (typeof value !== "number" || !Number.isInteger(value)) throw new GameError(message);
@@ -155,9 +142,7 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     if (game.phase !== "lobby") throw new GameError("Bots can only change in the lobby.");
     if (input.action === "addBot") {
       if (game.players.length >= 6) throw new GameError("This table is full.");
-      const names = botNames
-        .map((name) => `BOT ${name}`)
-        .filter((name) => !game.players.some((member) => member.name === name));
+      const names = botNames.filter((name) => !game.players.some((member) => member.name === name));
       const name = names[Math.floor(Math.random() * names.length)];
       game.players.push({
         ...makePlayer(`bot:${crypto.randomUUID()}`, name, now),
