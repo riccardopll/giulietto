@@ -81,7 +81,7 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
       { action: "bid", bid: 0 },
       { action: "play", card: 2 },
       { action: "start" },
-      { action: "settings", turnSeconds: 30, startingLives: 3 },
+      { action: "settings", option: "startingLives", value: 3 },
       { action: "addBot" },
       { action: "removeBot", playerId: "p0" },
     ] as const) {
@@ -163,7 +163,7 @@ test.each(["playing", "finished"] as const)(
 test.each([
   [{ action: "bid", bid: 1.5 }, "Enter a valid prediction."],
   [{ action: "play", card: "31" }, "Choose a valid card."],
-  [{ action: "settings", turnSeconds: 30, startingLives: 9 }, "Choose a whole number"],
+  [{ action: "settings", option: "startingLives", value: 9 }, "Choose a whole number"],
   [{ action: "rename" }, "Enter a display name."],
   [{ action: "emote", emote: "unknown" }, "Unknown emote."],
   [{ action: "chat", text: "   " }, "Type a message."],

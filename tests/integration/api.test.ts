@@ -46,24 +46,39 @@ for (const { visibility, action } of [
 
     for (const action of ["settings", "start"]) {
       expect(
-        (await api.post(other, { action, code, startingLives: 5, turnSeconds: 20 })).status,
+        (await api.post(other, { action, code, option: "startingLives", value: 5 })).status,
       ).toBe(400);
     }
     for (const startingLives of [0, 6, 1.5, "5"]) {
       expect(
-        (await api.post(host, { action: "settings", turnSeconds: 30, code, startingLives })).status,
+        (
+          await api.post(host, {
+            action: "settings",
+            code,
+            option: "startingLives",
+            value: startingLives,
+          })
+        ).status,
       ).toBe(400);
     }
     for (const turnSeconds of [0, 4, 61, 5.5, "35", null]) {
       expect(
-        (await api.post(host, { action: "settings", code, startingLives: 5, turnSeconds })).status,
+        (
+          await api.post(host, {
+            action: "settings",
+            code,
+            option: "turnSeconds",
+            value: turnSeconds,
+          })
+        ).status,
       ).toBe(400);
     }
+    await api.state(host, { action: "settings", code, option: "startingLives", value: 5 });
     const configured = await api.state(host, {
       action: "settings",
-      turnSeconds: 20,
+      option: "turnSeconds",
+      value: 20,
       code,
-      startingLives: 5,
     });
     expect(configured.startingLives).toBe(5);
     expect(configured.turnSeconds).toBe(20);
@@ -78,7 +93,7 @@ for (const { visibility, action } of [
       true,
     );
     expect(
-      (await api.post(host, { action: "settings", turnSeconds: 30, code, startingLives: 1 }))
+      (await api.post(host, { action: "settings", code, option: "startingLives", value: 1 }))
         .status,
     ).toBe(400);
   });
@@ -389,20 +404,31 @@ test("sockets close on floods, oversized messages, and a fourth tab", async () =
   expect((await latest.command({ action: "rename", name: "bot_3" })).type).toBe("ack");
 });
 
-test.each([undefined, 20])("restores saved tables with move time %s", async (turnSeconds) => {
-  const host = guest(1);
-  const { code } = await api.state(host, { action: "create" });
-  const stub = env.ROOMS.getByName(code);
-  await runInDurableObject(stub, (_instance, ctx) => {
-    const room = ctx.storage.kv.get("room") as { game: Game };
-    if (turnSeconds === undefined) Reflect.deleteProperty(room.game, "turnSeconds");
-    else room.game.turnSeconds = turnSeconds;
-    ctx.storage.kv.put("room", room);
-  });
-  await evictDurableObject(stub);
-  const restored = await api.state(host, { action: "join", code });
-  expect(restored.turnSeconds).toBe(turnSeconds ?? 30);
-  await api.state(guest(2), { action: "join", code });
-  const started = await api.state(host, { action: "start", code });
-  expect(started.deadline).toBe(started.startedAt! + (turnSeconds ?? 30) * 1000);
-});
+test.each([
+  { turnSeconds: undefined, phase: "lobby" },
+  { turnSeconds: undefined, phase: "bidding" },
+  { turnSeconds: undefined, phase: "playing" },
+  { turnSeconds: 20, phase: "bidding" },
+] as const)(
+  "restores $phase tables with move time $turnSeconds",
+  async ({ turnSeconds, phase }) => {
+    const host = guest(1);
+    const { code } = await api.state(host, { action: "create" });
+    await api.state(guest(2), { action: "join", code });
+    if (phase !== "lobby") await api.state(host, { action: "start", code });
+    const stub = env.ROOMS.getByName(code);
+    await runInDurableObject(stub, (_instance, ctx) => {
+      const room = ctx.storage.kv.get("room") as { game: Game };
+      room.game.phase = phase;
+      if (phase !== "lobby") room.game.deadline = room.game.startedAt! + (turnSeconds ?? 40) * 1000;
+      if (turnSeconds === undefined) Reflect.deleteProperty(room.game, "turnSeconds");
+      else room.game.turnSeconds = turnSeconds;
+      ctx.storage.kv.put("room", room);
+    });
+    await evictDurableObject(stub);
+    const restored = await api.state(host, { action: "join", code });
+    expect(restored.turnSeconds).toBe(turnSeconds ?? 30);
+    const active = phase === "lobby" ? await api.state(host, { action: "start", code }) : restored;
+    expect(active.deadline).toBe(active.startedAt! + (turnSeconds ?? 30) * 1000);
+  },
+);

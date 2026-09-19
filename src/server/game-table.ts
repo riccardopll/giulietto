@@ -55,7 +55,11 @@ export class GameTable extends DurableObject<Env> {
   }
   private read() {
     const room = this.ctx.storage.kv.get("room") as Room | undefined;
-    if (room) room.game.turnSeconds ??= DEFAULT_TURN_SECONDS;
+    if (room && room.game.turnSeconds === undefined) {
+      room.game.turnSeconds = DEFAULT_TURN_SECONDS;
+      if (room.game.phase === "bidding" || room.game.phase === "playing")
+        room.game.deadline -= (40 - DEFAULT_TURN_SECONDS) * 1000;
+    }
     return room;
   }
   private logConnection(

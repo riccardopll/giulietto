@@ -1,3 +1,4 @@
+import type { LobbyOption } from "../../shared/commands";
 import { Avatar } from "./avatar";
 import { useState } from "react";
 import { ArrowRight, Check, Link, Minus, Pencil, Plus, User } from "lucide-react";
@@ -30,20 +31,15 @@ const options = [
     step: 5,
   },
 ] as const;
-type OptionName = (typeof options)[number]["name"];
-type SaveSettings = (startingLives: number, turnSeconds: number) => Promise<unknown>;
+type SaveSettings = (option: LobbyOption, value: number) => Promise<unknown>;
 
 function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; save: SaveSettings }) {
-  const [draft, setDraft] = useState<{ name: OptionName; value: number } | null>(null);
+  const [draft, setDraft] = useState<{ name: LobbyOption; value: number } | null>(null);
   const host = game.host === game.you;
   async function commit() {
     if (!host || busy || !draft) return;
     try {
-      if (draft.value !== game[draft.name])
-        await save(
-          draft.name === "startingLives" ? draft.value : game.startingLives,
-          draft.name === "turnSeconds" ? draft.value : game.turnSeconds,
-        );
+      if (draft.value !== game[draft.name]) await save(draft.name, draft.value);
     } finally {
       setDraft(null);
     }

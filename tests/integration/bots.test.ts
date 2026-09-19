@@ -83,7 +83,8 @@ test("bots survive lobby inactivity and never inherit the host role", async () =
 test("server bots finish a match across eviction and persist bot identity without ranking bots", async () => {
   const host = guest(1);
   const { code, you } = await api.state(host, { action: "create" });
-  await api.state(host, { action: "settings", turnSeconds: 20, startingLives: 1, code });
+  await api.state(host, { action: "settings", option: "startingLives", value: 1, code });
+  await api.state(host, { action: "settings", option: "turnSeconds", value: 20, code });
   await api.state(host, { action: "addBot", code });
   await api.state(host, { action: "addBot", code });
   await api.state(host, { action: "start", code });
