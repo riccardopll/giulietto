@@ -2,8 +2,7 @@
 
 The bot learns to win complete Giulietto matches through self-play reinforcement
 learning. It currently plays the other seats in the development `/preview`.
-Live tables do not yet have bot seats. The inference decision is recorded in
-[ARCHITECTURE.md](ARCHITECTURE.md#bot-inference).
+Live tables do not yet have bot seats. The bot is served via TypeScript inference.
 
 ## Model and play
 

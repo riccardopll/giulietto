@@ -21,19 +21,6 @@ scans. Update totals and `matches.stats_counted` in the same finalization batch
 so a retry cannot count a match twice. Keep timing totals and sample counts
 separate.
 
-## Bot inference
-
-Use CPU TypeScript inference for both the browser preview and Cloudflare
-Workers/Durable Objects. The small network needs only dense layers and ReLU;
-keeping these operations local avoids an additional ML runtime, native bindings,
-and WASM loading/build requirements on Workers.
-
-Training runs separately in Python. The game consumes only exported model
-weights, through `createBot(weights)` and `bot(gameView)`. Keep feature layout,
-action indices, and network operations private to the bot implementation. Python
-training tools and tests stay outside game CI. See [BOT.md](BOT.md) for the model,
-training history, and release evidence.
-
 ## Emotes
 
 Keep thick outlines and readable silhouettes at the displayed size. Drawn
