@@ -16,7 +16,6 @@ BIDDING, PLAYING, TRICK, RESULTS, FINISHED = "bidding", "playing", "trick", "res
 
 @dataclass(slots=True)
 class Player:
-    id: str
     seat: int
     lives: int = DEFAULT_LIVES
     hand: list[int] = field(default_factory=list)
@@ -45,7 +44,6 @@ class Game:
     played: list[Play] = field(default_factory=list)
     last_winner: int | None = None
     winner: int | None = None
-    tie: bool = False
 
     def actor(self) -> int:
         return self.order[self.turn]
@@ -60,33 +58,8 @@ def strength(play: Play) -> int:
     return play.card
 
 
-class Xorshift:
-    def __init__(self, seed: int):
-        self.x = seed & 0xFFFFFFFF or 1
-
-    def next_u32(self) -> int:
-        x = self.x
-        x ^= (x << 13) & 0xFFFFFFFF
-        x ^= x >> 17
-        x ^= (x << 5) & 0xFFFFFFFF
-        self.x = x
-        return x
-
-    def shuffle(self, items: list) -> list:
-        for i in range(len(items) - 1, 0, -1):
-            span = i + 1
-            limit = (4294967296 // span) * span
-            while True:
-                random = self.next_u32()
-                if random < limit:
-                    break
-            j = random % span
-            items[i], items[j] = items[j], items[i]
-        return items
-
-
 def make_game(players: int, starting_lives: int = DEFAULT_LIVES) -> Game:
-    return Game(players=[Player(f"p{i}", i) for i in range(players)], starting_lives=starting_lives)
+    return Game(players=[Player(i) for i in range(players)], starting_lives=starting_lives)
 
 
 def deal(game: Game, rng) -> None:
@@ -103,7 +76,8 @@ def deal(game: Game, rng) -> None:
     order = [p.seat for p in active]
     offset = (game.round - 1) % len(active)
     game.order = order[offset:] + order[:offset]
-    deck = rng.shuffle(list(range(1, DECK + 1)))
+    deck = list(range(1, DECK + 1))
+    rng.shuffle(deck)
     cursor = 0
     for player in game.players:
         if player.lives > 0:
@@ -117,7 +91,6 @@ def deal(game: Game, rng) -> None:
     game.turn = 0
     game.trick = []
     game.played = []
-    game.tie = False
 
 
 def legal_bids(game: Game) -> list[int]:
@@ -166,7 +139,6 @@ def score(game: Game) -> list[int]:
         for player in game.players:
             player.lives = 1
         alive = game.players
-        game.tie = True
     if len(alive) <= 1:
         game.phase = FINISHED
         game.winner = alive[0].seat if alive else None

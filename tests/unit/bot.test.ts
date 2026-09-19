@@ -1,33 +1,27 @@
 import { describe, expect, test } from "vitest";
-import { botMove, decode, legalActions, type BotWeights } from "../../src/shared/bot";
+import { createBot } from "../../src/shared/bot";
 import shippedWeights from "../../public/bot/weights.json";
 import { bid, deal, findPlayer, legalBids, play, tick, view } from "../../src/shared/game";
-import { lobbyFixture, seedRandom } from "./helpers";
+import { gameFixture, lobbyFixture, seedRandom } from "./helpers";
 
-const shipped = shippedWeights as BotWeights;
+const bot = createBot(shippedWeights);
 
-describe("moves", () => {
-  test("decodes cards, the low ace, and bids", () => {
-    expect(decode(0)).toEqual({ action: "play", card: 1 });
-    expect(decode(30)).toEqual({ action: "play", card: 31, mode: "high" });
-    expect(decode(40)).toEqual({ action: "play", card: 31, mode: "low" });
-    expect(decode(41)).toEqual({ action: "bid", bid: 0 });
-    expect(decode(47)).toEqual({ action: "bid", bid: 6 });
-  });
+test("waits outside the bot's turn", () => {
+  const game = gameFixture();
+  expect(bot(view(game, "p1"))).toBeNull();
+  game.phase = "results";
+  expect(bot(view(game, "p0"))).toBeNull();
+});
 
-  test("samples only legal moves", () => {
-    seedRandom(3);
-    const game = lobbyFixture(4);
-    deal(game, 100);
-    while (game.phase === "bidding") bid(game, game.order[game.turn], legalBids(game)[0], 100);
-    const playing = view(game, game.order[game.turn]);
-    const legal = legalActions(playing);
-    for (const r of [0, 0.5, 0.999]) {
-      const move = botMove(playing, shipped, () => r)!;
-      expect(move.action).toBe("play");
-      expect(legal.map(decode)).toContainEqual(move);
-    }
-  });
+test("plays a hidden card and chooses a mode for the blind ace", () => {
+  const game = gameFixture([[7], [31], [12]]);
+  game.phase = "playing";
+  expect(bot(view(game, "p0"))).toEqual({ action: "play" });
+  game.turn = 1;
+  expect([
+    { action: "play", card: 31, mode: "high" },
+    { action: "play", card: 31, mode: "low" },
+  ]).toContainEqual(bot(view(game, "p1")));
 });
 
 describe("shipped weights", () => {
@@ -38,11 +32,11 @@ describe("shipped weights", () => {
       seedRandom(100_000 + i);
       const game = lobbyFixture(4);
       deal(game, 100);
-      const bot = game.players[i % 4].id;
+      const botId = game.players[i % 4].id;
       while (game.phase !== "finished") {
         const id = game.order[game.turn];
-        if (id === bot) {
-          const move = botMove(view(game, id), shipped)!;
+        if (id === botId) {
+          const move = bot(view(game, id))!;
           if (move.action === "bid") bid(game, id, move.bid, 100);
           else play(game, id, move.card ?? findPlayer(game, id)!.hand[0], move.mode, 100);
         } else if (game.phase === "bidding") {
@@ -52,7 +46,7 @@ describe("shipped weights", () => {
         } else play(game, id, findPlayer(game, id)!.hand[0], "high", 100);
         while (game.phase === "trick" || game.phase === "results") tick(game, game.deadline);
       }
-      if (game.winner === bot) wins++;
+      if (game.winner === botId) wins++;
     }
     expect(wins / matches).toBeGreaterThan(0.4);
   });

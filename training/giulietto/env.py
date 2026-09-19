@@ -34,15 +34,6 @@ naive_actor = fixed_actor(naive_action)
 heuristic_actor = fixed_actor(heuristic_action)
 
 
-class NumpyShuffle:
-    def __init__(self, rng: np.random.Generator):
-        self.rng = rng
-
-    def shuffle(self, items: list) -> list:
-        self.rng.shuffle(items)
-        return items
-
-
 @dataclass
 class Rollout:
     obs: list[np.ndarray] = field(default_factory=list)
@@ -72,7 +63,7 @@ class Rollout:
 @dataclass
 class Match:
     game: Game
-    rng: NumpyShuffle
+    rng: np.random.Generator
     seat_policy: list[int]
     pending: list[int | None]
     reward_acc: list[float]
@@ -82,12 +73,10 @@ class Match:
 @dataclass
 class Stats:
     matches: int = 0
-    learner_wins: int = 0
     learner_lost: float = 0.0
     learner_rounds: int = 0
     learner_exact: int = 0
     learner_over: int = 0
-    rounds: int = 0
     resets: int = 0
     lost_by_count: list[float] = field(default_factory=lambda: [0.0] * 7)
     rounds_by_count: list[int] = field(default_factory=lambda: [0] * 7)
@@ -136,7 +125,7 @@ class Arena:
             n = players or int(rng.choice(PLAYER_COUNTS, p=PLAYER_WEIGHTS))
             starting = lives or int(rng.choice(LIVES, p=LIVES_WEIGHTS))
             seed = seeds[i] if seeds is not None else int(rng.integers(2**63))
-            shuffle = NumpyShuffle(np.random.default_rng(seed))
+            shuffle = np.random.default_rng(seed)
             game = make_game(n, starting)
             deal(game, shuffle)
             policies = list(assignments[i]) if assignments is not None else seats(n, rng)
@@ -184,7 +173,6 @@ class Arena:
         lost = advance(game, match.rng)
         if lost is None:
             return
-        self.stats.rounds += 1
         self.stats.resets += int(all(before[s] <= lost[s] for s in range(len(before))))
         for seat, amount in enumerate(lost):
             if match.seat_policy[seat] != LEARNER:
@@ -217,16 +205,7 @@ class Arena:
             rollout.done[idx] = True
         won = match.seat_policy[game.winner] == LEARNER
         self.stats.matches += 1
-        self.stats.learner_wins += int(won)
-        self.results.append(
-            {
-                "seed": match.seed,
-                "win": int(won),
-                "winner": game.winner,
-                "policies": match.seat_policy,
-                "rounds": game.round,
-            }
-        )
+        self.results.append({"seed": match.seed, "win": int(won)})
         self.matches[i] = None
 
     def run(self, actors: dict[int, Actor], rollout: Rollout | None = None) -> None:

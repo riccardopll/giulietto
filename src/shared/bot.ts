@@ -1,4 +1,5 @@
-import { strength, type Play } from "./game";
+import type { TableCommand } from "./commands";
+import { strength, type GameView } from "./game";
 
 const DECK = 40;
 const ACE = 31;
@@ -14,43 +15,19 @@ const PLAYED_BASE = VISIBLE_BASE + DECK;
 const GLOBAL_BASE = PLAYED_BASE + DECK;
 const SEAT_VISIBLE_BASE = GLOBAL_BASE + GLOBAL_FEATURES;
 const HISTORY_BASE = SEAT_VISIBLE_BASE + MAX_PLAYERS;
-export const OBS_SIZE = HISTORY_BASE + MAX_COUNT * MAX_PLAYERS * 3;
-export const ACTION_ACE_LOW = DECK;
-export const ACTION_BID = DECK + 1;
-export const ACTIONS = ACTION_BID + MAX_COUNT + 1;
-const MASK_VALUE = -1e9;
+const OBS_SIZE = HISTORY_BASE + MAX_COUNT * MAX_PLAYERS * 3;
+const ACTION_ACE_LOW = DECK;
+const ACTION_BID = DECK + 1;
 
-export type BotView = {
-  you: string;
-  phase: string;
-  count: number;
-  cycle: number;
-  startingLives: number;
-  order: string[];
-  turn: number;
-  trick: Play[];
-  played: Play[];
-  canChooseAce: boolean;
-  players: {
-    id: string;
-    lives: number;
-    hand: (number | null)[];
-    bid: number | null;
-    taken: number;
-  }[];
-  legalBids: number[];
-};
 type Layer = { w: number[][]; b: number[] };
-export type BotWeights = { version: number; layers: Layer[]; policy: Layer; value: Layer };
-export type BotMove =
-  | { action: "bid"; bid: number }
-  | { action: "play"; card?: number; mode?: "high" | "low" };
+type Weights = { layers: Layer[]; policy: Layer };
+type BotMove = Extract<TableCommand, { action: "bid" | "play" }>;
 
-function actorOf(view: BotView) {
+function actorOf(view: GameView) {
   return view.phase === "bidding" || view.phase === "playing" ? view.order[view.turn] : null;
 }
 
-export function encode(view: BotView): Float32Array {
+function encode(view: GameView): Float32Array {
   const obs = new Float32Array(OBS_SIZE);
   const n = view.players.length;
   const myPos = view.players.findIndex((player) => player.id === view.you);
@@ -126,11 +103,11 @@ export function encode(view: BotView): Float32Array {
   return obs;
 }
 
-function isBlind(view: BotView) {
+function isBlind(view: GameView) {
   return view.count === 1 && ["bidding", "playing", "trick"].includes(view.phase);
 }
 
-export function legalActions(view: BotView): number[] {
+function legalActions(view: GameView): number[] {
   if (actorOf(view) !== view.you) return [];
   if (view.phase === "bidding") return view.legalBids.map((value) => ACTION_BID + value);
   if (isBlind(view)) return view.canChooseAce ? [ACE - 1, ACTION_ACE_LOW] : [];
@@ -156,35 +133,24 @@ function dense(input: ArrayLike<number>, layer: Layer, relu: boolean): Float32Ar
   return out;
 }
 
-export function infer(weights: BotWeights, obs: Float32Array, legal: number[]) {
-  let hidden: Float32Array = obs;
-  for (const layer of weights.layers) hidden = dense(hidden, layer, true);
-  const logits = dense(hidden, weights.policy, false);
-  const allowed = new Set(legal);
-  for (let i = 0; i < logits.length; i++) if (!allowed.has(i)) logits[i] = MASK_VALUE;
-  return { logits, value: dense(hidden, weights.value, false)[0] };
-}
-
-export function decode(action: number): BotMove {
+function decode(action: number): BotMove {
   if (action >= ACTION_BID) return { action: "bid", bid: action - ACTION_BID };
   if (action === ACTION_ACE_LOW) return { action: "play", card: ACE, mode: "low" };
   return { action: "play", card: action + 1, ...(action + 1 === ACE ? { mode: "high" } : {}) };
 }
 
-export function botMove(view: BotView, weights: BotWeights, random?: () => number): BotMove | null {
-  const legal = legalActions(view);
-  if (!legal.length)
-    return view.phase === "playing" && isBlind(view) && actorOf(view) === view.you
-      ? { action: "play" }
-      : null;
-  const { logits } = infer(weights, encode(view), legal);
-  if (!random) return decode(legal.reduce((best, a) => (logits[a] > logits[best] ? a : best)));
-  const max = Math.max(...legal.map((a) => logits[a]));
-  const weights_ = legal.map((a) => Math.exp(logits[a] - max));
-  let r = random() * weights_.reduce((total, w) => total + w, 0);
-  for (let i = 0; i < legal.length; i++) {
-    r -= weights_[i];
-    if (r <= 0) return decode(legal[i]);
-  }
-  return decode(legal[legal.length - 1]);
+export type Bot = (view: GameView) => BotMove | null;
+
+export function createBot(weights: Weights): Bot {
+  return (view) => {
+    const legal = legalActions(view);
+    if (!legal.length)
+      return view.phase === "playing" && isBlind(view) && actorOf(view) === view.you
+        ? { action: "play" }
+        : null;
+    let hidden = encode(view);
+    for (const layer of weights.layers) hidden = dense(hidden, layer, true);
+    const logits = dense(hidden, weights.policy, false);
+    return decode(legal.reduce((best, action) => (logits[action] > logits[best] ? action : best)));
+  };
 }

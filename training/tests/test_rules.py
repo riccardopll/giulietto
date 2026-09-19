@@ -8,7 +8,6 @@ from giulietto.rules import (
     BIDDING,
     FINISHED,
     PLAYING,
-    Xorshift,
     advance,
     bid,
     deal,
@@ -18,18 +17,9 @@ from giulietto.rules import (
 )
 
 
-class Shuffle:
-    def __init__(self, seed=0):
-        self.rng = np.random.default_rng(seed)
-
-    def shuffle(self, items):
-        self.rng.shuffle(items)
-        return items
-
-
 def test_deal_rotates_and_counts_down():
     game = make_game(3)
-    rng = Shuffle()
+    rng = np.random.default_rng(0)
     deal(game, rng)
     seats = [p.seat for p in game.players]
     assert game.count == 6 and game.order[0] == seats[0]
@@ -46,7 +36,7 @@ def test_deal_rotates_and_counts_down():
 
 def test_hook_rule_and_trick_winner():
     game = make_game(3)
-    deal(game, Shuffle())
+    deal(game, np.random.default_rng(0))
     game.count = 2
     a, b, c = game.order
     game.players[a].hand = [2, 3]
@@ -61,19 +51,19 @@ def test_hook_rule_and_trick_winner():
     play(game, b, 39)
     play(game, c, 31, low=True)
     assert game.last_winner == b and [p.card for p in game.played] == [2, 39, 31]
-    advance(game, Shuffle())
+    advance(game, np.random.default_rng(0))
     assert game.phase == PLAYING and game.actor() == b
     play(game, b, 40)
     play(game, c, 9)
     play(game, a, 3)
-    lost = advance(game, Shuffle())
+    lost = advance(game, np.random.default_rng(0))
     assert lost[a] == 1 and lost[b] == 2 and lost[c] == 0
     assert game.round == 2 and game.players[b].lives == 1
 
 
 def test_score_eliminates_and_ties():
     game = make_game(2, 1)
-    deal(game, Shuffle())
+    deal(game, np.random.default_rng(0))
     game.count = 1
     for p in game.players:
         p.hand = [p.seat + 1]
@@ -82,14 +72,14 @@ def test_score_eliminates_and_ties():
     bid(game, b, 1)
     play(game, a, game.players[a].hand[0])
     play(game, b, game.players[b].hand[0])
-    lost = advance(game, Shuffle())
+    lost = advance(game, np.random.default_rng(0))
     assert sorted(lost) == [0, 1]
     assert game.phase == FINISHED and game.winner == game.last_winner
 
 
 def test_all_out_gives_everyone_a_life():
     game = make_game(2, 1)
-    deal(game, Shuffle())
+    deal(game, np.random.default_rng(0))
     game.count = 2
     a, b = game.order
     game.players[a].hand = [1, 40]
@@ -98,22 +88,17 @@ def test_all_out_gives_everyone_a_life():
     bid(game, b, 0)
     play(game, a, 1)
     play(game, b, 2)
-    advance(game, Shuffle())
+    advance(game, np.random.default_rng(0))
     play(game, b, 39)
     play(game, a, 40)
-    lost = advance(game, Shuffle())
+    lost = advance(game, np.random.default_rng(0))
     assert lost == [1, 1]
     assert all(p.lives == 1 for p in game.players) and game.phase == BIDDING and game.round == 2
 
 
-def test_xorshift_matches_known_sequence():
-    rng = Xorshift(1)
-    assert [rng.next_u32() for _ in range(3)] == [270369, 67634689, 2647435461]
-
-
 def test_encoding_shapes_and_legal_actions():
     game = make_game(4)
-    deal(game, Shuffle())
+    deal(game, np.random.default_rng(0))
     me = game.actor()
     obs = encode(game, me)
     assert obs.shape == (OBS_SIZE,) and obs.dtype == np.float32
@@ -129,7 +114,7 @@ def test_encoding_shapes_and_legal_actions():
 
 def test_naive_bids_equal_share_and_plays_lowest_card():
     game = make_game(4)
-    deal(game, Shuffle())
+    deal(game, np.random.default_rng(0))
     assert naive_action(game, game.actor()) == ACTION_BID + 2
     for seat in game.order:
         bid(game, seat, naive_action(game, seat) - ACTION_BID)

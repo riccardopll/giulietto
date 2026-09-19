@@ -1,9 +1,9 @@
 import { expect, test } from "vitest";
 import { advancePreview, makePreview, normalizePreview } from "../../src/client/preview/games";
-import type { BotWeights } from "../../src/shared/bot";
+import { createBot } from "../../src/shared/bot";
 import weights from "../../public/bot/weights.json";
 
-const bot = weights as BotWeights;
+const bot = createBot(weights);
 
 test("normalizes preview controls to a playable round", () => {
   const options = normalizePreview({

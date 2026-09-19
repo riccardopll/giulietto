@@ -7,7 +7,7 @@ import numpy as np
 
 from .baseline import heuristic_action
 from .encode import decode, encode, legal_actions
-from .env import NumpyShuffle, fixed_actor
+from .env import fixed_actor
 from .rules import ACE, FINISHED, PLAYING, Game, advance, bid, blind, play
 
 
@@ -44,7 +44,7 @@ def sample_hands(game: Game, seat: int, rng: np.random.Generator) -> Game:
     return sampled
 
 
-def apply(game: Game, action: int, rng: NumpyShuffle) -> None:
+def apply(game: Game, action: int, rng: np.random.Generator) -> None:
     kind, value, low = decode(action)
     if kind == "bid":
         bid(game, game.actor(), value)
@@ -64,7 +64,7 @@ def search_action(game: Game, seat: int, samples: int = 8) -> int:
         sampled = sample_hands(game, seat, rng)
         for j, action in enumerate(legal):
             simulated = clone(sampled)
-            shuffle = NumpyShuffle(np.random.default_rng(0))
+            shuffle = np.random.default_rng(0)
             apply(simulated, int(action), shuffle)
             while simulated.phase != FINISHED and simulated.round == game.round:
                 apply(simulated, heuristic_action(simulated, simulated.actor()), shuffle)

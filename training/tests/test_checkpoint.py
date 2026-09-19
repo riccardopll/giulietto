@@ -2,7 +2,6 @@ import subprocess
 import sys
 
 import numpy as np
-import pytest
 import torch
 
 from giulietto.checkpoint import initialize
@@ -10,16 +9,15 @@ from giulietto.encode import OBS_SIZE
 from giulietto.model import Policy
 
 
-@pytest.mark.parametrize("hidden", [16, 24])
-def test_adding_observations_preserves_the_initial_policy(hidden):
-    original = Policy(hidden=16, obs_size=OBS_SIZE // 2).eval()
-    expanded = Policy(hidden)
-    initialize(expanded, original)
+def test_fine_tuning_preserves_policy_and_resets_value_estimates():
+    original = Policy(hidden=16).eval()
+    initialized = Policy(hidden=16)
+    initialize(initialized, original)
     obs = torch.as_tensor(np.random.default_rng(0).normal(size=(5, OBS_SIZE)), dtype=torch.float32)
     mask = torch.ones((5, 48), dtype=torch.bool)
     with torch.no_grad():
         old_logits, _ = original(obs, mask)
-        new_logits, values = expanded(obs, mask)
+        new_logits, values = initialized(obs, mask)
     torch.testing.assert_close(old_logits, new_logits)
     assert torch.count_nonzero(values) == 0
 

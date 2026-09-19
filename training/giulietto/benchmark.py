@@ -113,35 +113,6 @@ def setting_seed(seed: int, players: int, lives: int) -> int:
     return seed + 1000 * players + 10 * lives
 
 
-def paired_difference(candidate: list[dict], reference: list[dict]) -> dict:
-
-    def key(row):
-        return row["players"], row["lives"], row["format"], row.get("opponent")
-
-    old = {key(r): r for r in reference}
-    if {key(r) for r in candidate} != old.keys():
-        raise ValueError("Paired comparisons require identical settings and opponents")
-    differences = []
-    for row in candidate:
-        other = old[key(row)]
-        if row["deal_seeds"] != other["deal_seeds"] or row["games"] != other["games"]:
-            raise ValueError("Paired comparisons require identical deals and game counts")
-        scores = np.asarray(row["deal_scores"]) - np.asarray(other["deal_scores"])
-        differences.append(
-            {
-                "deal_scores": scores.tolist(),
-                "win_rate": float(scores.mean()),
-                "games": row["games"],
-            }
-        )
-    result = aggregate(differences)
-    return {
-        "win_rate_delta": result["win_rate"],
-        "ci95": result["ci95"],
-        "games_per_model": result["games"],
-    }
-
-
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("checkpoint", type=Path)

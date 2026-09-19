@@ -11,14 +11,14 @@ Run from `training/` with uv:
 ```sh
 uv sync --frozen
 uv run poe check
-uv run poe train --out runs/example --init ../public/bot/weights.json --decisions 30000000
+uv run poe train --out runs/example --init ../public/bot/weights.json --opponent ../public/bot/weights.json --decisions 30000000
 uv run poe benchmark runs/example/latest.pt --opponents ../public/bot/weights.json --out runs/example/benchmark.json
 uv run poe export runs/example/latest.pt ../public/bot/weights.json
 ```
 
-The shipped weights are the default fixed opponent. `--opponent` selects another
-reference. `--resume runs/example/state.pt` restores training; repeat the original
-options apart from the output path, budget, device, or thread count.
+`--opponent` selects the fixed reference. `--init` requires the same network shape.
+`--resume runs/example/state.pt` restores training; repeat the original options
+apart from the output path, budget, device, or thread count.
 
 Keep these constraints when changing training:
 

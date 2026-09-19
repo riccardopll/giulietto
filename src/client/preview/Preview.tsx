@@ -8,7 +8,7 @@ import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
 import { Button } from "../components/ui/button";
 import { bid, deal, play, view, type Game } from "../../shared/game";
-import type { BotWeights } from "../../shared/bot";
+import type { Bot } from "../../shared/bot";
 import {
   advancePreview,
   makePreview,
@@ -97,16 +97,16 @@ function readSettings() {
   };
 }
 
-function nextEntry(old: Entry, weights: BotWeights): Entry {
+function nextEntry(old: Entry, bot: Bot): Entry {
   const finished = old.game.phase === "finished";
   return {
     ...old,
-    game: finished ? makePreview(old.options, weights) : advancePreview(old.game, weights),
+    game: finished ? makePreview(old.options, bot) : advancePreview(old.game, bot),
     reset: old.reset + Number(finished),
   };
 }
 
-export function Preview({ weights }: { weights: BotWeights }) {
+export function Preview({ bot }: { bot: Bot }) {
   const [initial] = useState(readSettings);
   const [people, setPeople] = useState(initial.options.people);
   const [viewer, setViewer] = useState(initial.viewer);
@@ -118,7 +118,7 @@ export function Preview({ weights }: { weights: BotWeights }) {
     Object.fromEntries(
       counts.map((people) => {
         const options = normalizePreview({ ...initial.options, people });
-        return [people, { options, game: makePreview(options, weights), reset: 0 }];
+        return [people, { options, game: makePreview(options, bot), reset: 0 }];
       }),
     ),
   );
@@ -138,13 +138,13 @@ export function Preview({ weights }: { weights: BotWeights }) {
       const options = normalizePreview({ ...old.options, ...patch });
       return {
         ...tables,
-        [people]: { options, game: makePreview(options, weights), reset: old.reset + 1 },
+        [people]: { options, game: makePreview(options, bot), reset: old.reset + 1 },
       };
     });
   }
 
   function step() {
-    setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], weights) }));
+    setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], bot) }));
   }
 
   const shortcuts = useEffectEvent((key: string) => {
@@ -187,10 +187,10 @@ export function Preview({ weights }: { weights: BotWeights }) {
     if (acting && game.order[game.turn] === viewerId) return;
     const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? 3000 : 900;
     const timer = setTimeout(() => {
-      setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], weights) }));
+      setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], bot) }));
     }, delay);
     return () => clearTimeout(timer);
-  }, [entry.game, viewer, people, weights]);
+  }, [entry.game, viewer, people, bot]);
 
   const navigate = useEffectEvent(() => {
     const { options, viewer } = readSettings();
@@ -200,7 +200,7 @@ export function Preview({ weights }: { weights: BotWeights }) {
       ...tables,
       [options.people]: {
         options,
-        game: makePreview(options, weights),
+        game: makePreview(options, bot),
         reset: tables[options.people].reset + 1,
       },
     }));

@@ -6,15 +6,14 @@ from torch import nn
 
 from .encode import ACTIONS, OBS_SIZE
 
-HIDDEN = 256
 MASK_VALUE = -1e9
 
 
 class Policy(nn.Module):
-    def __init__(self, hidden: int = HIDDEN, obs_size: int = OBS_SIZE):
+    def __init__(self, hidden: int = 256):
         super().__init__()
         self.body = nn.Sequential(
-            nn.Linear(obs_size, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
+            nn.Linear(OBS_SIZE, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
         )
         self.policy = nn.Linear(hidden, ACTIONS)
         self.value = nn.Linear(hidden, 1)
@@ -22,7 +21,7 @@ class Policy(nn.Module):
         nn.init.zeros_(self.policy.bias)
 
     def forward(self, obs: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        h = self.body(obs[..., : self.body[0].in_features])
+        h = self.body(obs)
         logits = self.policy(h).masked_fill(~mask, MASK_VALUE)
         return logits, self.value(h).squeeze(-1)
 
@@ -43,7 +42,6 @@ class Policy(nn.Module):
         return actions.cpu().numpy(), logp.cpu().numpy(), values.cpu().numpy()
 
     def export(self) -> dict:
-
         def matrix(layer: nn.Linear) -> dict:
             return {
                 "w": [[round(float(v), 5) for v in row] for row in layer.weight.T.tolist()],

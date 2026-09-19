@@ -14,7 +14,6 @@ import torch
 
 from .benchmark import aggregate, evaluate, fingerprint
 from .checkpoint import from_state, initialize, load
-from .encode import OBS_SIZE, SEAT_VISIBLE_BASE
 from .env import (
     HALL,
     HEURISTIC,
@@ -136,7 +135,6 @@ def main() -> None:
     parser.add_argument("--shaping", type=float, default=0.5)
     parser.add_argument("--target-kl", type=float, default=0.02)
     parser.add_argument("--hidden", type=int, default=256)
-    parser.add_argument("--features", choices=["basic", "history"], default="history")
     parser.add_argument("--eval-every", type=int, default=12)
     parser.add_argument("--eval-matches", type=int, default=512)
     parser.add_argument("--hall", type=int, default=8)
@@ -144,11 +142,7 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--init", type=Path)
-    parser.add_argument(
-        "--opponent",
-        type=Path,
-        default=Path(__file__).resolve().parents[2] / "public" / "bot" / "weights.json",
-    )
+    parser.add_argument("--opponent", type=Path, required=True)
     parser.add_argument("--resume", type=Path)
     args = parser.parse_args()
     if args.hall < 2 or args.envs < 1 or not 0 <= args.lam <= 1:
@@ -157,9 +151,7 @@ def main() -> None:
     device = torch.device(args.device)
     torch.manual_seed(args.seed)
     rng = np.random.default_rng(args.seed)
-    net = Policy(args.hidden, OBS_SIZE if args.features == "history" else SEAT_VISIBLE_BASE).to(
-        device
-    )
+    net = Policy(args.hidden).to(device)
     reference = load(args.opponent, device) if not args.resume else None
     if args.init and not args.resume:
         initialize(net, load(args.init, device))
