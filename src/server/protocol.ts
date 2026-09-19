@@ -10,6 +10,8 @@ import {
   makePlayer,
   tick,
   MIN_STARTING_LIVES,
+  MIN_TURN_SECONDS,
+  MAX_TURN_SECONDS,
   MAX_STARTING_LIVES,
   type Game,
   findPlayer,
@@ -44,7 +46,17 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
         throw new GameError(
           `Choose a whole number from ${MIN_STARTING_LIVES} to ${MAX_STARTING_LIVES} for starting lives.`,
         );
-      return { action: "settings", startingLives: lives };
+      const turnSeconds = input.turnSeconds;
+      if (
+        typeof turnSeconds !== "number" ||
+        !Number.isInteger(turnSeconds) ||
+        turnSeconds < MIN_TURN_SECONDS ||
+        turnSeconds > MAX_TURN_SECONDS
+      )
+        throw new GameError(
+          `Choose a whole number from ${MIN_TURN_SECONDS} to ${MAX_TURN_SECONDS} for move time.`,
+        );
+      return { action: "settings", startingLives: lives, turnSeconds };
     }
     case "start":
     case "addBot":
@@ -132,10 +144,11 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   } else if (input.action === "chat") {
     sendChat(game, id, input.text, now);
   } else if (input.action === "settings") {
-    if (game.host !== id) throw new GameError("Only the host can change starting lives.");
+    if (game.host !== id) throw new GameError("Only the host can change lobby options.");
     if (game.phase !== "lobby")
-      throw new GameError("Starting lives cannot change after the game starts.");
+      throw new GameError("Lobby options cannot change after the game starts.");
     game.startingLives = input.startingLives;
+    game.turnSeconds = input.turnSeconds;
     for (const member of game.players) member.lives = input.startingLives;
   } else if (input.action === "addBot" || input.action === "removeBot") {
     if (game.host !== id) throw new GameError("Only the host can add or remove bots.");

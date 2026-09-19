@@ -1,5 +1,5 @@
-import { findPlayer, type GameView } from "../../src/shared/game";
-import { SELF, env } from "cloudflare:test";
+import { findPlayer, type Game, type GameView } from "../../src/shared/game";
+import { SELF, env, evictDurableObject, runInDurableObject } from "cloudflare:test";
 import { expect, test } from "vitest";
 import { api, captureLogs, guest } from "./helpers";
 
@@ -30,32 +30,57 @@ for (const { visibility, action } of [
   { visibility: "private", action: "create" },
   { visibility: "public", action: "match" },
 ]) {
-  test(`a ${visibility} lobby lets only its host configure lives and start the game`, async () => {
+  test(`a ${visibility} lobby lets only its host configure lives and move time and start the game`, async () => {
     const host = guest(1);
     const other = guest(2);
     const created = await api.state(host, { action });
     const { code } = created;
-    expect(created).toMatchObject({ phase: "lobby", startingLives: 3, host: created.you });
+    expect(created).toMatchObject({
+      phase: "lobby",
+      startingLives: 3,
+      turnSeconds: 30,
+      host: created.you,
+    });
     expect((await api.post(host, { action: "start", code })).status).toBe(400);
     await api.state(other, { action: "join", code });
 
     for (const action of ["settings", "start"]) {
-      expect((await api.post(other, { action, code, startingLives: 5 })).status).toBe(400);
+      expect(
+        (await api.post(other, { action, code, startingLives: 5, turnSeconds: 20 })).status,
+      ).toBe(400);
     }
     for (const startingLives of [0, 6, 1.5, "5"]) {
-      expect((await api.post(host, { action: "settings", code, startingLives })).status).toBe(400);
+      expect(
+        (await api.post(host, { action: "settings", turnSeconds: 30, code, startingLives })).status,
+      ).toBe(400);
     }
-    const configured = await api.state(host, { action: "settings", code, startingLives: 5 });
+    for (const turnSeconds of [0, 4, 61, 5.5, "35", null]) {
+      expect(
+        (await api.post(host, { action: "settings", code, startingLives: 5, turnSeconds })).status,
+      ).toBe(400);
+    }
+    const configured = await api.state(host, {
+      action: "settings",
+      turnSeconds: 20,
+      code,
+      startingLives: 5,
+    });
     expect(configured.startingLives).toBe(5);
+    expect(configured.turnSeconds).toBe(20);
     const joined = await api.state(guest(3), { action: "join", code });
     expect(joined.players.map((player) => player.lives)).toEqual([5, 5, 5]);
 
     const started = await api.state(host, { action: "start", code });
     expect(started.phase).toBe("bidding");
+    expect(started.turnSeconds).toBe(20);
+    expect(started.deadline).toBe(started.startedAt! + 20000);
     expect(started.players.every((player) => player.lives === 5 && player.hand.length === 6)).toBe(
       true,
     );
-    expect((await api.post(host, { action: "settings", code, startingLives: 1 })).status).toBe(400);
+    expect(
+      (await api.post(host, { action: "settings", turnSeconds: 30, code, startingLives: 1 }))
+        .status,
+    ).toBe(400);
   });
 }
 
@@ -362,4 +387,22 @@ test("sockets close on floods, oversized messages, and a fourth tab", async () =
   const latest = await api.connect(third, code);
   expect(await first.closed).toMatchObject({ code: 4002 });
   expect((await latest.command({ action: "rename", name: "bot_3" })).type).toBe("ack");
+});
+
+test.each([undefined, 20])("restores saved tables with move time %s", async (turnSeconds) => {
+  const host = guest(1);
+  const { code } = await api.state(host, { action: "create" });
+  const stub = env.ROOMS.getByName(code);
+  await runInDurableObject(stub, (_instance, ctx) => {
+    const room = ctx.storage.kv.get("room") as { game: Game };
+    if (turnSeconds === undefined) Reflect.deleteProperty(room.game, "turnSeconds");
+    else room.game.turnSeconds = turnSeconds;
+    ctx.storage.kv.put("room", room);
+  });
+  await evictDurableObject(stub);
+  const restored = await api.state(host, { action: "join", code });
+  expect(restored.turnSeconds).toBe(turnSeconds ?? 30);
+  await api.state(guest(2), { action: "join", code });
+  const started = await api.state(host, { action: "start", code });
+  expect(started.deadline).toBe(started.startedAt! + (turnSeconds ?? 30) * 1000);
 });

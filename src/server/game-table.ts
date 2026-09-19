@@ -6,12 +6,12 @@ import { createBot } from "../shared/bot";
 import weights from "../../public/bot/weights.json";
 import {
   makeGame,
+  DEFAULT_TURN_SECONDS,
   makePlayer,
   tick,
   view,
   SPECTATOR_RETENTION_MS,
   TABLE_RETENTION_MS,
-  TURN_MS,
   type Game,
   findPlayer,
 } from "../shared/game";
@@ -34,7 +34,7 @@ const bot = createBot(weights);
 function botTurnAt(game: Game) {
   return (game.phase === "bidding" || game.phase === "playing") &&
     findPlayer(game, game.order[game.turn])?.bot
-    ? game.deadline - TURN_MS + 800
+    ? game.deadline - game.turnSeconds * 1000 + 800
     : Infinity;
 }
 
@@ -54,7 +54,9 @@ export class GameTable extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair("ping", "pong"));
   }
   private read() {
-    return this.ctx.storage.kv.get("room") as Room | undefined;
+    const room = this.ctx.storage.kv.get("room") as Room | undefined;
+    if (room) room.game.turnSeconds ??= DEFAULT_TURN_SECONDS;
+    return room;
   }
   private logConnection(
     event: string,

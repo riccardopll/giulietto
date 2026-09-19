@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { gameEvents, type EventSource } from "../../src/server/game-events";
-import { bid, play, score, tick, TURN_MS, type Game } from "../../src/shared/game";
+import { bid, play, score, tick, type Game } from "../../src/shared/game";
 import { gameFixture } from "./helpers";
 
 function record(game: Game, action: () => void, origin: EventSource, now = 200) {
@@ -58,12 +58,13 @@ test("records played cards and private training context before the trick winner"
 });
 
 test.each([
-  [TURN_MS + 100, 0],
-  [TURN_MS - 1200, 1200],
-  [0, TURN_MS],
-  [-100, TURN_MS],
+  [10000 + 100, 0],
+  [10000 - 1200, 1200],
+  [0, 10000],
+  [-100, 10000],
 ])("records elapsed turn time with %i ms remaining", (remaining, elapsedMs) => {
   const game = gameFixture();
+  game.turnSeconds = 10;
   game.deadline = 200 + remaining;
   const [event] = record(game, () => bid(game, "p0", 0, 200), { source: "player" });
   expect(JSON.parse(event.payload).elapsedMs).toBe(elapsedMs);

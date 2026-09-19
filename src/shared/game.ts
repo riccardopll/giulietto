@@ -41,6 +41,7 @@ export type Game = {
   public: boolean;
   host: string;
   startingLives: number;
+  turnSeconds: number;
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
   spectators?: Spectator[];
@@ -58,7 +59,11 @@ export type Game = {
   winner: string | null;
   tie: boolean;
 };
-export const TURN_MS = 40000;
+export const DEFAULT_TURN_SECONDS = 30;
+export const MIN_TURN_SECONDS = 5;
+export const MAX_TURN_SECONDS = 60;
+export const ROUND_PAUSE_MS = 6000;
+export const TRICK_PAUSE_MS = 1600;
 export const TABLE_RETENTION_MS = 86400000;
 export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
@@ -71,6 +76,7 @@ export function makeGame(code: string, host: Player, isPublic: boolean): Game {
     public: isPublic,
     host: host.id,
     startingLives: DEFAULT_STARTING_LIVES,
+    turnSeconds: DEFAULT_TURN_SECONDS,
     phase: "lobby",
     players: [host],
     order: [],
@@ -148,7 +154,7 @@ export function deal(game: Game, now: number) {
   game.played = [];
   game.results = [];
   game.tie = false;
-  game.deadline = now + TURN_MS;
+  game.deadline = now + game.turnSeconds * 1000;
 }
 export function legalBids(game: Game) {
   const sum = game.players.reduce((total, player) => total + (player.bid ?? 0), 0);
@@ -167,7 +173,7 @@ export function bid(game: Game, id: string, prediction: number, now: number) {
     game.phase = "playing";
     game.turn = 0;
   }
-  game.deadline = now + TURN_MS;
+  game.deadline = now + game.turnSeconds * 1000;
 }
 export function play(
   game: Game,
@@ -194,10 +200,10 @@ export function play(
     winner.taken++;
     game.lastWinner = winner.id;
     game.phase = "trick";
-    game.deadline = now + 2600;
+    game.deadline = now + TRICK_PAUSE_MS;
   } else {
     game.turn = (game.turn + 1) % game.order.length;
-    game.deadline = now + TURN_MS;
+    game.deadline = now + game.turnSeconds * 1000;
   }
 }
 export function score(game: Game, now: number) {
@@ -238,7 +244,7 @@ export function score(game: Game, now: number) {
     game.deadline = 0;
   } else {
     game.phase = "results";
-    game.deadline = now + 12000;
+    game.deadline = now + ROUND_PAUSE_MS;
   }
 }
 export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
@@ -264,7 +270,7 @@ export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
       game.phase = "playing";
       game.turn = game.order.indexOf(game.lastWinner!);
       game.trick = [];
-      game.deadline = now + TURN_MS;
+      game.deadline = now + game.turnSeconds * 1000;
     }
   } else if (game.phase === "results") deal(game, now);
 }

@@ -152,7 +152,9 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 copied={table.copied}
                 onCopy={table.copyInvite}
                 onStart={() => void table.act({ action: "start" })}
-                onSettings={(startingLives) => table.act({ action: "settings", startingLives })}
+                onSettings={(startingLives, turnSeconds) =>
+                  table.act({ action: "settings", startingLives, turnSeconds })
+                }
                 onRename={table.renameSeat}
                 onAddBot={isPreview ? undefined : () => void table.act({ action: "addBot" })}
                 onRemoveBot={(playerId) => void table.act({ action: "removeBot", playerId })}

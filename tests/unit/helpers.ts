@@ -40,6 +40,6 @@ export function gameFixture(
     count: hands[0].length,
     phase: "bidding",
     order: game.players.map((player) => player.id),
-    deadline: 40_100,
+    deadline: 100 + game.turnSeconds * 1000,
   };
 }

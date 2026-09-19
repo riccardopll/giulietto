@@ -4,14 +4,20 @@ import {
   runDurableObjectAlarm,
   runInDurableObject,
 } from "cloudflare:test";
-import { afterEach, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBot } from "../../src/shared/bot";
 import weights from "../../public/bot/weights.json";
-import { findPlayer, TURN_MS, view, type Game } from "../../src/shared/game";
+import { findPlayer, view, type Game } from "../../src/shared/game";
 import { historyStatements } from "../../src/server/match-history";
 import { playerStats } from "../../src/server/player-stats";
 import { api, guest } from "./helpers";
 
+beforeEach(() => {
+  // workerd alarms use real time even when Date is mocked. Keep scheduled
+  // alarms in the future so only runDurableObjectAlarm advances these tests.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(vi.getRealSystemTime() + 86_400_000);
+});
 afterEach(() => vi.useRealTimers());
 
 const policy = createBot(weights);
@@ -62,7 +68,6 @@ test("bots survive lobby inactivity and never inherit the host role", async () =
   await api.state(host, { action: "addBot", code });
   const joined = await api.state(other, { action: "join", code });
   await api.connect(other, code);
-  vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(Date.now() + 120_001);
   await runDurableObjectAlarm(env.ROOMS.getByName(code));
   const game = await read(code);
@@ -78,13 +83,12 @@ test("bots survive lobby inactivity and never inherit the host role", async () =
 test("server bots finish a match across eviction and persist bot identity without ranking bots", async () => {
   const host = guest(1);
   const { code, you } = await api.state(host, { action: "create" });
-  await api.state(host, { action: "settings", startingLives: 1, code });
+  await api.state(host, { action: "settings", turnSeconds: 20, startingLives: 1, code });
   await api.state(host, { action: "addBot", code });
   await api.state(host, { action: "addBot", code });
   await api.state(host, { action: "start", code });
   const stub = env.ROOMS.getByName(code);
   await evictDurableObject(stub);
-  vi.useFakeTimers({ toFake: ["Date"] });
   let game = await read(code);
   let botMoves = 0;
   for (let step = 0; game.phase !== "finished" && step < 1000; step++) {
@@ -94,9 +98,9 @@ test("server bots finish a match across eviction and persist bot identity withou
         const move = policy(view(game, id))!;
         const alarm = await runInDurableObject(stub, (_instance, ctx) => ctx.storage.getAlarm());
         expect(alarm).not.toBeNull();
-        expect(alarm!).toBeLessThanOrEqual(game.deadline - TURN_MS + 1000);
+        expect(alarm!).toBeLessThanOrEqual(game.deadline - game.turnSeconds * 1000 + 1000);
         vi.setSystemTime(alarm!);
-        await runDurableObjectAlarm(stub);
+        expect(await runDurableObjectAlarm(stub)).toBe(true);
         const next = await read(code);
         if (next.revision === game.revision) continue;
         if (move.action === "bid") expect(findPlayer(next, id)!.bid).toBe(move.bid);
@@ -118,7 +122,7 @@ test("server bots finish a match across eviction and persist bot identity withou
       }
     } else {
       vi.setSystemTime(game.deadline);
-      await runDurableObjectAlarm(stub);
+      expect(await runDurableObjectAlarm(stub)).toBe(true);
     }
     game = await read(code);
   }
@@ -127,7 +131,7 @@ test("server bots finish a match across eviction and persist bot identity withou
   const finished = structuredClone(game);
   for (let i = 0; i < 10; i++) {
     vi.setSystemTime(Date.now() + 1000);
-    await runDurableObjectAlarm(stub);
+    expect(await runDurableObjectAlarm(stub)).toBe(true);
     const pending = await runInDurableObject(
       stub,
       (_instance, ctx) => !!(ctx.storage.kv.get("room") as { outbox?: Game }).outbox,
@@ -180,9 +184,8 @@ test.each([7, 31])("bots play the blind card %i without exposing it to inference
   const state = view(game, id);
   expect(findPlayer(state, id)!.hand).toEqual([null]);
   const move = policy(state)!;
-  vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(game.deadline + 1);
-  await runDurableObjectAlarm(stub);
+  expect(await runDurableObjectAlarm(stub)).toBe(true);
   expect((await read(code)).trick).toEqual([
     { player: id, card, ...(move.action === "play" && move.mode ? { mode: move.mode } : {}) },
   ]);

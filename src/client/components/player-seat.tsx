@@ -1,7 +1,7 @@
 import { Avatar } from "./avatar";
 import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
-import { TURN_MS, type GameView } from "../../shared/game";
+import { type GameView } from "../../shared/game";
 import { cn, toRoman } from "../utils";
 import { LifeCount } from "./lives";
 import { PlayingCard } from "./playing-card";
@@ -18,6 +18,7 @@ export function PlayerSeat({
   current,
   activeTurn,
   deadline,
+  turnSeconds,
   serverTime,
   round,
   status,
@@ -31,13 +32,15 @@ export function PlayerSeat({
   current: boolean;
   activeTurn: boolean;
   deadline: number;
+  turnSeconds: number;
   serverTime: number;
   round: number;
   status: string;
   side: "top" | "bottom";
 }) {
   const revealed = player.hand.some((card) => card !== null);
-  const remaining = Math.max(0, Math.min(TURN_MS, deadline - serverTime));
+  const turnMs = turnSeconds * 1000;
+  const remaining = Math.max(0, Math.min(turnMs, deadline - serverTime));
   return (
     <section
       data-seat={player.id}
@@ -71,7 +74,7 @@ export function PlayerSeat({
                 aria-hidden="true"
                 style={
                   {
-                    "--timer-remaining": 100 * (remaining / TURN_MS),
+                    "--timer-remaining": 100 * (remaining / turnMs),
                     "--timer-duration": `${remaining}ms`,
                   } as CSSProperties
                 }

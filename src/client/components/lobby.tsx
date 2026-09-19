@@ -1,44 +1,52 @@
 import { Avatar } from "./avatar";
-import { useEffect, useEffectEvent, useRef, useState } from "react";
+import { useState } from "react";
 import { ArrowRight, Check, Link, Minus, Pencil, Plus, User } from "lucide-react";
-import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type GameView } from "../../shared/game";
+import {
+  MAX_STARTING_LIVES,
+  MIN_STARTING_LIVES,
+  MIN_TURN_SECONDS,
+  MAX_TURN_SECONDS,
+  type GameView,
+} from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
 import { Button } from "./ui/button";
 import { NameChangeInput } from "./ui/name-change-input";
 import { ActionDialog } from "./ui/action-dialog";
 
-function LobbyOptions({
-  lives,
-  host,
-  busy,
-  save,
-}: {
-  lives: number;
-  host: boolean;
-  busy: boolean;
-  save: (lives: number) => Promise<unknown>;
-}) {
-  const [draft, setDraft] = useState<number | null>(null);
-  const [queued, setQueued] = useState<number | null>(null);
-  const saving = useRef(false);
-  const selected = draft ?? lives;
-  const persist = useEffectEvent(async (value: number) => {
-    if (saving.current) return;
-    saving.current = true;
+const options = [
+  {
+    name: "startingLives",
+    label: "Starting lives",
+    min: MIN_STARTING_LIVES,
+    max: MAX_STARTING_LIVES,
+    step: 1,
+  },
+  {
+    name: "turnSeconds",
+    label: "Move time",
+    min: MIN_TURN_SECONDS,
+    max: MAX_TURN_SECONDS,
+    step: 5,
+  },
+] as const;
+type OptionName = (typeof options)[number]["name"];
+type SaveSettings = (startingLives: number, turnSeconds: number) => Promise<unknown>;
+
+function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; save: SaveSettings }) {
+  const [draft, setDraft] = useState<{ name: OptionName; value: number } | null>(null);
+  const host = game.host === game.you;
+  async function commit() {
+    if (!host || busy || !draft) return;
     try {
-      if (value !== lives) await save(value);
+      if (draft.value !== game[draft.name])
+        await save(
+          draft.name === "startingLives" ? draft.value : game.startingLives,
+          draft.name === "turnSeconds" ? draft.value : game.turnSeconds,
+        );
     } finally {
-      setDraft((current) => (current === value ? null : current));
-      setQueued((current) => (current === value ? null : current));
-      saving.current = false;
+      setDraft(null);
     }
-  });
-  useEffect(() => {
-    if (host && !busy && queued !== null) void persist(queued);
-  }, [host, busy, queued]);
-  function commit() {
-    if (host && draft !== null) setQueued(draft);
   }
   return (
     <section
@@ -48,33 +56,49 @@ function LobbyOptions({
       <h2 id="lobby-options-heading" className="mb-3 text-xs font-semibold text-muted-foreground">
         Lobby options
       </h2>
-      <div className="mb-1 flex min-h-8 items-center justify-between gap-3">
-        <label htmlFor="starting-lives">Starting lives</label>
-        <output htmlFor="starting-lives" aria-live="polite" className="inline-flex items-center">
-          <Lives n={selected} />
-        </output>
-      </div>
-      <input
-        id="starting-lives"
-        type="range"
-        min={MIN_STARTING_LIVES}
-        max={MAX_STARTING_LIVES}
-        step={1}
-        value={selected}
-        className="range-slider m-0 h-12 w-full rounded accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-        aria-valuetext={`${selected} ${selected === 1 ? "life" : "lives"}`}
-        disabled={!host}
-        onChange={(event) => setDraft(Number(event.target.value))}
-        onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
-        onPointerUp={commit}
-        onPointerCancel={() => setDraft(null)}
-        onKeyUp={commit}
-        onBlur={commit}
-      />
-      <div className="flex justify-between px-1 text-xs text-muted-foreground" aria-hidden="true">
-        {Array.from({ length: MAX_STARTING_LIVES - MIN_STARTING_LIVES + 1 }, (_, i) => (
-          <span key={i}>{i + MIN_STARTING_LIVES}</span>
-        ))}
+      <div className="grid gap-4">
+        {options.map(({ name, label, min, max, step }) => {
+          const selected = draft?.name === name ? draft.value : game[name];
+          return (
+            <div key={name}>
+              <div className="mb-1 flex min-h-8 items-center justify-between gap-3">
+                <label htmlFor={name}>{label}</label>
+                <output htmlFor={name} aria-live="polite" className="inline-flex items-center">
+                  {name === "startingLives" ? <Lives n={selected} /> : `${selected} sec`}
+                </output>
+              </div>
+              <input
+                id={name}
+                type="range"
+                min={min}
+                max={max}
+                step={step}
+                value={selected}
+                className="range-slider m-0 h-12 w-full rounded accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                aria-valuetext={
+                  name === "startingLives"
+                    ? `${selected} ${selected === 1 ? "life" : "lives"}`
+                    : `${selected} seconds`
+                }
+                disabled={!host || busy}
+                onChange={(event) => setDraft({ name, value: Number(event.target.value) })}
+                onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
+                onPointerUp={() => void commit()}
+                onPointerCancel={() => setDraft(null)}
+                onKeyUp={() => void commit()}
+                onBlur={() => void commit()}
+              />
+              <div
+                className="flex justify-between px-1 text-xs text-muted-foreground"
+                aria-hidden="true"
+              >
+                {Array.from({ length: (max - min) / step + 1 }, (_, i) => (
+                  <span key={i}>{min + i * step}</span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -96,7 +120,7 @@ export function Lobby({
   copied: boolean;
   onCopy: () => void;
   onStart: () => void;
-  onSettings: (startingLives: number) => Promise<unknown>;
+  onSettings: SaveSettings;
   onRename: (name: string) => Promise<boolean>;
   onAddBot?: () => void;
   onRemoveBot: (playerId: string) => void;
@@ -210,12 +234,7 @@ export function Lobby({
           );
         })}
       </ul>
-      <LobbyOptions
-        lives={game.startingLives}
-        host={game.host === game.you}
-        busy={busy}
-        save={onSettings}
-      />
+      <LobbyOptions game={game} busy={busy} save={onSettings} />
       <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
         <Button
           variant="outline"

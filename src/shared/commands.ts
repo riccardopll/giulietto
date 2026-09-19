@@ -6,7 +6,7 @@ export type EntryCommand =
   | { action: "join"; name?: string; avatar?: AvatarId; matchmaking?: boolean };
 export type TableCommand =
   | { action: "rename"; name: string }
-  | { action: "settings"; startingLives: number }
+  | { action: "settings"; startingLives: number; turnSeconds: number }
   | { action: "start" }
   | { action: "addBot" }
   | { action: "removeBot"; playerId: string }
