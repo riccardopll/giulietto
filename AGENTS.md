@@ -11,3 +11,5 @@ schemas, data, and tests. Do not keep tests only to record past bugs.
 Read [ARCHITECTURE.md](ARCHITECTURE.md) before changing the UI, game
 architecture, emote artwork, or animation; [TESTS.md](TESTS.md) before testing;
 [PR.md](PR.md) before opening, updating, or merging a pull request.
+
+Read [BOT.md](BOT.md) before changing the bot, training, or benchmarks.
