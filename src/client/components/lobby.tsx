@@ -1,6 +1,6 @@
 import { Avatar } from "./avatar";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowRight, Check, Link, Pencil, Plus, User, X } from "lucide-react";
+import { ArrowRight, Check, Link, Minus, Pencil, Plus, User } from "lucide-react";
 import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type GameView } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
@@ -139,12 +139,16 @@ export function Lobby({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="-m-1 size-11 rounded-full"
+                      className="group relative -m-1 size-11 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                       aria-label={`Remove ${player.name}`}
+                      title={`Remove ${player.name}`}
                       disabled={busy}
                       onClick={() => onRemoveBot(player.id)}
                     >
-                      <X className="size-4" />
+                      <Avatar bot className="size-9 border-0 text-muted-foreground" />
+                      <span className="absolute right-0 bottom-0 grid size-5 place-items-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-colors group-hover:bg-primary/90">
+                        <Minus className="size-3" strokeWidth={3} />
+                      </span>
                     </Button>
                   ) : (
                     <Avatar
