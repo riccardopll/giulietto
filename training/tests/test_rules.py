@@ -60,7 +60,7 @@ def test_hook_rule_and_trick_winner():
     play(game, a, 2)
     play(game, b, 39)
     play(game, c, 31, low=True)
-    assert game.last_winner == b and game.played == [2, 39, 31]
+    assert game.last_winner == b and [p.card for p in game.played] == [2, 39, 31]
     advance(game, Shuffle())
     assert game.phase == PLAYING and game.actor() == b
     play(game, b, 40)
@@ -127,7 +127,7 @@ def test_encoding_shapes_and_legal_actions():
     assert legal_actions(game, (me + 1) % 4).sum() == 0
 
 
-def test_naive_matches_preview_policy():
+def test_naive_bids_equal_share_and_plays_lowest_card():
     game = make_game(4)
     deal(game, Shuffle())
     assert naive_action(game, game.actor()) == ACTION_BID + 2  # round(6 / 4) = 2
@@ -150,12 +150,11 @@ def test_arena_records_consistent_trajectories():
 
     arena = Arena(16, rng, seats)
     rollout = Rollout()
-    for _ in range(300):
-        arena.step({LEARNER: random_actor, NAIVE: naive_actor}, rollout)
-    arena.bootstrap(rollout, lambda obs, mask: np.zeros(len(obs)))
-    assert arena.stats.matches > 0
+    arena.run({LEARNER: random_actor, NAIVE: naive_actor}, rollout)
+    assert arena.stats.matches == 16
     assert all(rollout.mask[i][rollout.action[i]] for i in range(len(rollout)))
     for i, j in enumerate(rollout.next_idx):
         assert j == -1 or (j > i and not rollout.done[i])
     assert sum(rollout.done) >= arena.stats.matches
-    assert min(rollout.reward) >= -6 / 3 and max(rollout.reward) <= 1.0
+    assert all(rollout.done[i] or j >= 0 for i, j in enumerate(rollout.next_idx))
+    assert min(rollout.reward) == 0 and max(rollout.reward) == 1.0

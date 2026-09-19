@@ -1,23 +1,9 @@
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, test } from "vitest";
 import { bid, deal, play, tick, type Game } from "../../src/shared/game";
-import { lobbyFixture } from "./helpers";
-import fixture from "./fixtures/rules.json";
+import { lobbyFixture, seedRandom } from "./helpers";
+import fixture from "./.generated/rules.json";
 
 type Action = { bid?: number; card?: number; mode?: string };
-
-/** xorshift32 fed to crypto.getRandomValues so deals match training/giulietto/rules.py. */
-function seedRandom(seed: number) {
-  let x = seed >>> 0 || 1;
-  vi.spyOn(crypto, "getRandomValues").mockImplementation((array) => {
-    x ^= x << 13;
-    x >>>= 0;
-    x ^= x >>> 17;
-    x ^= x << 5;
-    x >>>= 0;
-    (array as Uint32Array)[0] = x;
-    return array;
-  });
-}
 
 function snapshot(game: Game) {
   return {

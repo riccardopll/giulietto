@@ -5,6 +5,6 @@
     ".wrangler/**",
     "package-lock.json",
     "public/**",
-    "tests/unit/fixtures/**"
+    "tests/unit/.generated/**"
   ]
 }

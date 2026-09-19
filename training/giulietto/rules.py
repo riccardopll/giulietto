@@ -2,7 +2,7 @@
 first deal shuffles the table; ids stay p0..pN-1 like the TypeScript tests.
 
 The shuffle protocol mirrors the TypeScript rejection sampling so a seeded
-generator produces the same deals on both sides (see conformance.py).
+generator produces the same deals on both sides (see fixtures.py).
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ class Game:
     cycle: int = 1
     turn: int = 0
     trick: list[Play] = field(default_factory=list)
-    played: list[int] = field(default_factory=list)
+    played: list[Play] = field(default_factory=list)
     last_winner: int | None = None
     winner: int | None = None
     tie: bool = False
@@ -149,8 +149,9 @@ def play(game: Game, seat: int, card: int, low: bool = False) -> None:
     assert game.phase == PLAYING and game.actor() == seat
     player = game.players[seat]
     player.hand.remove(card)
-    game.played.append(card)
-    game.trick.append(Play(seat, card, low and card == ACE))
+    entry = Play(seat, card, low and card == ACE)
+    game.played.append(entry)
+    game.trick.append(entry)
     if len(game.trick) == len(game.order):
         best = game.trick[0]
         for entry in game.trick[1:]:

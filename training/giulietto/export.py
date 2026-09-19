@@ -11,7 +11,7 @@ from pathlib import Path
 
 import torch
 
-from .compare import load
+from .checkpoint import load
 
 
 def main() -> None:

@@ -50,7 +50,7 @@ export type Game = {
   cycle: number;
   turn: number;
   trick: Play[];
-  played: number[];
+  played: Play[];
   lastWinner: string | null;
   results: Result[];
   deadline: number;
@@ -182,8 +182,9 @@ export function play(
   if (card === 31 && mode !== "high" && mode !== "low")
     throw new GameError("Choose high or low for the Ace of Coins.");
   player.hand.splice(player.hand.indexOf(card), 1);
-  (game.played ??= []).push(card);
-  game.trick.push({ player: id, card, ...(card === 31 ? { mode } : {}) });
+  const entry = { player: id, card, ...(card === 31 ? { mode } : {}) };
+  (game.played ??= []).push(entry);
+  game.trick.push(entry);
   if (game.trick.length === game.order.length) {
     const winning = game.trick.reduce((best, play) =>
       strength(best) > strength(play) ? best : play,

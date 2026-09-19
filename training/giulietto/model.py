@@ -6,15 +6,15 @@ from torch import nn
 
 from .encode import ACTIONS, OBS_SIZE
 
-HIDDEN = 128
+HIDDEN = 256
 MASK_VALUE = -1e9
 
 
 class Policy(nn.Module):
-    def __init__(self, hidden: int = HIDDEN):
+    def __init__(self, hidden: int = HIDDEN, obs_size: int = OBS_SIZE):
         super().__init__()
         self.body = nn.Sequential(
-            nn.Linear(OBS_SIZE, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
+            nn.Linear(obs_size, hidden), nn.ReLU(), nn.Linear(hidden, hidden), nn.ReLU()
         )
         self.policy = nn.Linear(hidden, ACTIONS)
         self.value = nn.Linear(hidden, 1)
@@ -22,7 +22,7 @@ class Policy(nn.Module):
         nn.init.zeros_(self.policy.bias)
 
     def forward(self, obs: torch.Tensor, mask: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-        h = self.body(obs)
+        h = self.body(obs[..., : self.body[0].in_features])
         logits = self.policy(h).masked_fill(~mask, MASK_VALUE)
         return logits, self.value(h).squeeze(-1)
 
@@ -53,10 +53,17 @@ class Policy(nn.Module):
             }
 
         return {
-            "version": 1,
-            "obs": OBS_SIZE,
+            "version": 2,
+            "obs": self.body[0].in_features,
             "actions": ACTIONS,
             "layers": [matrix(self.body[0]), matrix(self.body[2])],
             "policy": matrix(self.policy),
             "value": matrix(self.value),
         }
+
+
+def network_actor(net: Policy, device: torch.device, greedy: bool = False):
+    def act(obs, mask, states):
+        return net.act(obs, mask, device, greedy)
+
+    return act

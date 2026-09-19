@@ -14,7 +14,9 @@ const HAND_BASE = MAX_PLAYERS * SEAT_FEATURES;
 const VISIBLE_BASE = HAND_BASE + DECK;
 const PLAYED_BASE = VISIBLE_BASE + DECK;
 const GLOBAL_BASE = PLAYED_BASE + DECK;
-export const OBS_SIZE = GLOBAL_BASE + GLOBAL_FEATURES;
+const SEAT_VISIBLE_BASE = GLOBAL_BASE + GLOBAL_FEATURES;
+const HISTORY_BASE = SEAT_VISIBLE_BASE + MAX_PLAYERS;
+export const OBS_SIZE = HISTORY_BASE + MAX_COUNT * MAX_PLAYERS * 3;
 export const ACTION_ACE_LOW = DECK;
 export const ACTION_BID = DECK + 1;
 export const ACTIONS = ACTION_BID + MAX_COUNT + 1;
@@ -29,7 +31,7 @@ export type BotView = {
   order: string[];
   turn: number;
   trick: Play[];
-  played: number[];
+  played: Play[];
   canChooseAce: boolean;
   players: {
     id: string;
@@ -83,7 +85,24 @@ export function encode(view: BotView): Float32Array {
     for (const card of player.hand)
       if (card !== null) obs[(mine ? HAND_BASE : VISIBLE_BASE) + card - 1] = 1;
   }
-  for (const card of view.played) obs[PLAYED_BASE + card - 1] = 1;
+  for (let k = 0; k < n; k++) {
+    const player = view.players[(myPos + k) % n];
+    const card = player.hand[0];
+    if (blind && player.id !== view.you && card != null)
+      obs[SEAT_VISIBLE_BASE + k] = (card === ACE ? ACE_HIGH : card) / ACE_HIGH;
+  }
+  for (let i = 0; i < view.played.length; i++) {
+    const entry = view.played[i];
+    obs[PLAYED_BASE + entry.card - 1] = 1;
+    const seat = view.players.findIndex((player) => player.id === entry.player);
+    const relative = (seat - myPos + n) % n;
+    const trick = Math.floor(i / view.order.length);
+    const position = i % view.order.length;
+    const base = HISTORY_BASE + (trick * MAX_PLAYERS + relative) * 3;
+    obs[base] = 1;
+    obs[base + 1] = strength(entry) / ACE_HIGH;
+    obs[base + 2] = position / (MAX_PLAYERS - 1);
+  }
 
   const active = view.order.map((id) => view.players.find((player) => player.id === id)!);
   const bidsMade = active.filter((player) => player.bid !== null).length;

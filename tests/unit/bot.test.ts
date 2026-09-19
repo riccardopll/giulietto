@@ -11,10 +11,11 @@ import {
   type BotView,
   type BotWeights,
 } from "../../src/shared/bot";
-import fixture from "./fixtures/bot.json";
+import fixture from "./.generated/bot.json";
 import shippedWeights from "../../public/bot/weights.json";
+import shippedText from "../../public/bot/weights.json?raw";
 import { bid, deal, findPlayer, legalBids, play, tick, view } from "../../src/shared/game";
-import { lobbyFixture } from "./helpers";
+import { lobbyFixture, seedRandom } from "./helpers";
 
 const shipped = shippedWeights as BotWeights;
 
@@ -73,10 +74,29 @@ describe("moves", () => {
 });
 
 describe("shipped weights", () => {
+  test("match the Python inference fixture", async () => {
+    const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(shippedText));
+    const hash = Array.from(new Uint8Array(digest), (byte) =>
+      byte.toString(16).padStart(2, "0"),
+    ).join("");
+    expect(hash).toBe(fixture.shipped.sha256);
+    for (let i = 0; i < cases.length; i++) {
+      const c = cases[i];
+      const expected = fixture.shipped.cases[i];
+      const result = infer(shipped, encode(c.view), c.legal);
+      for (const action of c.legal)
+        expect(result.logits[action]).toBeCloseTo(expected.logits[action], 3);
+      expect(result.value).toBeCloseTo(expected.value, 3);
+      if (expected.action !== null)
+        expect(botMove(c.view, shipped)).toEqual(decode(expected.action));
+    }
+  });
+
   test("play full matches through the rules and beat the naive policy", () => {
     let wins = 0;
     const matches = 200;
     for (let i = 0; i < matches; i++) {
+      seedRandom(100_000 + i);
       const game = lobbyFixture(4);
       deal(game, 100);
       const bot = game.players[i % 4].id;

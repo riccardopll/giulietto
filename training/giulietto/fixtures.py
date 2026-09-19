@@ -5,6 +5,7 @@ Run with `uv run python -m giulietto.fixtures` from the training directory.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import random
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
+from .checkpoint import load
 from .encode import ACTION_BID, decode, encode, legal_actions
 from .model import Policy
 from .rules import (
@@ -30,7 +32,7 @@ from .rules import (
     play,
 )
 
-OUT = Path(__file__).resolve().parents[2] / "tests" / "unit" / "fixtures"
+OUT = Path(__file__).resolve().parents[2] / "tests" / "unit" / ".generated"
 
 
 def pid(game: Game, seat: int | None) -> str | None:
@@ -57,7 +59,14 @@ def snapshot(game: Game) -> dict:
             }
             for t in game.trick
         ],
-        "played": list(game.played),
+        "played": [
+            {
+                "player": pid(game, t.seat),
+                "card": t.card,
+                **({"mode": "low" if t.low else "high"} if t.card == ACE else {}),
+            }
+            for t in game.played
+        ],
         "lastWinner": pid(game, game.last_winner),
         "winner": pid(game, game.winner),
         "tie": game.tie,
@@ -76,7 +85,7 @@ def to_view(game: Game, me: int) -> dict:
         "order": [pid(game, s) for s in game.order],
         "turn": game.turn,
         "trick": snapshot(game)["trick"],
-        "played": list(game.played),
+        "played": snapshot(game)["played"],
         "canChooseAce": game.phase == PLAYING
         and game.actor() == me
         and ACE in game.players[me].hand,
@@ -209,7 +218,31 @@ def encoding(samples: int = 120) -> dict:
     assert any(c["legal"] and c["legal"][0] >= ACTION_BID for c in cases)
     assert any(c["view"]["count"] == 1 and c["view"]["phase"] == PLAYING for c in cases)
     assert any(c["view"]["canChooseAce"] and c["view"]["count"] == 1 for c in cases)
-    return {"weights": net.export(), "cases": cases}
+    weights_path = OUT.parents[2] / "public" / "bot" / "weights.json"
+    shipped = load(weights_path, torch.device("cpu"))
+    shipped_cases = []
+    for case in cases:
+        mask = np.zeros(48, dtype=bool)
+        mask[case["legal"]] = True
+        with torch.no_grad():
+            logits, value = shipped(
+                torch.tensor([case["obs"]], dtype=torch.float32), torch.tensor(mask)[None]
+            )
+        shipped_cases.append(
+            {
+                "logits": [float(v) for v in logits[0]],
+                "value": float(value[0]),
+                "action": int(logits[0].argmax()) if case["legal"] else None,
+            }
+        )
+    return {
+        "weights": net.export(),
+        "cases": cases,
+        "shipped": {
+            "sha256": hashlib.sha256(weights_path.read_bytes()).hexdigest(),
+            "cases": shipped_cases,
+        },
+    }
 
 
 def main() -> None:

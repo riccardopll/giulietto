@@ -106,7 +106,7 @@ function nextEntry(old: Entry, weights: BotWeights): Entry {
   };
 }
 
-/** Every seat but the viewer's is played by the bot; autoplay lets it play the viewer's too. */
+/** Every seat but the viewer's is played by the bot. */
 export function Preview({ weights }: { weights: BotWeights }) {
   const [initial] = useState(readSettings);
   const [people, setPeople] = useState(initial.options.people);

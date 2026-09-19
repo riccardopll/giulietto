@@ -27,4 +27,6 @@ check = ["lint", "test"]
 fixtures = "python -m giulietto.fixtures"
 train = "python -m giulietto.train"
 compare = "python -m giulietto.compare"
+benchmark = "python -m giulietto.benchmark"
+average = "python -m giulietto.average"
 export = "python -m giulietto.export"

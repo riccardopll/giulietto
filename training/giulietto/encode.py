@@ -28,7 +28,9 @@ HAND_BASE = MAX_PLAYERS * SEAT_FEATURES
 VISIBLE_BASE = HAND_BASE + DECK
 PLAYED_BASE = VISIBLE_BASE + DECK
 GLOBAL_BASE = PLAYED_BASE + DECK
-OBS_SIZE = GLOBAL_BASE + GLOBAL_FEATURES  # 212
+SEAT_VISIBLE_BASE = GLOBAL_BASE + GLOBAL_FEATURES
+HISTORY_BASE = SEAT_VISIBLE_BASE + MAX_PLAYERS
+OBS_SIZE = HISTORY_BASE + MAX_COUNT * MAX_PLAYERS * 3
 
 ACTION_ACE_LOW = DECK  # 40
 ACTION_BID = DECK + 1  # 41..47
@@ -69,8 +71,19 @@ def encode(game: Game, me: int) -> np.ndarray:
     else:
         for card in game.players[my_pos].hand:
             obs[HAND_BASE + card - 1] = 1.0
-    for card in game.played:
-        obs[PLAYED_BASE + card - 1] = 1.0
+    for k in range(n):
+        player = game.players[(my_pos + k) % n]
+        if is_blind and player.seat != me and player.hand:
+            card = player.hand[0]
+            obs[SEAT_VISIBLE_BASE + k] = (ACE_HIGH if card == ACE else card) / ACE_HIGH
+    for i, entry in enumerate(game.played):
+        obs[PLAYED_BASE + entry.card - 1] = 1.0
+        relative = (entry.seat - my_pos) % n
+        trick, position = divmod(i, len(game.order))
+        base = HISTORY_BASE + (trick * MAX_PLAYERS + relative) * 3
+        obs[base] = 1.0
+        obs[base + 1] = strength(entry) / ACE_HIGH
+        obs[base + 2] = position / (MAX_PLAYERS - 1)
 
     active = [game.players[seat] for seat in game.order]
     bids_made = sum(1 for p in active if p.bid is not None)

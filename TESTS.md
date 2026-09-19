@@ -1,5 +1,9 @@
 # Testing
 
+Install Node and uv. `npm run check` and the unit-test commands generate Python
+parity fixtures in `tests/unit/.generated/`; do not commit these files.
+Run `uv run --directory training --frozen poe check` for the training tests.
+
 Run UI tests locally after changes to player flows, layout, or the UI tests
 themselves. After layout changes, inspect the screenshots and open `/preview`
 for the user to review.
