@@ -27,8 +27,12 @@ test.each([false, true])(
     game.revision++;
     await db.batch(historyStatements(db, game, 0));
     await db.batch(historyStatements(db, game, 0));
-    expect((await playerStats(db, "p0")).player).toMatchObject({ matches: 1, wins: 1 });
-    expect((await playerStats(db, "p0")).leaders).toHaveLength(bot ? 2 : 3);
+    expect((await playerStats(db, "p0")).player).toMatchObject({
+      matches: bot ? 0 : 1,
+      wins: bot ? 0 : 1,
+      xp: bot ? 0 : 30,
+    });
+    expect((await playerStats(db, "p0")).leaders).toHaveLength(bot ? 0 : 3);
     expect(
       await db.prepare("SELECT has_bots FROM matches WHERE id=?").bind(game.matchId!).first(),
     ).toEqual({ has_bots: Number(bot) });
@@ -155,6 +159,8 @@ test("decision stats combine completed-match samples, omit missing timing, and s
   await db.prepare(migration("0007_player_decision_stats.sql").at(-1)!).run();
   const expected = {
     matches: 3,
+    wins: 3,
+    xp: 90,
     acesOfCoinsPlayed: 3,
     averagePrediction: 1.5,
     averageDecisionMs: 2250,
@@ -172,6 +178,12 @@ test("decision stats combine completed-match samples, omit missing timing, and s
     prediction_time_ms: 1000,
     timed_predictions: 1,
   });
+  const botGame = make("with-bots");
+  botGame.players[1].bot = true;
+  await deliver(botGame, moves);
+  await deliver(botGame, moves);
+  expect(await read()).toMatchObject(expected);
+  expect((await playerStats(db, "p1")).player.matches).toBe(3);
   for (const status of ["active", "abandoned"] as const) {
     await deliver(make(status, status), moves);
     expect(await read()).toMatchObject(expected);
@@ -303,4 +315,49 @@ test("aggregate migration preserves historical samples and retries count each co
     .all<{ detail: string }>();
   expect(plan.results.some((row) => row.detail.includes("player_stats_ranking"))).toBe(true);
   expect(plan.results.some((row) => row.detail.includes("TEMP B-TREE"))).toBe(false);
+});
+
+test("bot exclusion migration rebuilds every total from human-only matches", async () => {
+  for (const [matchId, bot] of [
+    ["human-only", false],
+    ["with-bot", true],
+  ] as const) {
+    const game = gameFixture();
+    game.matchId = matchId;
+    game.players[1].bot = bot;
+    if (bot) game.players[2].id = "bot-only-opponent";
+    game.phase = "finished";
+    game.finishedAt = 200;
+    game.winner = "p0";
+    await db.batch(historyStatements(db, game, 0));
+    await db
+      .prepare(`UPDATE match_results SET aces_of_coins_played=?,
+      prediction_total=?,prediction_count=2,play_time_ms=?,timed_plays=2,
+      prediction_time_ms=?,timed_predictions=1 WHERE match_id=?`)
+      .bind(bot ? 10 : 1, bot ? 20 : 4, bot ? 40000 : 4000, bot ? 20000 : 2000, matchId)
+      .run();
+  }
+  // Rebuild the totals as they existed before bot matches were excluded.
+  await db.prepare("DELETE FROM player_stats").run();
+  await db.prepare(migration("0008_player_stats.sql")[3]).run();
+  expect((await playerStats(db, "p0")).player).toMatchObject({ matches: 2, xp: 60 });
+  await db.batch(migration("0010_exclude_bot_match_stats.sql").map((sql) => db.prepare(sql)));
+  expect((await playerStats(db, "p0")).player).toEqual({
+    matches: 1,
+    wins: 1,
+    xp: 30,
+    level: 1,
+    acesOfCoinsPlayed: 1,
+    averagePrediction: 2,
+    averageDecisionMs: 2000,
+  });
+  expect((await playerStats(db, "bot-only-opponent")).player).toMatchObject({
+    matches: 0,
+    wins: 0,
+    xp: 0,
+    acesOfCoinsPlayed: 0,
+    averagePrediction: null,
+    averageDecisionMs: null,
+  });
+  expect((await playerStats(db, "p0")).leaders).toHaveLength(3);
 });

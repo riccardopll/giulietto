@@ -39,11 +39,11 @@ jobs:
           path: test-results/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Apply migrations and deploy
+      - name: Deploy and apply migrations
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: 5e685011a567671bf6498aa211e42cb4
         run: |
-          npm run db:migrate:remote
           npx wrangler deploy
+          npm run db:migrate:remote
