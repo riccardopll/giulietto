@@ -14,38 +14,43 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     await document.fonts.ready;
     await Promise.all([...document.images].map((image) => image.decode()));
   });
-  const errors = await page.evaluate(() => {
-    const errors: string[] = [];
-    if (
-      document.documentElement.scrollWidth > innerWidth ||
-      document.documentElement.scrollHeight > innerHeight
-    )
-      errors.push("Page overflows the viewport");
-    for (const element of document.querySelectorAll<HTMLElement>(
-      ".seat-identity, .seat-avatar, .playing-card, header, button",
-    )) {
-      const rect = element.getBoundingClientRect();
-      const label = element.getAttribute("aria-label") ?? element.className;
-      if (
-        rect.left < -1 ||
-        rect.top < -1 ||
-        rect.right > innerWidth + 1 ||
-        rect.bottom > innerHeight + 1
-      )
-        errors.push(`Outside viewport: ${label}`);
-      if (element.matches("button:enabled")) {
-        if (rect.width < 44 || rect.height < 44) errors.push(`Small touch target: ${label}`);
+  // Container-query size transitions can outlast font and image loading.
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const errors: string[] = [];
         if (
-          !element.contains(
-            document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2),
-          )
+          document.documentElement.scrollWidth > innerWidth ||
+          document.documentElement.scrollHeight > innerHeight
         )
-          errors.push(`Covered control: ${label}`);
-      }
-    }
-    return errors;
-  });
-  expect(errors).toEqual([]);
+          errors.push("Page overflows the viewport");
+        for (const element of document.querySelectorAll<HTMLElement>(
+          ".seat-identity, .seat-avatar, .playing-card, header, button",
+        )) {
+          const rect = element.getBoundingClientRect();
+          const label = element.getAttribute("aria-label") ?? element.className;
+          if (
+            rect.left < -1 ||
+            rect.top < -1 ||
+            rect.right > innerWidth + 1 ||
+            rect.bottom > innerHeight + 1
+          )
+            errors.push(`Outside viewport: ${label}`);
+          if (element.matches("button:enabled")) {
+            if (rect.width < 44 || rect.height < 44) errors.push(`Small touch target: ${label}`);
+            if (
+              !element.contains(
+                document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2),
+              )
+            )
+              errors.push(`Covered control: ${label}`);
+          }
+        }
+        return errors;
+      }),
+    )
+    .toEqual([]);
+  await screenshot(page, testInfo, "bidding");
   const overlappingProfiles = await page.locator(".seat-profile").evaluateAll(
     (profiles) =>
       profiles.filter((profile) => {
