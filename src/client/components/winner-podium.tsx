@@ -41,6 +41,7 @@ export function WinnerPodium({
                 {group.players.length === 1 && (
                   <Avatar
                     avatar={group.players[0].avatar}
+                    bot={group.players[0].bot}
                     id={group.players[0].id}
                     className={cn(
                       "mx-auto size-12 sm:size-16",
@@ -88,6 +89,7 @@ export function WinnerPodium({
                 {group.players.length === 1 && (
                   <Avatar
                     avatar={group.players[0].avatar}
+                    bot={group.players[0].bot}
                     id={group.players[0].id}
                     className="mx-auto size-12 sm:size-16"
                   />

@@ -1,6 +1,6 @@
 import { Avatar } from "./avatar";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { ArrowRight, Check, Link, Pencil } from "lucide-react";
+import { ArrowRight, Check, Link, Minus, Pencil, Plus, User } from "lucide-react";
 import { MAX_STARTING_LIVES, MIN_STARTING_LIVES, type GameView } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
@@ -88,6 +88,8 @@ export function Lobby({
   onStart,
   onSettings,
   onRename,
+  onAddBot,
+  onRemoveBot,
 }: {
   game: GameView;
   busy: boolean;
@@ -96,6 +98,8 @@ export function Lobby({
   onStart: () => void;
   onSettings: (startingLives: number) => Promise<unknown>;
   onRename: (name: string) => Promise<boolean>;
+  onAddBot?: () => void;
+  onRemoveBot: (playerId: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState("");
@@ -131,40 +135,75 @@ export function Lobby({
             >
               {player ? (
                 <>
-                  <Avatar avatar={player.avatar} id={player.id} className="size-9" />
-                  <div className="flex min-w-0 flex-1 flex-col">
-                    <strong className="text-sm wrap-anywhere text-foreground">
-                      {player.name}
-                      {player.id === game.you ? " (you)" : ""}
-                    </strong>
-                    {player.id === game.host && <span className="text-xs">Host</span>}
-                  </div>
-                  {player.id === game.you && (
+                  {player.bot && game.host === game.you ? (
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-11 shrink-0"
-                      aria-label="Edit your name"
+                      className="group relative -m-1 size-11 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      aria-label={`Remove ${player.name}`}
+                      title={`Remove ${player.name}`}
                       disabled={busy}
-                      onClick={() => {
-                        setDraftName("");
-                        setEditing(true);
-                      }}
+                      onClick={() => onRemoveBot(player.id)}
                     >
-                      <Pencil className="size-4" />
+                      <Avatar bot className="size-9 border-0 text-muted-foreground" />
+                      <span className="absolute right-0 bottom-0 grid size-5 place-items-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-colors group-hover:bg-primary/90">
+                        <Minus className="size-3" strokeWidth={3} />
+                      </span>
                     </Button>
+                  ) : (
+                    <Avatar
+                      avatar={player.avatar}
+                      bot={player.bot}
+                      id={player.id}
+                      className="size-9"
+                    />
                   )}
+                  <div className="flex min-w-0 flex-1 flex-col">
+                    <div className="flex min-w-0 items-center gap-1">
+                      <strong className="min-w-0 text-sm wrap-anywhere text-foreground">
+                        {player.name}
+                        {player.id === game.you ? " (you)" : ""}
+                      </strong>
+                      {player.id === game.you && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="-my-3 size-11 shrink-0"
+                          aria-label="Edit your name"
+                          disabled={busy}
+                          onClick={() => {
+                            setDraftName("");
+                            setEditing(true);
+                          }}
+                        >
+                          <Pencil className="size-4" />
+                        </Button>
+                      )}
+                    </div>
+                    {player.id === game.host && <span className="text-xs">Host</span>}
+                  </div>
                   <Lives n={game.startingLives} />
                 </>
               ) : (
                 <>
                   <div
-                    className="grid size-9 shrink-0 place-items-center rounded-full border border-dashed border-input text-xl"
+                    className="grid size-9 shrink-0 place-items-center rounded-full border border-dashed border-input"
                     aria-hidden="true"
                   >
-                    +
+                    <User className="size-5" />
                   </div>
-                  <span className="text-sm">Open seat</span>
+                  <span className="flex-1 text-sm">Open seat</span>
+                  {game.host === game.you && (
+                    <Button
+                      variant="ghost"
+                      className="min-h-11 font-semibold text-primary"
+                      disabled={busy || !onAddBot}
+                      onClick={onAddBot}
+                    >
+                      <Plus className="size-5" />
+                      Add bot
+                    </Button>
+                  )}
                 </>
               )}
             </li>

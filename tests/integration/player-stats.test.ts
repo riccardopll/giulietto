@@ -11,6 +11,30 @@ const db = env.DB;
 const migration = (name: string) =>
   env.TEST_MIGRATIONS.find((entry) => entry.name === name)!.queries;
 
+test.each([false, true])(
+  "records bot participation from identity, not display names (%s)",
+  async (bot) => {
+    const game = gameFixture();
+    game.players[1].name = "Tutorial";
+    game.players[1].bot = bot;
+    await db.batch(eventStatements(db, game, []));
+    expect(
+      await db.prepare("SELECT has_bots FROM matches WHERE id=?").bind(game.matchId!).first(),
+    ).toEqual({ has_bots: Number(bot) });
+    game.phase = "finished";
+    game.finishedAt = 200;
+    game.winner = "p0";
+    game.revision++;
+    await db.batch(historyStatements(db, game, 0));
+    await db.batch(historyStatements(db, game, 0));
+    expect((await playerStats(db, "p0")).player).toMatchObject({ matches: 1, wins: 1 });
+    expect((await playerStats(db, "p0")).leaders).toHaveLength(bot ? 2 : 3);
+    expect(
+      await db.prepare("SELECT has_bots FROM matches WHERE id=?").bind(game.matchId!).first(),
+    ).toEqual({ has_bots: Number(bot) });
+  },
+);
+
 test("stats use finalized history once, preserve identity, and rank players by wins", async () => {
   const host = guest(1);
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(host.token));

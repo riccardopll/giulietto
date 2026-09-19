@@ -95,7 +95,12 @@ export function PlayerSeat({
               aria-hidden="true"
             >
               {player.lives > 0 && (
-                <Avatar avatar={player.avatar} id={player.id} className="size-full border-0" />
+                <Avatar
+                  avatar={player.avatar}
+                  bot={player.bot}
+                  id={player.id}
+                  className="size-full border-0"
+                />
               )}
               {player.lives <= 0 && (
                 <span

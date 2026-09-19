@@ -1,4 +1,18 @@
+import { vi } from "vitest";
 import { makeGame, makePlayer, type Game } from "../../src/shared/game";
+
+export function seedRandom(seed: number) {
+  let x = seed >>> 0 || 1;
+  vi.spyOn(crypto, "getRandomValues").mockImplementation((array) => {
+    x ^= x << 13;
+    x >>>= 0;
+    x ^= x >>> 17;
+    x ^= x << 5;
+    x >>>= 0;
+    (array as Uint32Array)[0] = x;
+    return array;
+  });
+}
 
 export function lobbyFixture(people = 3): Game {
   const players = Array.from({ length: people }, (_, i) =>

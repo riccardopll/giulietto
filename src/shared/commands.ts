@@ -8,6 +8,8 @@ export type TableCommand =
   | { action: "rename"; name: string }
   | { action: "settings"; startingLives: number }
   | { action: "start" }
+  | { action: "addBot" }
+  | { action: "removeBot"; playerId: string }
   | { action: "bid"; bid: number }
   | { action: "play"; card?: number; mode?: "high" | "low" }
   | { action: "emote"; emote: Emote["id"] }

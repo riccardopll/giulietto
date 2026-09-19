@@ -1,7 +1,6 @@
 import {
   bid,
   deal,
-  legalBids,
   makeGame,
   MAX_STARTING_LIVES,
   MIN_STARTING_LIVES,
@@ -10,7 +9,9 @@ import {
   tick,
   type Game,
   findPlayer,
+  view,
 } from "../../shared/game";
+import type { Bot } from "../../shared/bot";
 
 export type PreviewPhase =
   | "lobby"
@@ -63,17 +64,15 @@ export function normalizePreview(options: PreviewOptions): Required<PreviewOptio
   };
 }
 
-export function advancePreview(source: Game): Game {
+export function advancePreview(source: Game, bot: Bot): Game {
   if (source.phase === "lobby") return source;
   const game = structuredClone(source);
   const now = Date.now();
-  if (game.phase === "bidding") {
-    const choices = legalBids(game);
-    const target = Math.round(game.count / game.order.length);
-    bid(game, game.order[game.turn], choices.includes(target) ? target : choices[0], now);
-  } else if (game.phase === "playing") {
-    const id = game.order[game.turn];
-    play(game, id, findPlayer(game, id)!.hand[0], "high", now);
+  const id = game.order[game.turn];
+  if (game.phase === "bidding" || game.phase === "playing") {
+    const move = bot(view(game, id))!;
+    if (move.action === "bid") bid(game, id, move.bid, now);
+    else play(game, id, move.card ?? findPlayer(game, id)!.hand[0], move.mode, now);
   } else if (game.phase !== "finished") {
     tick(game, game.deadline);
   }
@@ -81,7 +80,7 @@ export function advancePreview(source: Game): Game {
   return game;
 }
 
-export function makePreview(input: PreviewOptions): Game {
+export function makePreview(input: PreviewOptions, bot: Bot): Game {
   const options = normalizePreview(input);
   const { people, phase, longNames, cards, seatStates, startingLives } = options;
   const players = Array.from({ length: people }, (_, i) =>
@@ -126,24 +125,24 @@ export function makePreview(input: PreviewOptions): Game {
   });
   game.order = game.players.filter((p) => p.hand.length > 0).map((p) => p.id);
   if (phase === "bidding") {
-    for (let i = 0; i < options.bids; i++) game = advancePreview(game);
+    for (let i = 0; i < options.bids; i++) game = advancePreview(game, bot);
     return game;
   }
-  while (game.phase === "bidding") game = advancePreview(game);
+  while (game.phase === "bidding") game = advancePreview(game, bot);
   if (phase === "results") {
     while (game.phase !== "trick" || game.players.some((p) => p.hand.length))
-      game = advancePreview(game);
-    game = advancePreview(game);
+      game = advancePreview(game, bot);
+    game = advancePreview(game, bot);
   } else {
     for (let trick = 0; trick < options.completedTricks; trick++) {
-      while (game.phase === "playing") game = advancePreview(game);
-      game = advancePreview(game);
+      while (game.phase === "playing") game = advancePreview(game, bot);
+      game = advancePreview(game, bot);
     }
     const active = game.order.length;
     const played = phase === "trick" ? active : options.played;
     // Rotate the trick's starting player so seat one can act after any partial trick.
     if (options.completedTricks === 0) game.turn = (active - played) % active;
-    for (let i = 0; i < played; i++) game = advancePreview(game);
+    for (let i = 0; i < played; i++) game = advancePreview(game, bot);
   }
   return game;
 }

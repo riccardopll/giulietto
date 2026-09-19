@@ -1,5 +1,9 @@
 import { expect, test } from "vitest";
 import { advancePreview, makePreview, normalizePreview } from "../../src/client/preview/games";
+import { createBot } from "../../src/shared/bot";
+import weights from "../../public/bot/weights.json";
+
+const bot = createBot(weights);
 
 test("normalizes preview controls to a playable round", () => {
   const options = normalizePreview({
@@ -23,15 +27,18 @@ test("normalizes preview controls to a playable round", () => {
 });
 
 test("advances one move without changing the source fixture", () => {
-  const game = makePreview({
-    people: 4,
-    cards: 6,
-    phase: "playing",
-    played: 0,
-    longNames: false,
-  });
+  const game = makePreview(
+    {
+      people: 4,
+      cards: 6,
+      phase: "playing",
+      played: 0,
+      longNames: false,
+    },
+    bot,
+  );
   const original = structuredClone(game);
-  const next = advancePreview(game);
+  const next = advancePreview(game, bot);
   expect(game).toEqual(original);
   expect(next.trick).toHaveLength(1);
   expect(next.revision).toBe(game.revision + 1);

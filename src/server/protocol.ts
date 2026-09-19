@@ -15,6 +15,8 @@ import {
   findPlayer,
 } from "../shared/game";
 
+const botNames = ["Vannacci", "Tutorial", "Perso", "Pippa", "Netanyahu", "Slayer 1.90"];
+
 function integer(value: unknown, message: string) {
   if (typeof value !== "number" || !Number.isInteger(value)) throw new GameError(message);
   return value;
@@ -45,8 +47,12 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
       return { action: "settings", startingLives: lives };
     }
     case "start":
+    case "addBot":
     case "leave":
       return { action: input.action };
+    case "removeBot":
+      if (typeof input.playerId !== "string") throw new GameError("Choose a bot to remove.");
+      return { action: "removeBot", playerId: input.playerId };
     case "bid":
       return { action: "bid", bid: integer(input.bid, "Enter a valid prediction.") };
     case "play":
@@ -131,6 +137,22 @@ export function apply(game: Game, id: string, input: Command, now: number) {
       throw new GameError("Starting lives cannot change after the game starts.");
     game.startingLives = input.startingLives;
     for (const member of game.players) member.lives = input.startingLives;
+  } else if (input.action === "addBot" || input.action === "removeBot") {
+    if (game.host !== id) throw new GameError("Only the host can add or remove bots.");
+    if (game.phase !== "lobby") throw new GameError("Bots can only change in the lobby.");
+    if (input.action === "addBot") {
+      if (game.players.length >= 6) throw new GameError("This table is full.");
+      const names = botNames.filter((name) => !game.players.some((member) => member.name === name));
+      const name = names[Math.floor(Math.random() * names.length)];
+      game.players.push({
+        ...makePlayer(`bot:${crypto.randomUUID()}`, name, now),
+        lives: game.startingLives,
+        bot: true,
+      });
+    } else {
+      if (!findPlayer(game, input.playerId)?.bot) throw new GameError("Choose a bot to remove.");
+      game.players = game.players.filter((member) => member.id !== input.playerId);
+    }
   } else if (input.action === "start") {
     if (game.host !== id) throw new GameError("Only the host can start.");
     if (game.phase !== "lobby" || game.players.length < 2)
@@ -142,7 +164,7 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     play(game, id, game.count === 1 ? player.hand[0] : input.card!, input.mode, now);
   } else if (input.action === "leave" && game.phase === "lobby") {
     game.players = game.players.filter((member) => member.id !== id);
-    if (game.host === id) game.host = game.players[0]?.id ?? "";
+    if (game.host === id) game.host = game.players.find((member) => !member.bot)?.id ?? "";
   }
 }
 export function displayName(value: unknown) {
