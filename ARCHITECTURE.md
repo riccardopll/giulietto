@@ -21,6 +21,10 @@ scans. Update totals and `matches.stats_counted` in the same finalization batch
 so a retry cannot count a match twice. Keep timing totals and sample counts
 separate. Matches with bots do not contribute to player statistics or rankings.
 
+Deploy workers before applying remote migrations. Worker changes must run against the
+previous schema until migrations finish. This keeps old finalizers from restoring
+bot-match totals after the statistics rebuild.
+
 ## Emotes
 
 Keep thick outlines and readable silhouettes at the displayed size. Drawn
