@@ -162,9 +162,16 @@ test("server bots finish a match across eviction and persist bot identity withou
   }
   await env.DB.batch(historyStatements(env.DB, finished, 0));
   const stats = await playerStats(env.DB, you);
-  expect(stats.player.matches).toBe(1);
-  expect(stats.leaders).toHaveLength(1);
-  expect(stats.leaders[0].you).toBe(true);
+  expect(stats.player).toEqual({
+    matches: 0,
+    wins: 0,
+    xp: 0,
+    level: 1,
+    acesOfCoinsPlayed: 0,
+    averagePrediction: null,
+    averageDecisionMs: null,
+  });
+  expect(stats.leaders).toHaveLength(0);
 });
 
 test.each([7, 31])("bots play the blind card %i without exposing it to inference", async (card) => {

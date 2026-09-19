@@ -245,10 +245,10 @@ test("uses the configured move time across turns and the shorter pauses between 
   play(game, "p0", 2, undefined, 2200);
   tick(game, 3800);
   expect(game.phase).toBe("results");
-  expect(game.deadline).toBe(9800);
-  tick(game, 9799);
+  expect(game.deadline).toBe(11800);
+  tick(game, 11799);
   expect(game.phase).toBe("results");
-  tick(game, 9800);
+  tick(game, 11800);
   expect(game.phase).toBe("bidding");
-  expect(game.deadline).toBe(19800);
+  expect(game.deadline).toBe(21800);
 });

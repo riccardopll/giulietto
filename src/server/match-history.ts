@@ -92,6 +92,7 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
               COALESCE(prediction_time_ms,0),COALESCE(timed_predictions,0)
             FROM match_results WHERE match_id=? AND outcome IN ('won','lost')
               AND finalized_at IS NOT NULL AND ${uncounted}
+              AND EXISTS (SELECT 1 FROM matches m WHERE m.id=match_results.match_id AND m.has_bots=0)
               AND EXISTS (SELECT 1 FROM players p WHERE p.id=match_results.player_id AND p.is_bot=0)
             ON CONFLICT(player_id) DO UPDATE SET
               matches=player_stats.matches+excluded.matches,

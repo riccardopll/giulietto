@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
-import { findPlayer, type GameView } from "../../shared/game";
+import { findPlayer, ROUND_PAUSE_MS, type GameView } from "../../shared/game";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
@@ -18,11 +18,11 @@ function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
     const received = Date.now();
     const timer = setInterval(
       () => setClock((current) => ({ ...current, elapsed: Date.now() - received })),
-      500,
+      50,
     );
     return () => clearInterval(timer);
   }, [frozen, deadline, serverTime]);
-  return Math.max(0, Math.ceil((clock.deadline - clock.serverTime - clock.elapsed) / 1000));
+  return Math.max(0, Math.min(ROUND_PAUSE_MS, clock.deadline - clock.serverTime - clock.elapsed));
 }
 
 export function ResultsPanel({
@@ -36,7 +36,8 @@ export function ResultsPanel({
   chat: ChatState;
   onReset: () => void;
 }) {
-  const seconds = useCountdown(game, preview);
+  const remaining = useCountdown(game, preview);
+  const seconds = Math.ceil(remaining / 1000);
   const finished = game.phase === "finished";
   const winner = finished && game.winner ? findPlayer(game, game.winner) : undefined;
   if (winner) return <WinnerPodium game={game} winner={winner} onReset={onReset} />;
@@ -130,8 +131,8 @@ export function ResultsPanel({
           </p>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-primary/10" aria-hidden="true">
             <div
-              className="h-full rounded-full bg-primary/60 transition-[width] duration-1000 ease-linear"
-              style={{ width: `${Math.max(0, Math.min(1, seconds / 12)) * 100}%` }}
+              className="h-full rounded-full bg-primary/60"
+              style={{ width: `${(remaining / ROUND_PAUSE_MS) * 100}%` }}
             />
           </div>
         </div>

@@ -101,6 +101,15 @@ test("three players complete a game, including round results and elimination", a
       }
     }
     if (round === 1) {
+      const page = players[0].page;
+      const countdown = page.getByText(/^Next round in/);
+      await expect(countdown).toHaveText("Next round in 8s");
+      const bar = countdown.locator("..").locator("[aria-hidden='true'] > div");
+      const width = () => bar.evaluate((element) => parseFloat(element.style.width));
+      expect(await width()).toBeGreaterThan(85);
+      await expect(countdown).toHaveText("Next round in 4s", { timeout: 5000 });
+      expect(await width()).toBeGreaterThan(35);
+      expect(await width()).toBeLessThanOrEqual(50);
       await synced(players, (state) => state.round === 2 && state.phase === "bidding");
       await expect(players[2].page.getByRole("region", { name: "Spectator mode" })).toBeVisible();
       await expect(
