@@ -74,7 +74,7 @@ def evaluate(
     started = time.monotonic()
     # Evaluation must not advance the learner's sampling or minibatch RNG.
     with torch.random.fork_rng(devices=[]):
-        torch.manual_seed(seed)
+        torch.random.default_generator.manual_seed(seed)
         arena.run({LEARNER: candidate, HALL: opponent})
     outcomes: dict[int, list[int]] = {}
     for row in arena.results:

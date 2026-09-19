@@ -100,9 +100,12 @@ def test_blind_bid_does_not_observe_own_card():
 @pytest.mark.parametrize("players", [2, 3, 4, 5, 6])
 def test_paired_identical_policies_are_exactly_equal_for_every_table_size(players):
     before = torch.get_rng_state().clone()
+    mps_before = torch.mps.get_rng_state().clone() if torch.backends.mps.is_available() else None
     result = evaluate(
         heuristic_actor, heuristic_actor, 4 * players, players, seed=91, balanced=True
     )
     assert result["win_rate"] == 0.5
     assert result["deal_scores"] == [0.5, 0.5]
     assert torch.equal(before, torch.get_rng_state())
+    if mps_before is not None:
+        assert torch.equal(mps_before, torch.mps.get_rng_state())
