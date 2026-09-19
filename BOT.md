@@ -19,4 +19,3 @@ using PPO. The bot is served via TypeScript inference.
   (**95% interval: 52.09–52.86%**, **75,024 games**). This balanced comparison
   covered 2–6 players and 1/3/5 starting lives, with 50% as the equal-strength
   baseline. It also improved against two neural opponents excluded from training.
-  Results are recorded in [PR #52](https://github.com/riccardopll/giulietto/pull/52).
