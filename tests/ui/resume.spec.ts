@@ -93,4 +93,38 @@ test("reloading and reconnecting during play restore the player and hand and all
       page.getByRole("region", { name: "Current trick", exact: true }).getByRole("img"),
     ).toHaveCount(2);
   }
+
+  await returning.page.getByRole("button", { name: "Leave table", exact: true }).click();
+  const confirmation = returning.page.getByRole("alertdialog");
+  await expect(confirmation).toContainText("You can rejoin as a spectator.");
+  let leaveCommandId: string | undefined;
+  await returning.page.route(
+    "**/api/game",
+    (route) => {
+      leaveCommandId = route.request().postDataJSON().commandId;
+      return route.fulfill({ status: 503, json: { error: "Could not leave the table." } });
+    },
+    { times: 1 },
+  );
+  await confirmation.getByRole("button", { name: "Leave table", exact: true }).click();
+  await expect(returning.page.getByText("Could not leave the table.")).toBeVisible();
+  expect(await returning.page.evaluate(() => localStorage.getItem("giulietto-room"))).toBe(
+    before.code,
+  );
+  expect(findPlayer(returning.state!, before.you)?.forfeited).not.toBe(true);
+  const retry = returning.page.waitForRequest(
+    (request) => request.method() === "POST" && request.postDataJSON()?.action === "leave",
+  );
+  await returning.page.getByRole("button", { name: "Retry", exact: true }).click();
+  expect((await retry).postDataJSON().commandId).toBe(leaveCommandId);
+  await expect(returning.page.getByRole("button", { name: "Open your profile" })).toBeVisible();
+  await synced(
+    players.filter((player) => player !== returning),
+    (state) => !!findPlayer(state, before.you)?.forfeited,
+  );
+  returning.state = undefined;
+  await returning.page.goto(`/?table=${before.code}`);
+  await expect.poll(() => returning.state?.spectating).toBe(true);
+  expect(findPlayer(returning.state!, before.you)).toMatchObject({ lives: 0, forfeited: true });
+  await expect(returning.page.getByRole("region", { name: "Your hand", exact: true })).toBeHidden();
 });

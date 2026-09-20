@@ -179,7 +179,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     showError("");
     if (input.action === "play") setPendingCard(input.card ?? -1);
     try {
-      if (input.action === "leave") transport.current?.stop();
       let s: GameView;
       if (
         gameRef.current &&
@@ -206,8 +205,14 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       return true;
     } catch (e) {
       if (e instanceof GameRequestError && !e.retryable) httpAttempt.current = null;
-      if (input.action === "leave") reset();
-      else showError((e as Error).message);
+      if (input.action === "leave" && gameRef.current?.phase === "lobby") reset();
+      else if (input.action === "leave") {
+        setLeaveOpen(false);
+        toast.error((e as Error).message, {
+          id: "game-error",
+          action: { label: "Retry", onClick: () => void act(input) },
+        });
+      } else showError((e as Error).message);
       return false;
     } finally {
       setBusy(false);

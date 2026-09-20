@@ -9,7 +9,7 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
   const participants = JSON.stringify(game.players);
   const finished = game.phase === "finished";
   const endedAt = finished ? game.finishedAt! : null;
-  const status = finished ? (game.winner ? "completed" : "abandoned") : "active";
+  const status = finished ? "completed" : "active";
   return [
     db
       .prepare(`INSERT INTO players(id,display_name,created_at,last_seen_at,is_bot)
@@ -41,7 +41,8 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
       .prepare(`INSERT INTO match_results(match_id,player_id,display_name,outcome,lives,
         rounds_played,tricks_won,exact_predictions,prediction_error,finalized_at)
       SELECT ?,json_extract(p.value,'$.id'),json_extract(p.value,'$.name'),
-        CASE WHEN ?=0 THEN 'active' WHEN ? IS NULL THEN 'abandoned'
+        CASE WHEN json_extract(p.value,'$.forfeited')=1 THEN 'forfeited'
+          WHEN ?=0 THEN 'active'
           WHEN json_extract(p.value,'$.id')=? THEN 'won' ELSE 'lost' END,
         json_extract(p.value,'$.lives'),json_extract(p.value,'$.stats.roundsPlayed'),
         json_extract(p.value,'$.stats.tricksWon'),json_extract(p.value,'$.stats.exactPredictions'),
@@ -51,16 +52,8 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
         rounds_played=excluded.rounds_played,tricks_won=excluded.tricks_won,
         exact_predictions=excluded.exact_predictions,prediction_error=excluded.prediction_error,
         finalized_at=excluded.finalized_at WHERE match_results.finalized_at IS NULL`)
-      .bind(
-        game.matchId!,
-        finished ? 1 : 0,
-        game.winner,
-        game.winner,
-        endedAt,
-        participants,
-        ...guardValues,
-      ),
-    ...(finished && game.winner
+      .bind(game.matchId!, finished ? 1 : 0, game.winner, endedAt, participants, ...guardValues),
+    ...(finished
       ? [
           db
             .prepare(`UPDATE match_results AS r SET
@@ -81,7 +74,7 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
             GROUP BY player_id
           ) AS totals
           WHERE r.match_id=? AND r.player_id=totals.player_id
-            AND r.outcome IN ('won','lost') AND r.finalized_at IS NOT NULL AND ${uncounted}`)
+            AND r.outcome IN ('won','lost','forfeited') AND r.finalized_at IS NOT NULL AND ${uncounted}`)
             .bind(game.matchId!, game.matchId!, ...guardValues),
           db
             .prepare(`INSERT INTO player_stats(player_id,matches,wins,aces_of_coins_played,
@@ -90,7 +83,7 @@ export function historyStatements(db: D1Database, game: Game, eventCount: number
               COALESCE(prediction_total,0),COALESCE(prediction_count,0),
               COALESCE(play_time_ms,0),COALESCE(timed_plays,0),
               COALESCE(prediction_time_ms,0),COALESCE(timed_predictions,0)
-            FROM match_results WHERE match_id=? AND outcome IN ('won','lost')
+            FROM match_results WHERE match_id=? AND outcome IN ('won','lost','forfeited')
               AND finalized_at IS NOT NULL AND ${uncounted}
               AND EXISTS (SELECT 1 FROM matches m WHERE m.id=match_results.match_id AND m.has_bots=0)
               AND EXISTS (SELECT 1 FROM players p WHERE p.id=match_results.player_id AND p.is_bot=0)

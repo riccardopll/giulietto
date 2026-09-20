@@ -33,7 +33,17 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
       payload: JSON.stringify(payload),
     });
   };
-  if (after.round !== before.round) {
+  const forfeited = after.players.find(
+    (player) => player.forfeited && !findPlayer(before, player.id)?.forfeited,
+  );
+  if (forfeited) {
+    add("forfeited", forfeited.id, { lives: 0 });
+    if (after.phase === "trick")
+      add("trick_won", after.lastWinner, {
+        trick: after.players.reduce((sum, player) => sum + player.taken, 0),
+        plays: after.trick,
+      });
+  } else if (after.round !== before.round) {
     add("round_dealt", null, {
       rulesVersion: 1,
       count: after.count,
@@ -73,7 +83,7 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
     });
     if (after.phase === "trick") add("trick_won", after.lastWinner, { trick, plays: after.trick });
   }
-  if (before.phase === "trick" && ["results", "finished"].includes(after.phase)) {
+  if (!forfeited && before.phase === "trick" && ["results", "finished"].includes(after.phase)) {
     add("round_scored", null, {
       results: after.results,
       tie: after.tie,
