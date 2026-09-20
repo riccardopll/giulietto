@@ -141,11 +141,28 @@ export function Tutorial() {
             </figure>
 
             <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
+            <figure className="my-3" aria-label="Cards per player: 6, 5, 4, 3, 2, 1, then repeat">
+              <figcaption className="mb-2 text-xs text-muted-foreground">
+                Cards per player, each round
+              </figcaption>
+              <ol className="flex items-center justify-between gap-1" aria-hidden="true">
+                {[6, 5, 4, 3, 2, 1].map((count) => (
+                  <li key={count} className="flex items-center gap-1">
+                    <span className="grid h-10 w-6 place-items-center rounded-sm border bg-secondary font-semibold tabular-nums">
+                      {count}
+                    </span>
+                    {count > 1 && <span className="text-xs text-muted-foreground">→</span>}
+                  </li>
+                ))}
+              </ol>
+              <p className="mt-1 text-right text-xs text-muted-foreground" aria-hidden="true">
+                ↻ Back to 6
+              </p>
+            </figure>
             <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>
             <PredictionExample />
             <p>
-              <strong>The last prediction can’t make the total equal the available tricks.</strong>{" "}
-              Cards per player: 6 → 5 → 4 → 3 → 2 → 1, then repeat.
+              <strong>The last prediction can’t make the total equal the available tricks.</strong>
             </p>
 
             <h3 className="mb-1 mt-5 font-semibold">Playing round</h3>

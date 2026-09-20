@@ -129,6 +129,10 @@ test("menu tutorial explains play and returns focus when closed", async ({ page 
     "Blind round",
     "Reading the table",
   ]);
+  await tutorial
+    .getByLabel("Cards per player: 6, 5, 4, 3, 2, 1, then repeat")
+    .scrollIntoViewIfNeeded();
+  await screenshot(page, testInfo, "tutorial-rounds", { animations: "disabled" });
   await tutorial.getByLabel("Prediction example").scrollIntoViewIfNeeded();
   await screenshot(page, testInfo, "tutorial-prediction", { animations: "disabled" });
   await tutorial.getByLabel("Suit strength").scrollIntoViewIfNeeded();
