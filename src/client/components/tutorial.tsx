@@ -1,49 +1,64 @@
-import { useEffect, useRef, useState } from "react";
-import { CircleHelp, Copy, LogOut, MessageCircle, RotateCcw, Smile, Target, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CircleHelp, Copy, LogOut, MessageCircle, Smile, Target, X } from "lucide-react";
 import { Dialog } from "radix-ui";
+import { Avatar } from "./avatar";
+import { PredictionEmote } from "./prediction-emote";
 import { PlayingCard } from "./playing-card";
 import { LifeCount } from "./lives";
 import { Button } from "./ui/button";
 import { overlayClass } from "./ui/action-dialog";
 
-function TrickExample() {
-  const table = useRef<HTMLDivElement>(null);
-  const [replay, setReplay] = useState(0);
+function PredictionExample() {
+  const [bid, setBid] = useState<number | null>(null);
   useEffect(() => {
-    const animations = Array.from(table.current!.children).flatMap((card, index) => [
-      card.animate(
-        [
-          { opacity: 0, transform: "translateY(18px) scale(.94)" },
-          { opacity: 1, transform: "translateY(0) scale(1)" },
-        ],
-        { duration: 240, delay: index * 450, easing: "ease-out", fill: "backwards" },
-      ),
-      card.animate(
-        [
-          { opacity: 1, transform: "translate(0,0) scale(1)" },
-          { opacity: 0, transform: `translate(${(1 - index) * 76}px,-70px) scale(.22)` },
-        ],
-        { duration: 380, delay: 2000 + index * 18, easing: "cubic-bezier(.4,0,.2,1)" },
-      ),
-    ]);
-    return () => animations.forEach((animation) => animation.cancel());
-  }, [replay]);
+    const timer = setInterval(() => setBid((value) => (value === null ? 2 : null)), 2000);
+    return () => clearInterval(timer);
+  }, []);
   return (
-    <figure className="my-4 rounded-xl bg-secondary px-3 py-3">
-      <div className="mb-3 flex items-center justify-between gap-2 text-sm">
-        <span className="font-semibold">Coins wins this trick</span>
-        <Button
-          variant="ghost"
-          size="icon"
-          aria-label="Replay trick animation"
-          onClick={() => setReplay(replay + 1)}
-        >
-          <RotateCcw className="size-4" />
-        </Button>
+    <figure className="my-4 rounded-xl bg-secondary px-3 py-4" aria-label="Prediction example">
+      <div aria-hidden="true">
+        <div className="relative mx-auto mb-4 w-fit pt-14">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2">
+            <PredictionEmote bid={bid} name="You" />
+          </div>
+          <Avatar avatar="king-cups" />
+        </div>
+        <div className="flex flex-col items-center gap-2">
+          {[
+            [0, 1, 2],
+            [3, 4, 5, 6],
+          ].map((numbers) => (
+            <div key={numbers[0]} className="flex justify-center gap-2">
+              {numbers.map((number) => (
+                <span
+                  key={number}
+                  className={`grid size-11 place-items-center rounded-lg border text-xl font-semibold transition-colors ${bid === number ? "border-primary bg-primary text-primary-foreground" : "bg-card"}`}
+                >
+                  {number}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
-      <div ref={table} className="flex justify-center gap-3 py-1">
-        {[10, 35, 22].map((card) => (
-          <div key={card} className="w-16">
+      <figcaption className="mt-3 text-center text-xs text-muted-foreground">
+        Choose 2: you’re predicting two trick wins.
+      </figcaption>
+    </figure>
+  );
+}
+
+function TrickExample() {
+  return (
+    <figure className="my-4 rounded-xl bg-secondary px-3 py-4" aria-label="Trick example">
+      <div className="mb-4 text-center text-sm font-semibold">5 of Coins wins this trick</div>
+      <div className="flex justify-center gap-3 py-1" aria-hidden="true">
+        {[10, 22, 35].map((card, index) => (
+          <div
+            key={card}
+            className="w-16 animate-[tutorial-trick_4s_ease-in-out_infinite]"
+            style={{ animationDelay: `${index * 300}ms` }}
+          >
             <PlayingCard card={card} />
           </div>
         ))}
@@ -52,6 +67,27 @@ function TrickExample() {
         King of Clubs &lt; 2 of Cups &lt; 5 of Coins.
       </figcaption>
     </figure>
+  );
+}
+
+function TurnExample() {
+  return (
+    <span className="relative mx-auto block size-11" aria-label="Turn timer">
+      <Avatar avatar="king-cups" />
+      <svg
+        viewBox="0 0 50 50"
+        className="absolute -inset-1 size-[calc(100%+8px)] -rotate-90"
+        aria-hidden="true"
+      >
+        <circle
+          cx="25"
+          cy="25"
+          r="23"
+          pathLength="100"
+          className="fill-none stroke-primary stroke-[3] animate-[tutorial-timer_4s_linear_infinite]"
+        />
+      </svg>
+    </span>
   );
 }
 
@@ -83,27 +119,50 @@ export function Tutorial() {
               to be the last player standing.
             </p>
 
-            <h3 className="mb-1 mt-5 font-semibold">Predict, then play</h3>
+            <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
             <p>
-              Each round deals 6 cards, then 5, 4, 3, 2 and 1 before repeating. On your turn, tap a
-              number in the centre to predict your wins. The last player can’t make everyone’s
-              predictions add up to the number of tricks; that option is disabled.
+              Look at your hand and predict how many tricks you’ll win. On your turn, tap a number
+              in the centre. A trick is one card from each player.
+            </p>
+            <PredictionExample />
+            <p>
+              The last player can’t make everyone’s predictions add up to the number of tricks; that
+              option is disabled. Cards per player go from 6 down to 1, then repeat.
             </p>
             <p className="mt-2">
-              A trick is one card from each player. Tap any card in your hand when it’s your turn.
-              You don’t have to follow suit. The strongest card wins the trick.
+              In the <strong>one-card round</strong>, you see everyone’s card except your own.
+              Predict using what you can see.
             </p>
+            <figure className="my-4">
+              <div className="flex justify-center gap-5" aria-hidden="true">
+                <div className="w-16">
+                  <PlayingCard card={22} />
+                  <span className="mt-2 block text-center text-xs">Theirs</span>
+                </div>
+                <div className="w-16">
+                  <PlayingCard card={null} />
+                  <span className="mt-2 block text-center text-xs">Yours</span>
+                </div>
+              </div>
+              <figcaption className="sr-only">
+                In the one-card round, their card is visible and yours is hidden.
+              </figcaption>
+            </figure>
 
-            <h3 className="mb-1 mt-5 font-semibold">Which card wins?</h3>
+            <h3 className="mb-1 mt-5 font-semibold">Playing round</h3>
             <p>
-              From weakest to strongest: <strong>Clubs → Swords → Cups → Coins</strong>. Any card in
-              a stronger suit beats every card in a weaker suit. Within each suit: Ace, 2–7, Jack,
-              Knight, King.
+              Tap any card in your hand when it’s your turn. You don’t have to follow suit. The
+              strongest card wins the trick.
+            </p>
+            <p className="mt-2">
+              Suits rank <strong>Clubs → Swords → Cups → Coins</strong>, weakest to strongest. Any
+              card in a stronger suit beats every card in a weaker suit. Within each suit: Ace, 2–7,
+              Jack, Knight, King.
             </p>
             <TrickExample />
             <p>
-              The <strong>Ace of Coins</strong> is special: when you play it, choose Low (0,
-              weakest) or High (41, strongest).
+              The <strong>Ace of Coins</strong> is special: choose Low (0, weakest) or High (41,
+              strongest) when you play it.
             </p>
             <div className="my-3 flex justify-center gap-5" aria-label="Ace of Coins choices">
               <div className="w-16">
@@ -113,16 +172,30 @@ export function Tutorial() {
                 <PlayingCard card={31} mode="high" />
               </div>
             </div>
-
-            <h3 className="mb-1 mt-5 font-semibold">Keep your lives</h3>
             <p>
-              Lose one life for each trick above or below your prediction. Predict 2 and win 4? Lose
-              2 lives. An exact prediction costs nothing. At zero lives, you watch the rest of the
-              game. If everyone goes out together, everyone gets one life and play continues.
+              At the end of the round, lose one life for each trick above or below your prediction.
+              An exact prediction costs nothing.
             </p>
-            <p className="mt-2">
-              In the <strong>one-card round</strong>, you see everyone’s card except your own.
-              Predict using what you can see, then play your hidden card.
+            <figure className="my-4 grid grid-cols-3 gap-2 rounded-xl bg-secondary px-3 py-3 text-center">
+              <div>
+                <span className="block text-xs text-muted-foreground">Predicted</span>
+                <strong className="text-xl">2</strong>
+              </div>
+              <div>
+                <span className="block text-xs text-muted-foreground">Won</span>
+                <strong className="text-xl">4</strong>
+              </div>
+              <div>
+                <span className="block text-xs text-muted-foreground">Lives lost</span>
+                <span className="text-xl">
+                  <LifeCount n={2} />
+                </span>
+              </div>
+              <figcaption className="sr-only">Predict 2 and win 4: lose 2 lives.</figcaption>
+            </figure>
+            <p>
+              At zero lives, you watch the rest of the game. If everyone goes out together, everyone
+              gets one life and play continues.
             </p>
 
             <h3 className="mb-2 mt-5 font-semibold">Reading the table</h3>
@@ -134,7 +207,9 @@ export function Tutorial() {
                 Hearts show lives remaining. Beside them, <strong>1 / 2</strong> means 1 trick won
                 out of 2 predicted.
               </dd>
-              <dt className="text-center font-semibold text-primary">Ring</dt>
+              <dt className="py-1">
+                <TurnExample />
+              </dt>
               <dd>
                 The shrinking ring around an avatar marks whose turn it is and the time left. If
                 time runs out, the game acts for you.
