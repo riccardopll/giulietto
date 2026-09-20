@@ -123,11 +123,9 @@ test("menu tutorial explains play and returns focus when closed", async ({ page 
     "Prediction round",
     "Playing round",
     "Reading the table",
+    "Blind round",
   ]);
   await tutorial.getByLabel("Prediction example").scrollIntoViewIfNeeded();
-  await expect(tutorial.locator(".prediction-digit")).toBeVisible();
-  await expect(tutorial.locator(".prediction-digit")).toHaveCount(0);
-  await expect(tutorial.locator(".prediction-digit")).toBeVisible();
   await screenshot(page, testInfo, "tutorial-prediction", { animations: "disabled" });
   await tutorial.getByLabel("Ace of Coins choices").scrollIntoViewIfNeeded();
   await screenshot(page, testInfo, "tutorial-cards", { animations: "disabled" });

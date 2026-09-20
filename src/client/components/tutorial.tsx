@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { CircleHelp, Copy, LogOut, MessageCircle, Smile, Target, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Avatar } from "./avatar";
-import { PredictionEmote } from "./prediction-emote";
 import { PlayingCard } from "./playing-card";
 import { LifeCount } from "./lives";
 import { Button } from "./ui/button";
@@ -17,12 +16,6 @@ function PredictionExample() {
   return (
     <figure className="my-4 rounded-xl bg-secondary px-3 py-4" aria-label="Prediction example">
       <div aria-hidden="true">
-        <div className="relative mx-auto mb-4 w-fit pt-14">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2">
-            <PredictionEmote bid={bid} name="You" />
-          </div>
-          <Avatar avatar="king-cups" />
-        </div>
         <div className="flex flex-col items-center gap-2">
           {[
             [0, 1, 2],
@@ -41,9 +34,6 @@ function PredictionExample() {
           ))}
         </div>
       </div>
-      <figcaption className="mt-3 text-center text-xs text-muted-foreground">
-        Choose 2: you’re predicting two trick wins.
-      </figcaption>
     </figure>
   );
 }
@@ -114,55 +104,26 @@ export function Tutorial() {
             </Dialog.Close>
           </div>
           <div className="overflow-y-auto overscroll-contain px-5 py-4 text-sm leading-relaxed">
-            <p>
-              Predict how many tricks you’ll win, then try to win exactly that many. Keep your lives
-              to be the last player standing.
-            </p>
+            <p>Win exactly as many tricks as you predict. The last player with lives wins.</p>
 
             <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
-            <p>
-              Look at your hand and predict how many tricks you’ll win. On your turn, tap a number
-              in the centre. A trick is one card from each player.
-            </p>
+            <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>
             <PredictionExample />
             <p>
-              The last player can’t make everyone’s predictions add up to the number of tricks; that
-              option is disabled. Cards per player go from 6 down to 1, then repeat.
+              The last prediction can’t make the total equal the available tricks. Cards per player:
+              6 → 5 → 4 → 3 → 2 → 1, then repeat.
             </p>
-            <p className="mt-2">
-              In the <strong>one-card round</strong>, you see everyone’s card except your own.
-              Predict using what you can see.
-            </p>
-            <figure className="my-4">
-              <div className="flex justify-center gap-5" aria-hidden="true">
-                <div className="w-16">
-                  <PlayingCard card={22} />
-                  <span className="mt-2 block text-center text-xs">Theirs</span>
-                </div>
-                <div className="w-16">
-                  <PlayingCard card={null} />
-                  <span className="mt-2 block text-center text-xs">Yours</span>
-                </div>
-              </div>
-              <figcaption className="sr-only">
-                In the one-card round, their card is visible and yours is hidden.
-              </figcaption>
-            </figure>
 
             <h3 className="mb-1 mt-5 font-semibold">Playing round</h3>
-            <p>
-              Tap any card in your hand when it’s your turn. You don’t have to follow suit. The
-              strongest card wins the trick.
-            </p>
+            <p>On your turn, tap a card. The strongest card wins the trick.</p>
             <p className="mt-2">
-              Suits rank <strong>Clubs → Swords → Cups → Coins</strong>, weakest to strongest. Any
-              card in a stronger suit beats every card in a weaker suit. Within each suit: Ace, 2–7,
-              Jack, Knight, King.
+              Weakest to strongest: <strong>Clubs → Swords → Cups → Coins</strong>. Suit beats rank.
+              Within a suit: Ace, 2–7, Jack, Knight, King.
             </p>
             <TrickExample />
             <p>
-              The <strong>Ace of Coins</strong> is special: choose Low (0, weakest) or High (41,
-              strongest) when you play it.
+              For the <strong>Ace of Coins</strong>, choose Low (0) or High (41): weakest or
+              strongest.
             </p>
             <div className="my-3 flex justify-center gap-5" aria-label="Ace of Coins choices">
               <div className="w-16">
@@ -173,8 +134,8 @@ export function Tutorial() {
               </div>
             </div>
             <p>
-              At the end of the round, lose one life for each trick above or below your prediction.
-              An exact prediction costs nothing.
+              Each trick above or below your prediction costs one life. An exact prediction costs
+              nothing.
             </p>
             <figure className="my-4 grid grid-cols-3 gap-2 rounded-xl bg-secondary px-3 py-3 text-center">
               <div>
@@ -193,10 +154,7 @@ export function Tutorial() {
               </div>
               <figcaption className="sr-only">Predict 2 and win 4: lose 2 lives.</figcaption>
             </figure>
-            <p>
-              At zero lives, you watch the rest of the game. If everyone goes out together, everyone
-              gets one life and play continues.
-            </p>
+            <p>Zero lives? You spectate. If everyone goes out, everyone returns with one life.</p>
 
             <h3 className="mb-2 mt-5 font-semibold">Reading the table</h3>
             <dl className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-3 gap-y-3">
@@ -204,40 +162,55 @@ export function Tutorial() {
                 <LifeCount n={3} />
               </dt>
               <dd>
-                Hearts show lives remaining. Beside them, <strong>1 / 2</strong> means 1 trick won
-                out of 2 predicted.
+                Lives remaining. <strong>1 / 2</strong> beside them means 1 trick won, 2 predicted.
               </dd>
               <dt className="py-1">
                 <TurnExample />
               </dt>
               <dd>
-                The shrinking ring around an avatar marks whose turn it is and the time left. If
-                time runs out, the game acts for you.
+                The ring marks the current turn and time left. Out of time? The game acts for you.
               </dd>
               <dt className="flex justify-center pt-1">
                 <Target className="size-5" aria-label="Prediction total" />
               </dt>
-              <dd>
-                The target shows total predictions and how far over or under the available tricks
-                they are.
-              </dd>
+              <dd>Total predictions, and how far over or under the available tricks.</dd>
               <dt className="flex justify-center gap-2 pt-1">
                 <MessageCircle className="size-5" aria-label="Chat" />
                 <Smile className="size-5" aria-label="Emotes" />
               </dt>
               <dd>
-                Use the table’s side tabs for chat and reactions. Your cards sit along the bottom;
-                played cards appear in the centre.
+                Side tabs open chat and reactions. Your hand is below; played cards are in the
+                centre.
               </dd>
               <dt className="flex justify-center gap-2 pt-1">
                 <Copy className="size-5" aria-label="Copy invite" />
                 <LogOut className="size-5" aria-label="Leave table" />
               </dt>
               <dd>
-                At the top, copy the lobby invite or leave the table. If you leave mid-game, your
-                seat plays automatically; rejoin with the code to resume.
+                Copy an invite or leave. Your seat plays automatically while away; rejoin with the
+                code.
               </dd>
             </dl>
+            <h3 className="mb-1 mt-5 font-semibold">Blind round</h3>
+            <p>
+              With one card each, you see everyone’s card except your own. Predict, then play blind.
+            </p>
+            <figure className="my-4">
+              <div className="flex justify-center gap-5" aria-hidden="true">
+                <div className="w-16">
+                  <PlayingCard card={22} />
+                  <span className="mt-2 block text-center text-xs">Theirs</span>
+                </div>
+                <div className="w-16">
+                  <PlayingCard card={null} />
+                  <span className="mt-2 block text-center text-xs">Yours</span>
+                </div>
+              </div>
+              <figcaption className="sr-only">
+                In the one-card round, their card is visible and yours is hidden.
+              </figcaption>
+            </figure>
+
             <Dialog.Close asChild>
               <Button className="mt-5 w-full">Got it</Button>
             </Dialog.Close>
