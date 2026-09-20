@@ -154,6 +154,26 @@ export function Tutorial() {
             </figure>
             <p>Zero lives? You spectate. If everyone goes out, everyone returns with one life.</p>
 
+            <h3 className="mb-1 mt-5 font-semibold">Blind round</h3>
+            <p>
+              With one card each, you see everyone’s card except your own. Predict, then play blind.
+            </p>
+            <figure className="my-4">
+              <div className="flex justify-center gap-5" aria-hidden="true">
+                <div className="w-16">
+                  <PlayingCard card={22} />
+                  <span className="mt-2 block text-center text-xs">Theirs</span>
+                </div>
+                <div className="w-16">
+                  <PlayingCard card={null} />
+                  <span className="mt-2 block text-center text-xs">Yours</span>
+                </div>
+              </div>
+              <figcaption className="sr-only">
+                In the one-card round, their card is visible and yours is hidden.
+              </figcaption>
+            </figure>
+
             <h3 className="mb-2 mt-5 font-semibold">Reading the table</h3>
             <dl className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-3 gap-y-3">
               <dt className="flex justify-center pt-1">
@@ -186,26 +206,6 @@ export function Tutorial() {
                 code.
               </dd>
             </dl>
-            <h3 className="mb-1 mt-5 font-semibold">Blind round</h3>
-            <p>
-              With one card each, you see everyone’s card except your own. Predict, then play blind.
-            </p>
-            <figure className="my-4">
-              <div className="flex justify-center gap-5" aria-hidden="true">
-                <div className="w-16">
-                  <PlayingCard card={22} />
-                  <span className="mt-2 block text-center text-xs">Theirs</span>
-                </div>
-                <div className="w-16">
-                  <PlayingCard card={null} />
-                  <span className="mt-2 block text-center text-xs">Yours</span>
-                </div>
-              </div>
-              <figcaption className="sr-only">
-                In the one-card round, their card is visible and yours is hidden.
-              </figcaption>
-            </figure>
-
             <Dialog.Close asChild>
               <Button className="mt-5 w-full">Got it</Button>
             </Dialog.Close>

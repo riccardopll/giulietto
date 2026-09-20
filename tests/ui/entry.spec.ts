@@ -122,8 +122,8 @@ test("menu tutorial explains play and returns focus when closed", async ({ page 
   await expect(tutorial.getByRole("heading", { level: 3 })).toHaveText([
     "Prediction round",
     "Playing round",
-    "Reading the table",
     "Blind round",
+    "Reading the table",
   ]);
   await tutorial.getByLabel("Prediction example").scrollIntoViewIfNeeded();
   await screenshot(page, testInfo, "tutorial-prediction", { animations: "disabled" });
