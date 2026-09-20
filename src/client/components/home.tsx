@@ -1,4 +1,5 @@
 import { ChevronRight, Link, Loader2, Play, Trophy, Users } from "lucide-react";
+import { Tutorial } from "./tutorial";
 import { toast } from "../toast";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -101,11 +102,14 @@ export function Home({
           </Button>
         </div>
       </form>
-      <Button variant="link" className="mx-auto mt-6 gap-3" onClick={onLeaderboard}>
-        <Trophy className="size-5" />
-        Leaderboard
-        <ChevronRight />
-      </Button>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4">
+        <Tutorial />
+        <Button variant="link" className="gap-3" onClick={onLeaderboard}>
+          <Trophy className="size-5" />
+          Leaderboard
+          <ChevronRight className="-ml-2" />
+        </Button>
+      </div>
     </main>
   );
 }
