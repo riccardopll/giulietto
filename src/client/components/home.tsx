@@ -107,7 +107,7 @@ export function Home({
         <Button variant="link" className="gap-3" onClick={onLeaderboard}>
           <Trophy className="size-5" />
           Leaderboard
-          <ChevronRight />
+          <ChevronRight className="-ml-2" />
         </Button>
       </div>
     </main>

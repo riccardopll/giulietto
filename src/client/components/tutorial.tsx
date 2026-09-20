@@ -146,8 +146,11 @@ export function Tutorial() {
               </div>
               <div>
                 <span className="block text-xs text-muted-foreground">Lives lost</span>
-                <span className="text-xl">
-                  <LifeCount n={2} />
+                <span className="inline-flex items-center gap-1 text-xl" aria-label="Lose 2 lives">
+                  <span aria-hidden="true">−</span>
+                  <span aria-hidden="true">
+                    <LifeCount n={2} />
+                  </span>
                 </span>
               </div>
               <figcaption className="sr-only">Predict 2 and win 4: lose 2 lives.</figcaption>
@@ -224,8 +227,8 @@ export function Tutorial() {
                 <LogOut className="size-5" aria-label="Leave table" />
               </dt>
               <dd>
-                Copy an invite or leave. Your seat plays automatically while away; rejoin with the
-                code.
+                Copy an invite or leave. Leaving forfeits the game and all your lives. You can
+                rejoin as a spectator.
               </dd>
             </dl>
             <Dialog.Close asChild>

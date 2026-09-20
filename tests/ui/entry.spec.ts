@@ -115,6 +115,8 @@ test("menu tutorial explains play and returns focus when closed", async ({ page 
   await page.setViewportSize({ width: 320, height: 568 });
   await page.goto("/");
   const help = page.getByRole("button", { name: "How to play", exact: true });
+  await expect(help).toBeVisible();
+  await screenshot(page, testInfo, "tutorial-menu", { animations: "disabled", fullPage: true });
   await help.click();
   const tutorial = page.getByRole("dialog", { name: "How to play" });
   await expect(tutorial).toBeVisible();
