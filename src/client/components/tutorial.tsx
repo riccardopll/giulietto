@@ -62,9 +62,6 @@ function TrickExample() {
           </div>
         ))}
       </div>
-      <figcaption className="mt-3 text-center text-xs text-muted-foreground">
-        King of Clubs &lt; 2 of Cups &lt; 5 of Coins.
-      </figcaption>
     </figure>
   );
 }
