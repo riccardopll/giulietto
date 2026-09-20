@@ -138,9 +138,6 @@ export function Tutorial() {
                   </div>
                 ))}
               </div>
-              <figcaption className="mt-3 border-t border-foreground/10 pt-2 text-center text-xs font-semibold">
-                3 players · 3 cards · 1 trick
-              </figcaption>
             </figure>
 
             <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
