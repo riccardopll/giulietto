@@ -113,8 +113,8 @@ export function Tutorial() {
             <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>
             <PredictionExample />
             <p>
-              The last prediction can’t make the total equal the available tricks. Cards per player:
-              6 → 5 → 4 → 3 → 2 → 1, then repeat.
+              <strong>The last prediction can’t make the total equal the available tricks.</strong>{" "}
+              Cards per player: 6 → 5 → 4 → 3 → 2 → 1, then repeat.
             </p>
 
             <h3 className="mb-1 mt-5 font-semibold">Playing round</h3>
