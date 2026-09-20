@@ -1,5 +1,14 @@
 import { useEffect, useState } from "react";
-import { CircleHelp, Copy, LogOut, MessageCircleMore, Smile, Target, X } from "lucide-react";
+import {
+  ArrowDown,
+  CircleHelp,
+  Copy,
+  LogOut,
+  MessageCircleMore,
+  Smile,
+  Target,
+  X,
+} from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Avatar } from "./avatar";
 import { PlayingCard } from "./playing-card";
@@ -108,6 +117,31 @@ export function Tutorial() {
               Win exactly as many tricks as you predict. The last player with lives wins.
               <strong className="block">A trick is one card from each player.</strong>
             </p>
+
+            <figure
+              className="my-4 rounded-xl bg-secondary px-3 py-4"
+              aria-label="One card from each player makes a trick"
+            >
+              <div className="grid grid-cols-3 gap-3" aria-hidden="true">
+                {[
+                  { avatar: "king-clubs", card: 10 },
+                  { avatar: "queen-cups", card: 22 },
+                  { avatar: "queen-coins", card: 35 },
+                ].map(({ avatar, card }, index) => (
+                  <div key={avatar} className="flex min-w-0 flex-col items-center gap-2">
+                    <Avatar avatar={avatar} />
+                    <span className="text-xs">Player {index + 1}</span>
+                    <ArrowDown className="size-4 text-muted-foreground" />
+                    <div className="w-full max-w-14">
+                      <PlayingCard card={card} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <figcaption className="mt-3 border-t border-foreground/10 pt-2 text-center text-xs font-semibold">
+                3 players · 3 cards · 1 trick
+              </figcaption>
+            </figure>
 
             <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
             <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>

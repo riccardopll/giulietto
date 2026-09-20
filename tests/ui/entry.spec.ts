@@ -121,6 +121,8 @@ test("menu tutorial explains play and returns focus when closed", async ({ page 
   const tutorial = page.getByRole("dialog", { name: "How to play" });
   await expect(tutorial).toBeVisible();
   await screenshot(page, testInfo, "tutorial-top", { animations: "disabled" });
+  await tutorial.getByLabel("One card from each player makes a trick").scrollIntoViewIfNeeded();
+  await screenshot(page, testInfo, "tutorial-trick-definition", { animations: "disabled" });
   await expect(tutorial.getByRole("heading", { level: 3 })).toHaveText([
     "Prediction round",
     "Playing round",
