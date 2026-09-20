@@ -140,25 +140,27 @@ export function Tutorial() {
               </div>
             </figure>
 
-            <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
             <figure className="my-3" aria-label="Cards per player: 6, 5, 4, 3, 2, 1, then repeat">
               <figcaption className="mb-2 text-xs text-muted-foreground">
                 Cards per player, each round
               </figcaption>
-              <ol className="flex items-center justify-between gap-1" aria-hidden="true">
+              <ol className="flex items-center" aria-hidden="true">
                 {[6, 5, 4, 3, 2, 1].map((count) => (
-                  <li key={count} className="flex items-center gap-1">
+                  <li key={count} className="flex flex-1 items-center last:flex-none">
                     <span className="grid h-10 w-6 place-items-center rounded-sm border bg-secondary font-semibold tabular-nums">
                       {count}
                     </span>
-                    {count > 1 && <span className="text-xs text-muted-foreground">→</span>}
+                    {count > 1 && (
+                      <span className="flex-1 text-center text-xs text-muted-foreground">→</span>
+                    )}
                   </li>
                 ))}
               </ol>
-              <p className="mt-1 text-right text-xs text-muted-foreground" aria-hidden="true">
+              <p className="mt-1 text-center text-xs text-muted-foreground" aria-hidden="true">
                 ↻ Back to 6
               </p>
             </figure>
+            <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
             <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>
             <PredictionExample />
             <p>
@@ -287,10 +289,7 @@ export function Tutorial() {
                 <Copy className="size-5" aria-label="Copy invite" />
                 <LogOut className="size-5" aria-label="Leave table" />
               </dt>
-              <dd>
-                Copy an invite or leave. Leaving forfeits the game and all your lives. You can
-                rejoin as a spectator.
-              </dd>
+              <dd>Copy an invite or leave. Leaving forfeits the game and all your lives.</dd>
             </dl>
             <Dialog.Close asChild>
               <Button className="mt-5 w-full">Got it</Button>
