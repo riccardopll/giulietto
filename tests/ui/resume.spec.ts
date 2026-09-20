@@ -93,4 +93,18 @@ test("reloading and reconnecting during play restore the player and hand and all
       page.getByRole("region", { name: "Current trick", exact: true }).getByRole("img"),
     ).toHaveCount(2);
   }
+
+  await returning.page.getByRole("button", { name: "Leave table", exact: true }).click();
+  const confirmation = returning.page.getByRole("alertdialog");
+  await expect(confirmation).toContainText("You cannot rejoin.");
+  await confirmation.getByRole("button", { name: "Leave table", exact: true }).click();
+  await expect(returning.page.getByRole("button", { name: "Open your profile" })).toBeVisible();
+  await synced(
+    players.filter((player) => player !== returning),
+    (state) => !!findPlayer(state, before.you)?.forfeited,
+  );
+  await returning.page.goto(`/?table=${before.code}`);
+  await expect(
+    returning.page.getByText("You forfeited this game and cannot rejoin."),
+  ).toBeVisible();
 });

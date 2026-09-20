@@ -5,6 +5,7 @@ import { EMOTE_IDS, sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
 import {
   bid,
+  forfeit,
   deal,
   play,
   makePlayer,
@@ -90,6 +91,7 @@ export function command(value: unknown): Command {
 }
 export function join(game: Game, id: string, name: string, now: number, matchmaking = false) {
   const seated = findPlayer(game, id);
+  if (seated?.forfeited) throw new GameError("You forfeited this game and cannot rejoin.");
   if (matchmaking && game.phase !== "lobby" && !seated)
     throw new GameError("This table is no longer available.");
   const existing = seated ?? game.spectators?.find((spectator) => spectator.id === id);
@@ -126,6 +128,8 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   }
   const player = findPlayer(game, id);
   if (!player) throw new GameError("Join this table first.");
+  if (player.forfeited && input.action !== "leave")
+    throw new GameError("You forfeited this game and cannot rejoin.");
   player.seen = now;
   if (input.action === "rename") {
     if (game.phase !== "lobby") throw new GameError("Names can only change in the lobby.");
@@ -169,7 +173,7 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   } else if (input.action === "leave" && game.phase === "lobby") {
     game.players = game.players.filter((member) => member.id !== id);
     if (game.host === id) game.host = game.players.find((member) => !member.bot)?.id ?? "";
-  }
+  } else if (input.action === "leave") forfeit(game, id, now);
 }
 export function displayName(value: unknown) {
   const name = typeof value === "string" ? value.trim().slice(0, 20) : "Guest";

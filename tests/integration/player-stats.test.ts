@@ -361,3 +361,24 @@ test("bot exclusion migration rebuilds every total from human-only matches", asy
   });
   expect((await playerStats(db, "p0")).leaders).toHaveLength(3);
 });
+
+test("forfeiture persists during play and counts once as a loss when the match finishes", async () => {
+  const game = gameFixture();
+  game.players[0].forfeited = true;
+  game.players[0].lives = 0;
+  await db.batch(historyStatements(db, game, 0));
+  expect(
+    await db.prepare("SELECT outcome,finalized_at FROM match_results WHERE player_id='p0'").first(),
+  ).toEqual({ outcome: "forfeited", finalized_at: null });
+  expect((await playerStats(db, "p0")).player.matches).toBe(0);
+  game.phase = "finished";
+  game.winner = "p1";
+  game.finishedAt = 200;
+  game.revision++;
+  await db.batch(historyStatements(db, game, 0));
+  await db.batch(historyStatements(db, game, 0));
+  expect(
+    await db.prepare("SELECT outcome,finalized_at FROM match_results WHERE player_id='p0'").first(),
+  ).toEqual({ outcome: "forfeited", finalized_at: 200 });
+  expect((await playerStats(db, "p0")).player).toMatchObject({ matches: 1, wins: 0 });
+});

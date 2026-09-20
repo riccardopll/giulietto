@@ -1,5 +1,11 @@
 import { findPlayer, type Game, type GameView } from "../../src/shared/game";
-import { SELF, env, evictDurableObject, runInDurableObject } from "cloudflare:test";
+import {
+  SELF,
+  env,
+  evictDurableObject,
+  runDurableObjectAlarm,
+  runInDurableObject,
+} from "cloudflare:test";
 import { expect, test } from "vitest";
 import { api, captureLogs, guest } from "./helpers";
 
@@ -353,7 +359,7 @@ test("matchmaking skips games that have started", async () => {
   expect(next.spectating).toBe(false);
 });
 
-test("quitting a started game preserves the seat and rejoining restores play", async () => {
+test("disconnecting from a started game preserves the seat and rejoining restores play", async () => {
   const host = guest(1);
   const other = guest(2);
   const { code } = await api.state(host, { action: "create" });
@@ -363,7 +369,6 @@ test("quitting a started game preserves the seat and rejoining restores play", a
   const socket = await api.connect(first, code);
   const observer = await api.connect(first === host ? other : host, code);
   const own = socket.latest()!.players.find((p) => p.id === socket.latest()!.you)!;
-  expect((await socket.command({ action: "leave" })).type).toBe("ack");
   socket.close();
   await expect
     .poll(() => observer.latest()?.players.find((p) => p.id === own.id)?.connected)
@@ -436,5 +441,69 @@ test.each([
     expect(stored.deadline).toBe(restored.deadline);
     const active = phase === "lobby" ? await api.state(host, { action: "start", code }) : restored;
     expect(active.deadline).toBe(active.startedAt! + (turnSeconds ?? 30) * 1000);
+  },
+);
+
+test.each(["http", "socket"])(
+  "leaving over %s forfeits the game and rejects all reentry",
+  async (transport) => {
+    const host = guest(1);
+    const other = guest(2);
+    const { code } = await api.state(host, { action: "create" });
+    await api.state(other, { action: "join", code });
+    const started = await api.state(host, { action: "start", code });
+    const socket = await api.connect(host, code);
+    const secondTab = await api.connect(host, code);
+    const observer = await api.connect(other, code);
+    if (transport === "http") {
+      const response = await api.post(host, { action: "leave", code });
+      expect(response.status).toBe(200);
+      expect(await response.json()).toEqual({ ok: true });
+    } else expect((await socket.command({ action: "leave" })).type).toBe("ack");
+    expect(await socket.closed).toMatchObject({ code: 4001 });
+    expect(await secondTab.closed).toMatchObject({ code: 4001 });
+    await expect.poll(() => observer.latest()?.phase).toBe("finished");
+    expect(findPlayer(observer.latest()!, started.you)).toMatchObject({
+      lives: 0,
+      forfeited: true,
+    });
+    expect(observer.latest()!.winner).toBe(observer.latest()!.you);
+    expect(
+      await runInDurableObject(env.ROOMS.getByName(code), (_instance, ctx) => {
+        const room = ctx.storage.kv.get("room") as { game: Game };
+        return findPlayer(room.game, started.you)?.forfeited;
+      }),
+    ).toBe(true);
+    expect((await api.post(host, { action: "join", code })).status).toBe(400);
+    expect((await api.get(host, code)).status).toBe(400);
+    expect((await api.post(host, { action: "bid", bid: 0, code })).status).toBe(400);
+    const response = await SELF.fetch(`http://game.test/api/game/socket?code=${code}`, {
+      headers: {
+        Upgrade: "websocket",
+        "Sec-WebSocket-Protocol": `giulietto, ${host.token}`,
+        Origin: "http://game.test",
+      },
+    });
+    expect(response.status).toBe(400);
+    await runDurableObjectAlarm(env.ROOMS.getByName(code));
+    expect(
+      await env.DB.prepare(
+        "SELECT outcome,lives FROM match_results WHERE match_id=? AND player_id=?",
+      )
+        .bind(started.matchId!, started.you)
+        .first(),
+    ).toEqual({ outcome: "forfeited", lives: 0 });
+    expect(
+      await env.DB.prepare("SELECT matches,wins FROM player_stats WHERE player_id=?")
+        .bind(started.you)
+        .first(),
+    ).toEqual({ matches: 1, wins: 0 });
+    expect(
+      await env.DB.prepare(
+        "SELECT COUNT(*) AS count FROM match_events WHERE match_id=? AND type='forfeited'",
+      )
+        .bind(started.matchId!)
+        .first(),
+    ).toEqual({ count: 1 });
   },
 );

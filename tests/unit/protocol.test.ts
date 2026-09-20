@@ -22,32 +22,19 @@ test("preserves a reconnecting player's seat, hand, and progress", () => {
   expect(view(game, "p0").spectating).toBe(false);
 });
 
-test("keeps a quitting player's seat active and lets them resume after an automatic turn", () => {
+test("forfeiting blocks joining, viewing, and further commands", () => {
   const game = gameFixture();
-  const before = structuredClone(game.players[0]);
   apply(game, "p0", { action: "leave", commandId: crypto.randomUUID() }, 200);
-  expect(game.players[0]).toEqual({ ...before, seen: 200 });
-  tick(game, game.deadline);
-  expect(game.players[0].bid).toBe(0);
-  const progress = structuredClone(game.players[0]);
-  join(game, "p0", "bot_1", 50_000);
-  expect(game.players).toHaveLength(3);
-  expect(game.players[0]).toEqual({ ...progress, seen: 50_000 });
-  expect(view(game, "p0").spectating).toBe(false);
-  apply(game, "p1", { action: "bid", bid: 0, commandId: crypto.randomUUID() }, 50_001);
-  apply(game, "p2", { action: "bid", bid: 0, commandId: crypto.randomUUID() }, 50_002);
-  apply(
-    game,
-    "p0",
-    { action: "play", card: before.hand[0], commandId: crypto.randomUUID() },
-    50_003,
-  );
-  expect(game.trick[0]).toEqual({ player: "p0", card: before.hand[0] });
+  expect(game.players[0]).toMatchObject({ lives: 0, forfeited: true });
+  expect(() => join(game, "p0", "bot_1", 300)).toThrow("cannot rejoin");
+  expect(() => view(game, "p0")).toThrow("cannot rejoin");
+  expect(() =>
+    apply(game, "p0", { action: "bid", bid: 0, commandId: crypto.randomUUID() }, 300),
+  ).toThrow("cannot rejoin");
 });
 
 test("does not revive a player eliminated while away", () => {
   const game = gameFixture();
-  apply(game, "p0", { action: "leave", commandId: crypto.randomUUID() }, 200);
   game.players[0].lives = 1;
   game.players.forEach((p) => {
     p.bid = 1;

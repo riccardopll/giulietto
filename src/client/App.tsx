@@ -105,8 +105,10 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           onOpenChange={table.setLeaveOpen}
           title="Leave this table?"
           description={
-            !waiting && !game?.spectating && phase !== "finished"
-              ? "Your seat keeps playing automatically. Rejoin with the invite code to resume."
+            !waiting &&
+            game?.players.some((player) => player.id === game.you) &&
+            phase !== "finished"
+              ? "You will forfeit this game and lose all your lives. You cannot rejoin."
               : undefined
           }
           cancelLabel="Stay"
