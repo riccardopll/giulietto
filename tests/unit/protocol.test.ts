@@ -22,15 +22,17 @@ test("preserves a reconnecting player's seat, hand, and progress", () => {
   expect(view(game, "p0").spectating).toBe(false);
 });
 
-test("forfeiting blocks joining, viewing, and further commands", () => {
+test("forfeited players can rejoin to watch but cannot play", () => {
   const game = gameFixture();
   apply(game, "p0", { action: "leave", commandId: crypto.randomUUID() }, 200);
   expect(game.players[0]).toMatchObject({ lives: 0, forfeited: true });
-  expect(() => join(game, "p0", "bot_1", 300)).toThrow("cannot rejoin");
-  expect(() => view(game, "p0")).toThrow("cannot rejoin");
+  join(game, "p0", "bot_1", 300);
+  expect(view(game, "p0")).toMatchObject({ spectating: true, legalBids: [], canChooseAce: false });
+  expect(game.order).not.toContain("p0");
+  expect(game.players[0]).toMatchObject({ lives: 0, forfeited: true });
   expect(() =>
     apply(game, "p0", { action: "bid", bid: 0, commandId: crypto.randomUUID() }, 300),
-  ).toThrow("cannot rejoin");
+  ).toThrow("Spectators cannot play");
 });
 
 test("does not revive a player eliminated while away", () => {

@@ -210,6 +210,7 @@ export function play(
 export function forfeit(game: Game, id: string, now: number) {
   if (game.phase === "finished") return;
   const player = findPlayer(game, id)!;
+  if (player.forfeited) return;
   player.forfeited = true;
   player.lives = 0;
   player.eliminatedRound ??= game.round;
@@ -322,7 +323,6 @@ export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
 }
 export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
   const me = findPlayer(game, id);
-  if (me?.forfeited) throw new GameError("You forfeited this game and cannot rejoin.");
   const spectator = game.spectators?.find((spectator) => spectator.id === id);
   if (!me && !spectator) throw new GameError("You are no longer at this table. Join again.");
   const active = !!me && game.order.includes(id);
@@ -342,7 +342,7 @@ export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
       active && game.phase === "playing" && game.order[game.turn] === id && me.hand.includes(31),
     players: game.players.map((player) => ({
       ...player,
-      connected: !player.forfeited && (player.bot || (connected?.has(player.id) ?? true)),
+      connected: player.bot || (connected?.has(player.id) ?? true),
       hand: player.hand.map((card) =>
         active && ((!blind && player.id === id) || (blind && player.id !== id)) ? card : null,
       ),

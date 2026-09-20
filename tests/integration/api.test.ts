@@ -445,12 +445,14 @@ test.each([
 );
 
 test.each(["http", "socket"])(
-  "leaving over %s forfeits the game and rejects all reentry",
+  "leaving over %s forfeits the game and allows reentry only as a spectator",
   async (transport) => {
     const host = guest(1);
     const other = guest(2);
+    const third = guest(3);
     const { code } = await api.state(host, { action: "create" });
     await api.state(other, { action: "join", code });
+    const thirdSeat = await api.state(third, { action: "join", code });
     const started = await api.state(host, { action: "start", code });
     const socket = await api.connect(host, code);
     const secondTab = await api.connect(host, code);
@@ -462,29 +464,35 @@ test.each(["http", "socket"])(
     } else expect((await socket.command({ action: "leave" })).type).toBe("ack");
     expect(await socket.closed).toMatchObject({ code: 4001 });
     expect(await secondTab.closed).toMatchObject({ code: 4001 });
-    await expect.poll(() => observer.latest()?.phase).toBe("finished");
+    await expect.poll(() => findPlayer(observer.latest()!, started.you)?.forfeited).toBe(true);
+    expect(observer.latest()!.phase).toBe("bidding");
     expect(findPlayer(observer.latest()!, started.you)).toMatchObject({
       lives: 0,
       forfeited: true,
     });
-    expect(observer.latest()!.winner).toBe(observer.latest()!.you);
     expect(
       await runInDurableObject(env.ROOMS.getByName(code), (_instance, ctx) => {
         const room = ctx.storage.kv.get("room") as { game: Game };
         return findPlayer(room.game, started.you)?.forfeited;
       }),
     ).toBe(true);
-    expect((await api.post(host, { action: "join", code })).status).toBe(400);
-    expect((await api.get(host, code)).status).toBe(400);
+    const rejoined = await api.state(host, { action: "join", code });
+    expect(rejoined.spectating).toBe(true);
+    expect(findPlayer(rejoined, started.you)).toMatchObject({ lives: 0, forfeited: true });
+    expect((await api.get(host, code)).status).toBe(200);
     expect((await api.post(host, { action: "bid", bid: 0, code })).status).toBe(400);
-    const response = await SELF.fetch(`http://game.test/api/game/socket?code=${code}`, {
-      headers: {
-        Upgrade: "websocket",
-        "Sec-WebSocket-Protocol": `giulietto, ${host.token}`,
-        Origin: "http://game.test",
-      },
-    });
-    expect(response.status).toBe(400);
+    const watching = await api.connect(host, code);
+    expect(watching.latest()!.spectating).toBe(true);
+    expect((await watching.command({ action: "chat", text: "Still watching" })).type).toBe("ack");
+    expect((await watching.command({ action: "emote", emote: "chicken" })).type).toBe("ack");
+    expect((await watching.command({ action: "play", card: 1 })).type).toBe("error");
+    expect(
+      watching.latest()!.players.every((player) => player.hand.every((card) => card === null)),
+    ).toBe(true);
+    expect((await watching.command({ action: "leave" })).type).toBe("ack");
+    await api.post(other, { action: "leave", code });
+    const finished = await api.state(host, { action: "join", code });
+    expect(finished).toMatchObject({ phase: "finished", winner: thirdSeat.you, spectating: true });
     await runDurableObjectAlarm(env.ROOMS.getByName(code));
     expect(
       await env.DB.prepare(
@@ -500,9 +508,9 @@ test.each(["http", "socket"])(
     ).toEqual({ matches: 1, wins: 0 });
     expect(
       await env.DB.prepare(
-        "SELECT COUNT(*) AS count FROM match_events WHERE match_id=? AND type='forfeited'",
+        "SELECT COUNT(*) AS count FROM match_events WHERE match_id=? AND type='forfeited' AND player_id=?",
       )
-        .bind(started.matchId!)
+        .bind(started.matchId!, started.you)
         .first(),
     ).toEqual({ count: 1 });
   },

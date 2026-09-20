@@ -106,9 +106,9 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           title="Leave this table?"
           description={
             !waiting &&
-            game?.players.some((player) => player.id === game.you) &&
+            game?.players.some((player) => player.id === game.you && !player.forfeited) &&
             phase !== "finished"
-              ? "You will forfeit this game and lose all your lives. You cannot rejoin."
+              ? "You will forfeit this game and lose all your lives. You can rejoin as a spectator."
               : undefined
           }
           cancelLabel="Stay"

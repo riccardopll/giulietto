@@ -215,10 +215,10 @@ export class GameTable extends DurableObject<Env> {
       throw new GameError("Table not found or expired. Check the invite code.");
     return room;
   }
-  private closeForfeited(id: string) {
-    if (findPlayer(this.read()!.game, id)?.forfeited)
+  private closeForfeited(id: string, input: Command) {
+    if (input.action === "leave" && findPlayer(this.read()!.game, id)?.forfeited)
       for (const socket of this.ctx.getWebSockets(id))
-        socket.close(4001, "You forfeited this game and cannot rejoin.");
+        socket.close(4001, "You left the table. You can rejoin as a spectator.");
   }
   private async execute(room: Room, id: string, input: Command) {
     const duplicate = this.ctx.storage.sql
@@ -284,8 +284,6 @@ export class GameTable extends DurableObject<Env> {
           !room.game.spectators?.some((spectator) => spectator.id === id)
         )
           throw new GameError("Join this table first.");
-        if (findPlayer(room.game, id)?.forfeited && req.method === "GET")
-          throw new GameError("You forfeited this game and cannot rejoin.");
         room = await this.advance(room);
         if (url.pathname.endsWith("/socket")) {
           this.view(room.game, id);
@@ -308,9 +306,10 @@ export class GameTable extends DurableObject<Env> {
           });
         }
         if (req.method === "GET") return Response.json(this.view(room.game, id));
-        const result = await this.execute(room, id, command(await req.json()));
+        const input = command(await req.json());
+        const result = await this.execute(room, id, input);
         persist = result.persist;
-        this.closeForfeited(id);
+        this.closeForfeited(id, input);
         return Response.json(result.state);
       } catch (error) {
         const response = failure(error);
@@ -369,7 +368,7 @@ export class GameTable extends DurableObject<Env> {
         const result = await this.execute(await this.advance(room), id, input);
         persist = result.persist;
         this.send(ws, { type: "ack", commandId, state: result.state });
-        this.closeForfeited(id);
+        this.closeForfeited(id, input);
         outcome = result.duplicate ? "duplicate" : "accepted";
       } catch (error) {
         const response = failure(error);

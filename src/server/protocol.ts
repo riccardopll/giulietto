@@ -91,7 +91,6 @@ export function command(value: unknown): Command {
 }
 export function join(game: Game, id: string, name: string, now: number, matchmaking = false) {
   const seated = findPlayer(game, id);
-  if (seated?.forfeited) throw new GameError("You forfeited this game and cannot rejoin.");
   if (matchmaking && game.phase !== "lobby" && !seated)
     throw new GameError("This table is no longer available.");
   const existing = seated ?? game.spectators?.find((spectator) => spectator.id === id);
@@ -128,8 +127,8 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   }
   const player = findPlayer(game, id);
   if (!player) throw new GameError("Join this table first.");
-  if (player.forfeited && input.action !== "leave")
-    throw new GameError("You forfeited this game and cannot rejoin.");
+  if (player.forfeited && !["leave", "chat", "emote"].includes(input.action))
+    throw new GameError("Spectators cannot play or change the game.");
   player.seen = now;
   if (input.action === "rename") {
     if (game.phase !== "lobby") throw new GameError("Names can only change in the lobby.");

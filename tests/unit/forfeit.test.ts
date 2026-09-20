@@ -38,7 +38,16 @@ test("forfeiting the last unplayed seat resolves the trick immediately", () => {
   for (const id of game.order) bid(game, id, 0, 200);
   play(game, "p0", 1, undefined, 300);
   play(game, "p1", 11, undefined, 400);
+  const before = structuredClone(game);
   forfeit(game, "p2", 500);
+  expect(gameEvents(before, game, { source: "player" }, 500)).toEqual([
+    expect.objectContaining({ type: "forfeited", player_id: "p2" }),
+    expect.objectContaining({
+      type: "trick_won",
+      player_id: "p1",
+      payload: JSON.stringify({ trick: 1, plays: game.trick }),
+    }),
+  ]);
   expect(game.phase).toBe("trick");
   expect(game.lastWinner).toBe("p1");
 });
@@ -47,7 +56,17 @@ test("forfeiting during the trick pause awards the trick to a remaining player",
   const game = gameFixture();
   for (const id of game.order) bid(game, id, 0, 200);
   for (const player of game.players) play(game, player.id, player.hand[0], undefined, 300);
+  const before = structuredClone(game);
   forfeit(game, "p2", 400);
+  expect(
+    gameEvents(before, game, { source: "player" }, 400).map((event) => [
+      event.type,
+      event.player_id,
+    ]),
+  ).toEqual([
+    ["forfeited", "p2"],
+    ["trick_won", "p1"],
+  ]);
   expect(game.lastWinner).toBe("p1");
   expect(game.players.map((player) => player.taken)).toEqual([0, 1, 0]);
   tick(game, game.deadline);

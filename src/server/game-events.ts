@@ -38,6 +38,11 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
   );
   if (forfeited) {
     add("forfeited", forfeited.id, { lives: 0 });
+    if (after.phase === "trick")
+      add("trick_won", after.lastWinner, {
+        trick: after.players.reduce((sum, player) => sum + player.taken, 0),
+        plays: after.trick,
+      });
   } else if (after.round !== before.round) {
     add("round_dealt", null, {
       rulesVersion: 1,
