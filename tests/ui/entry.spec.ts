@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { observe, test, type Player } from "./helpers";
+import { observe, screenshot, test, type Player } from "./helpers";
 
 test("entry retries reuse the create command, refresh the join command, and leave despite lost replies", async ({
   browser,
@@ -109,4 +109,27 @@ test("entry retries reuse the create command, refresh the join command, and leav
   } finally {
     for (const player of players) await player.page.context().close();
   }
+});
+
+test("menu tutorial explains play and returns focus when closed", async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.goto("/");
+  const help = page.getByRole("button", { name: "How to play", exact: true });
+  await help.click();
+  const tutorial = page.getByRole("dialog", { name: "How to play" });
+  await expect(tutorial).toBeVisible();
+  await screenshot(page, testInfo, "tutorial-top", { animations: "disabled" });
+  await tutorial.getByRole("button", { name: "Replay trick animation" }).click();
+  await tutorial.getByLabel("Ace of Coins choices").scrollIntoViewIfNeeded();
+  await screenshot(page, testInfo, "tutorial-cards", { animations: "disabled" });
+  await expect(tutorial.getByText("Reading the table", { exact: true })).toBeAttached();
+  await tutorial.getByRole("button", { name: "Got it", exact: true }).scrollIntoViewIfNeeded();
+  await screenshot(page, testInfo, "tutorial-controls", { animations: "disabled" });
+  await tutorial.getByRole("button", { name: "Got it", exact: true }).click();
+  await expect(tutorial).toBeHidden();
+  await expect(help).toBeFocused();
+  await help.click();
+  await page.keyboard.press("Escape");
+  await expect(tutorial).toBeHidden();
+  await expect(help).toBeFocused();
 });
