@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CircleHelp, Copy, LogOut, MessageCircle, Smile, Target, X } from "lucide-react";
+import { CircleHelp, Copy, LogOut, MessageCircleMore, Smile, Target, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Avatar } from "./avatar";
 import { PlayingCard } from "./playing-card";
@@ -176,8 +176,16 @@ export function Tutorial() {
 
             <h3 className="mb-2 mt-5 font-semibold">Reading the table</h3>
             <dl className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-3 gap-y-3">
-              <dt className="flex justify-center pt-1">
+              <dt className="flex items-center justify-center gap-1 pt-1 text-xs">
                 <LifeCount n={3} />
+                <span
+                  className="inline-flex items-center gap-0.5 border-l border-foreground/10 pl-1 font-semibold whitespace-nowrap tabular-nums"
+                  aria-label="1 trick won, 2 predicted"
+                >
+                  <span className="text-destructive">1</span>
+                  <span className="font-normal text-muted-foreground/70">/</span>
+                  <span>2</span>
+                </span>
               </dt>
               <dd>
                 Lives remaining. <strong>1 / 2</strong> beside them means 1 trick won, 2 predicted.
@@ -188,12 +196,26 @@ export function Tutorial() {
               <dd>
                 The ring marks the current turn and time left. Out of time? The game acts for you.
               </dd>
-              <dt className="flex justify-center pt-1">
-                <Target className="size-5" aria-label="Prediction total" />
+              <dt
+                className="flex items-center justify-center gap-1 pt-1 text-xs font-semibold tabular-nums"
+                aria-label="7 tricks predicted, 1 over the 6 available tricks"
+              >
+                <Target
+                  className="size-5 shrink-0 text-foreground/60"
+                  strokeWidth={1.5}
+                  aria-hidden="true"
+                />
+                <span aria-hidden="true">7</span>
+                <span
+                  className="rounded-full bg-destructive px-1.5 leading-5 text-primary-foreground"
+                  aria-hidden="true"
+                >
+                  +1
+                </span>
               </dt>
               <dd>Total predictions, and how far over or under the available tricks.</dd>
               <dt className="flex justify-center gap-2 pt-1">
-                <MessageCircle className="size-5" aria-label="Chat" />
+                <MessageCircleMore className="size-5" aria-label="Chat" />
                 <Smile className="size-5" aria-label="Emotes" />
               </dt>
               <dd>Side tabs open chat and reactions.</dd>
