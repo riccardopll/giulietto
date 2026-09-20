@@ -158,9 +158,7 @@ export function Tutorial() {
             <p>Zero lives? You spectate. If everyone goes out, everyone returns with one life.</p>
 
             <h3 className="mb-1 mt-5 font-semibold">Blind round</h3>
-            <p>
-              With one card each, you see everyone’s card except your own. Predict, then play blind.
-            </p>
+            <p>With one card each, you see everyone’s card except your own.</p>
             <figure className="my-4">
               <div className="flex justify-center gap-5" aria-hidden="true">
                 <div className="w-16">
