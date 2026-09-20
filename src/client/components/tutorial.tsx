@@ -119,9 +119,24 @@ export function Tutorial() {
 
             <h3 className="mb-1 mt-5 font-semibold">Playing round</h3>
             <p>On your turn, tap a card. The strongest card wins the trick.</p>
-            <p className="mt-2">
-              Weakest to strongest: <strong>Clubs → Swords → Cups → Coins</strong>. Suit beats rank.
-            </p>
+            <figure className="my-4" aria-label="Suit strength">
+              <figcaption className="mb-3 text-center text-xs text-muted-foreground">
+                Weakest → strongest. Suit beats rank.
+              </figcaption>
+              <div className="mx-auto grid max-w-xs grid-cols-4 gap-3">
+                {[
+                  { card: 2, suit: "Clubs" },
+                  { card: 12, suit: "Swords" },
+                  { card: 22, suit: "Cups" },
+                  { card: 32, suit: "Coins" },
+                ].map(({ card, suit }) => (
+                  <div key={card} className="min-w-0">
+                    <PlayingCard card={card} />
+                    <span className="mt-2 block text-center text-xs font-semibold">{suit}</span>
+                  </div>
+                ))}
+              </div>
+            </figure>
             <TrickExample />
             <p>
               For the <strong>Ace of Coins</strong>, choose Low (weakest) or High (strongest).

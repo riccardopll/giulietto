@@ -129,6 +129,8 @@ test("menu tutorial explains play and returns focus when closed", async ({ page 
   ]);
   await tutorial.getByLabel("Prediction example").scrollIntoViewIfNeeded();
   await screenshot(page, testInfo, "tutorial-prediction", { animations: "disabled" });
+  await tutorial.getByLabel("Suit strength").scrollIntoViewIfNeeded();
+  await screenshot(page, testInfo, "tutorial-suits", { animations: "disabled" });
   await tutorial.getByLabel("Ace of Coins choices").scrollIntoViewIfNeeded();
   await screenshot(page, testInfo, "tutorial-cards", { animations: "disabled" });
   await expect(tutorial.getByText("Reading the table", { exact: true })).toBeAttached();
