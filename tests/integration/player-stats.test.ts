@@ -76,10 +76,6 @@ test("stats use finalized history once, preserve identity, and rank players by w
     averagePrediction: null,
     averageDecisionMs: null,
   });
-  game.matchId = "abandoned";
-  game.winner = null;
-  await deliver();
-  expect((await read()).player.matches).toBe(1);
   for (let i = 0; i < 4; i++) {
     game.matchId = `next-${i}`;
     game.players = game.players.filter((p) => p.id !== id);
@@ -103,14 +99,14 @@ test("stats use finalized history once, preserve identity, and rank players by w
 
 test("decision stats combine completed-match samples, omit missing timing, and survive replay", async () => {
   const read = async () => (await playerStats(db, "p0")).player;
-  const make = (matchId: string, status: "completed" | "active" | "abandoned" = "completed") => {
+  const make = (matchId: string, status: "completed" | "active" = "completed") => {
     const game = gameFixture();
     game.matchId = matchId;
     game.revision = 10;
     if (status !== "active") {
       game.phase = "finished";
       game.finishedAt = 200;
-      game.winner = status === "completed" ? "p0" : null;
+      game.winner = "p0";
     }
     return game;
   };
@@ -184,10 +180,8 @@ test("decision stats combine completed-match samples, omit missing timing, and s
   await deliver(botGame, moves);
   expect(await read()).toMatchObject(expected);
   expect((await playerStats(db, "p1")).player.matches).toBe(3);
-  for (const status of ["active", "abandoned"] as const) {
-    await deliver(make(status, status), moves);
-    expect(await read()).toMatchObject(expected);
-  }
+  await deliver(make("active", "active"), moves);
+  expect(await read()).toMatchObject(expected);
   await deliver(first, moves);
   first.revision--;
   await db.batch(historyStatements(db, first, 0));
@@ -253,14 +247,14 @@ test("profile edits persist, reach tables, and survive older match history", asy
 });
 
 test("aggregate migration preserves historical samples and retries count each completed match once", async () => {
-  const games = ["completed", "completed", "active", "abandoned"].map((status, i) => {
+  const games = ["completed", "completed", "active"].map((status, i) => {
     const game = gameFixture();
     game.matchId = `backfill-${i}`;
     game.revision = 10;
     if (status !== "active") {
       game.phase = "finished";
       game.finishedAt = 200;
-      game.winner = status === "completed" ? `p${i}` : null;
+      game.winner = `p${i}`;
     }
     return game;
   });
