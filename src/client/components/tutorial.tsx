@@ -104,7 +104,10 @@ export function Tutorial() {
             </Dialog.Close>
           </div>
           <div className="overflow-y-auto overscroll-contain px-5 py-4 text-sm leading-relaxed">
-            <p>Win exactly as many tricks as you predict. The last player with lives wins.</p>
+            <p>
+              Win exactly as many tricks as you predict. The last player with lives wins.
+              <strong className="block">A trick is one card from each player.</strong>
+            </p>
 
             <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
             <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>
@@ -118,12 +121,10 @@ export function Tutorial() {
             <p>On your turn, tap a card. The strongest card wins the trick.</p>
             <p className="mt-2">
               Weakest to strongest: <strong>Clubs → Swords → Cups → Coins</strong>. Suit beats rank.
-              Within a suit: Ace, 2–7, Jack, Knight, King.
             </p>
             <TrickExample />
             <p>
-              For the <strong>Ace of Coins</strong>, choose Low (0) or High (41): weakest or
-              strongest.
+              For the <strong>Ace of Coins</strong>, choose Low (weakest) or High (strongest).
             </p>
             <div className="my-3 flex justify-center gap-5" aria-label="Ace of Coins choices">
               <div className="w-16">
@@ -133,10 +134,7 @@ export function Tutorial() {
                 <PlayingCard card={31} mode="high" />
               </div>
             </div>
-            <p>
-              Each trick above or below your prediction costs one life. An exact prediction costs
-              nothing.
-            </p>
+            <p>Each trick above or below your prediction costs one life.</p>
             <figure className="my-4 grid grid-cols-3 gap-2 rounded-xl bg-secondary px-3 py-3 text-center">
               <div>
                 <span className="block text-xs text-muted-foreground">Predicted</span>
@@ -178,10 +176,7 @@ export function Tutorial() {
                 <MessageCircle className="size-5" aria-label="Chat" />
                 <Smile className="size-5" aria-label="Emotes" />
               </dt>
-              <dd>
-                Side tabs open chat and reactions. Your hand is below; played cards are in the
-                centre.
-              </dd>
+              <dd>Side tabs open chat and reactions.</dd>
               <dt className="flex justify-center gap-2 pt-1">
                 <Copy className="size-5" aria-label="Copy invite" />
                 <LogOut className="size-5" aria-label="Leave table" />
