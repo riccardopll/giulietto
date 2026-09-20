@@ -149,7 +149,7 @@ export function Tutorial() {
                 <span className="inline-flex items-center gap-1 text-xl" aria-label="Lose 2 lives">
                   <span aria-hidden="true">−</span>
                   <span aria-hidden="true">
-                    <LifeCount n={2} />
+                    <LifeCount n={2} className="flex-row-reverse" />
                   </span>
                 </span>
               </div>
