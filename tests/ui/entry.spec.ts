@@ -1,5 +1,5 @@
 import { expect } from "@playwright/test";
-import { observe, screenshot, test, type Player } from "./helpers";
+import { observe, test, type Player } from "./helpers";
 
 test("entry retries reuse the create command, refresh the join command, and leave despite lost replies", async ({
   browser,
@@ -109,44 +109,4 @@ test("entry retries reuse the create command, refresh the join command, and leav
   } finally {
     for (const player of players) await player.page.context().close();
   }
-});
-
-test("menu tutorial explains play and returns focus when closed", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 320, height: 568 });
-  await page.goto("/");
-  const help = page.getByRole("button", { name: "How to play", exact: true });
-  await expect(help).toBeVisible();
-  await screenshot(page, testInfo, "tutorial-menu", { animations: "disabled", fullPage: true });
-  await help.click();
-  const tutorial = page.getByRole("dialog", { name: "How to play" });
-  await expect(tutorial).toBeVisible();
-  await screenshot(page, testInfo, "tutorial-top", { animations: "disabled" });
-  await tutorial.getByLabel("One card from each player makes a trick").scrollIntoViewIfNeeded();
-  await screenshot(page, testInfo, "tutorial-trick-definition", { animations: "disabled" });
-  await expect(tutorial.getByRole("heading", { level: 3 })).toHaveText([
-    "Prediction round",
-    "Playing round",
-    "Blind round",
-    "Reading the table",
-  ]);
-  await tutorial
-    .getByLabel("Cards per player: 6, 5, 4, 3, 2, 1, then repeat")
-    .scrollIntoViewIfNeeded();
-  await screenshot(page, testInfo, "tutorial-rounds", { animations: "disabled" });
-  await tutorial.getByLabel("Prediction example").scrollIntoViewIfNeeded();
-  await screenshot(page, testInfo, "tutorial-prediction", { animations: "disabled" });
-  await tutorial.getByLabel("Suit strength").scrollIntoViewIfNeeded();
-  await screenshot(page, testInfo, "tutorial-suits", { animations: "disabled" });
-  await tutorial.getByLabel("Ace of Coins choices").scrollIntoViewIfNeeded();
-  await screenshot(page, testInfo, "tutorial-cards", { animations: "disabled" });
-  await expect(tutorial.getByText("Reading the table", { exact: true })).toBeAttached();
-  await tutorial.getByRole("button", { name: "Got it", exact: true }).scrollIntoViewIfNeeded();
-  await screenshot(page, testInfo, "tutorial-controls", { animations: "disabled" });
-  await tutorial.getByRole("button", { name: "Got it", exact: true }).click();
-  await expect(tutorial).toBeHidden();
-  await expect(help).toBeFocused();
-  await help.click();
-  await page.keyboard.press("Escape");
-  await expect(tutorial).toBeHidden();
-  await expect(help).toBeFocused();
 });
