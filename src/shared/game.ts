@@ -61,8 +61,8 @@ export type Game = {
   tie: boolean;
 };
 export const DEFAULT_TURN_SECONDS = 30;
-export const MIN_TURN_SECONDS = 5;
-export const MAX_TURN_SECONDS = 60;
+export const MIN_TURN_SECONDS = 15;
+export const MAX_TURN_SECONDS = 40;
 export const ROUND_PAUSE_MS = 8000;
 export const TRICK_PAUSE_MS = 1600;
 export const TABLE_RETENTION_MS = 86400000;
