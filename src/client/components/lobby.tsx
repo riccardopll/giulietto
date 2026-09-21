@@ -216,7 +216,7 @@ export function Lobby({
                   {game.host === game.you && (
                     <Button
                       variant="ghost"
-                      className="min-h-11 font-semibold text-primary"
+                      className="-my-3 min-h-11 font-semibold text-primary"
                       disabled={busy || !onAddBot}
                       onClick={onAddBot}
                     >
