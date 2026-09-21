@@ -67,7 +67,7 @@ for (const { visibility, action } of [
         ).status,
       ).toBe(400);
     }
-    for (const turnSeconds of [0, 4, 61, 5.5, "35", null]) {
+    for (const turnSeconds of [0, 14, 41, 15.5, "35", null]) {
       expect(
         (
           await api.post(host, {
