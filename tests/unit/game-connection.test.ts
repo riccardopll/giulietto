@@ -75,7 +75,11 @@ test("reconnects a synced socket directly and replays an unacknowledged command 
   second.receive({ type: "state", state: state() });
   second.receive({ type: "state", state: state() });
   expect(second.send.mock.calls).toEqual([[message]]);
-  second.receive({ type: "ack", commandId: JSON.parse(message).commandId, state: state() });
+  second.receive({
+    type: "ack",
+    commandId: JSON.parse(message).commandId,
+    state: state(),
+  });
   await expect(pending).resolves.toMatchObject({ you: "p0" });
   expect(status).toHaveBeenLastCalledWith("");
 });
@@ -123,6 +127,30 @@ test("pings every ten seconds and drops a socket that stops replying", async () 
   expect(Socket.sockets).toHaveLength(2);
 });
 
+test("drops a socket that never delivers its first snapshot and tries again", async () => {
+  const first = Socket.sockets[0];
+  await vi.advanceTimersByTimeAsync(9999);
+  expect(first.close).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(first.close).toHaveBeenCalledWith(4000, "No reply");
+  await vi.advanceTimersByTimeAsync(500);
+  const second = Socket.sockets[1];
+  second.open();
+  second.receive({ type: "state", state: state() });
+  await vi.advanceTimersByTimeAsync(14999);
+  expect(second.close).not.toHaveBeenCalled();
+});
+
+test("pongs do not keep an open socket alive before its first snapshot", async () => {
+  const first = Socket.sockets[0];
+  first.open();
+  page.dispatchEvent(new Event("visibilitychange"));
+  expect(first.send.mock.calls).toEqual([["ping"]]);
+  first.onmessage?.({ data: "pong" });
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(first.close).toHaveBeenCalledWith(4000, "No reply");
+});
+
 test("drops a socket that does not answer a command and replays it on the next socket", async () => {
   const first = Socket.sockets[0];
   first.open();
@@ -136,7 +164,11 @@ test("drops a socket that does not answer a command and replays it on the next s
   second.open();
   second.receive({ type: "state", state: state() });
   expect(second.send.mock.calls).toEqual([[message]]);
-  second.receive({ type: "ack", commandId: JSON.parse(message).commandId, state: state() });
+  second.receive({
+    type: "ack",
+    commandId: JSON.parse(message).commandId,
+    state: state(),
+  });
   await expect(pending).resolves.toMatchObject({ you: "p0" });
 });
 
