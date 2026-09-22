@@ -127,17 +127,18 @@ test("pings every ten seconds and drops a socket that stops replying", async () 
   expect(Socket.sockets).toHaveLength(2);
 });
 
-test("drops a handshake that never completes and tries again", async () => {
+test("drops a socket that never delivers its first snapshot and tries again", async () => {
   const first = Socket.sockets[0];
   await vi.advanceTimersByTimeAsync(9999);
   expect(first.close).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(1);
-  expect(first.close).toHaveBeenCalledWith(4000, "Connect timed out");
+  expect(first.close).toHaveBeenCalledWith(4000, "No reply");
   await vi.advanceTimersByTimeAsync(500);
-  expect(Socket.sockets).toHaveLength(2);
-  Socket.sockets[1].open();
-  await vi.advanceTimersByTimeAsync(10000);
-  expect(Socket.sockets[1].close).not.toHaveBeenCalled();
+  const second = Socket.sockets[1];
+  second.open();
+  second.receive({ type: "state", state: state() });
+  await vi.advanceTimersByTimeAsync(14999);
+  expect(second.close).not.toHaveBeenCalled();
 });
 
 test("drops a socket that does not answer a command and replays it on the next socket", async () => {

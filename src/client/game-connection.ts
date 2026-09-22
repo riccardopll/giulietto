@@ -19,8 +19,7 @@ export class GameConnection {
   private attempt = 0;
   private retry?: number;
   private heartbeat?: number;
-  private reply?: number;
-  private opening?: number;
+  private watchdog?: number;
   private joining?: AbortController;
   private synced = false;
   private closedReason = "Connection closed.";
@@ -45,12 +44,16 @@ export class GameConnection {
     if (typeof window !== "undefined") window.addEventListener("online", this.wake);
     this.connect();
   }
+  /** Any inbound message satisfies the earliest armed deadline; silence closes the socket. */
+  private expect(ws: WebSocket, ms: number) {
+    this.watchdog ??= setTimeout(() => {
+      this.watchdog = undefined;
+      ws.close(4000, "No reply");
+    }, ms);
+  }
   private send(ws: WebSocket, message: string) {
     ws.send(message);
-    this.reply ??= setTimeout(() => {
-      this.reply = undefined;
-      ws.close(4000, "No reply");
-    }, REPLY_MS);
+    this.expect(ws, REPLY_MS);
   }
   private connect() {
     if (this.stopped) return;
@@ -60,10 +63,9 @@ export class GameConnection {
     url.searchParams.set("code", this.code);
     const ws = (this.socket = new WebSocket(url, ["giulietto", this.token]));
     this.status("Connecting…");
-    // A handshake that hangs fires no event, so give it a deadline like the HTTP join.
-    this.opening = setTimeout(() => ws.close(4000, "Connect timed out"), CONNECT_MS);
+    // A hung handshake fires no event, so the first snapshot has a deadline too.
+    this.expect(ws, CONNECT_MS);
     ws.onopen = () => {
-      clearTimeout(this.opening);
       if (this.stopped || this.socket !== ws) return;
       this.heartbeat = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) this.send(ws, "ping");
@@ -72,8 +74,8 @@ export class GameConnection {
     };
     ws.onmessage = (event) => {
       if (this.stopped || this.socket !== ws) return;
-      clearTimeout(this.reply);
-      this.reply = undefined;
+      clearTimeout(this.watchdog);
+      this.watchdog = undefined;
       if (event.data === "pong") return;
       const message = JSON.parse(event.data);
       if (message.type === "state") {
@@ -95,10 +97,9 @@ export class GameConnection {
       }
     };
     ws.onclose = (event) => {
-      clearTimeout(this.opening);
       clearInterval(this.heartbeat);
-      clearTimeout(this.reply);
-      this.reply = undefined;
+      clearTimeout(this.watchdog);
+      this.watchdog = undefined;
       if (this.stopped) return;
       if (event.code === 4001 || event.code === 4002) {
         this.closedReason = event.reason || "Connection closed.";
@@ -163,9 +164,8 @@ export class GameConnection {
   stop() {
     this.stopped = true;
     clearTimeout(this.retry);
-    clearTimeout(this.opening);
     clearInterval(this.heartbeat);
-    clearTimeout(this.reply);
+    clearTimeout(this.watchdog);
     if (typeof document !== "undefined")
       document.removeEventListener("visibilitychange", this.wake);
     if (typeof window !== "undefined") window.removeEventListener("online", this.wake);
