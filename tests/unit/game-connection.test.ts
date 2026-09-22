@@ -141,6 +141,16 @@ test("drops a socket that never delivers its first snapshot and tries again", as
   expect(second.close).not.toHaveBeenCalled();
 });
 
+test("pongs do not keep an open socket alive before its first snapshot", async () => {
+  const first = Socket.sockets[0];
+  first.open();
+  page.dispatchEvent(new Event("visibilitychange"));
+  expect(first.send.mock.calls).toEqual([["ping"]]);
+  first.onmessage?.({ data: "pong" });
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(first.close).toHaveBeenCalledWith(4000, "No reply");
+});
+
 test("drops a socket that does not answer a command and replays it on the next socket", async () => {
   const first = Socket.sockets[0];
   first.open();

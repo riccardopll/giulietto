@@ -74,6 +74,8 @@ export class GameConnection {
     };
     ws.onmessage = (event) => {
       if (this.stopped || this.socket !== ws) return;
+      // A pong proves the link, not the table; the first snapshot keeps its deadline.
+      if (event.data === "pong" && !this.synced) return;
       clearTimeout(this.watchdog);
       this.watchdog = undefined;
       if (event.data === "pong") return;
