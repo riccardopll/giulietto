@@ -10,6 +10,7 @@ type Pending = {
 
 const PING_MS = 10000;
 const REPLY_MS = 5000;
+const CONNECT_MS = 10000;
 
 /** Retries keep the same command ID; the room acknowledges each mutation only once. */
 export class GameConnection {
@@ -19,6 +20,7 @@ export class GameConnection {
   private retry?: number;
   private heartbeat?: number;
   private reply?: number;
+  private opening?: number;
   private joining?: AbortController;
   private synced = false;
   private closedReason = "Connection closed.";
@@ -58,7 +60,10 @@ export class GameConnection {
     url.searchParams.set("code", this.code);
     const ws = (this.socket = new WebSocket(url, ["giulietto", this.token]));
     this.status("Connecting…");
+    // A handshake that hangs fires no event, so give it a deadline like the HTTP join.
+    this.opening = setTimeout(() => ws.close(4000, "Connect timed out"), CONNECT_MS);
     ws.onopen = () => {
+      clearTimeout(this.opening);
       if (this.stopped || this.socket !== ws) return;
       this.heartbeat = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) this.send(ws, "ping");
@@ -90,6 +95,7 @@ export class GameConnection {
       }
     };
     ws.onclose = (event) => {
+      clearTimeout(this.opening);
       clearInterval(this.heartbeat);
       clearTimeout(this.reply);
       this.reply = undefined;
@@ -157,6 +163,7 @@ export class GameConnection {
   stop() {
     this.stopped = true;
     clearTimeout(this.retry);
+    clearTimeout(this.opening);
     clearInterval(this.heartbeat);
     clearTimeout(this.reply);
     if (typeof document !== "undefined")

@@ -75,7 +75,11 @@ test("reconnects a synced socket directly and replays an unacknowledged command 
   second.receive({ type: "state", state: state() });
   second.receive({ type: "state", state: state() });
   expect(second.send.mock.calls).toEqual([[message]]);
-  second.receive({ type: "ack", commandId: JSON.parse(message).commandId, state: state() });
+  second.receive({
+    type: "ack",
+    commandId: JSON.parse(message).commandId,
+    state: state(),
+  });
   await expect(pending).resolves.toMatchObject({ you: "p0" });
   expect(status).toHaveBeenLastCalledWith("");
 });
@@ -123,6 +127,19 @@ test("pings every ten seconds and drops a socket that stops replying", async () 
   expect(Socket.sockets).toHaveLength(2);
 });
 
+test("drops a handshake that never completes and tries again", async () => {
+  const first = Socket.sockets[0];
+  await vi.advanceTimersByTimeAsync(9999);
+  expect(first.close).not.toHaveBeenCalled();
+  await vi.advanceTimersByTimeAsync(1);
+  expect(first.close).toHaveBeenCalledWith(4000, "Connect timed out");
+  await vi.advanceTimersByTimeAsync(500);
+  expect(Socket.sockets).toHaveLength(2);
+  Socket.sockets[1].open();
+  await vi.advanceTimersByTimeAsync(10000);
+  expect(Socket.sockets[1].close).not.toHaveBeenCalled();
+});
+
 test("drops a socket that does not answer a command and replays it on the next socket", async () => {
   const first = Socket.sockets[0];
   first.open();
@@ -136,7 +153,11 @@ test("drops a socket that does not answer a command and replays it on the next s
   second.open();
   second.receive({ type: "state", state: state() });
   expect(second.send.mock.calls).toEqual([[message]]);
-  second.receive({ type: "ack", commandId: JSON.parse(message).commandId, state: state() });
+  second.receive({
+    type: "ack",
+    commandId: JSON.parse(message).commandId,
+    state: state(),
+  });
   await expect(pending).resolves.toMatchObject({ you: "p0" });
 });
 
