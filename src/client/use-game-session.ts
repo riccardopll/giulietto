@@ -151,8 +151,8 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       window.removeEventListener("beforeunload", onUnload);
     };
   }, [isPreview]);
-  // Seated players see the live invite; only those who did not open it are notified.
-  const invite = game?.rematch && findPlayer(game, game.you) ? game.rematch : undefined;
+  // Only the players who did not open the invite are notified.
+  const invite = game?.rematch;
   const inviteCode = invite && invite.by !== game!.you ? invite.code : undefined;
   const announceInvite = useEffectEvent((code: string) => {
     const current = game!;

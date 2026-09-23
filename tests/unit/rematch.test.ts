@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { apply, join } from "../../src/server/protocol";
-import { tick } from "../../src/shared/game";
+import { tick, view } from "../../src/shared/game";
 import { checkRematch, inviteRematch, REMATCH_INVITE_MS } from "../../src/shared/rematch";
 import { gameFixture } from "./helpers";
 
@@ -53,4 +53,7 @@ test("the table assigns the lobby code and keeps spectators out", () => {
   );
   apply(game, "p0", { action: "rematch", code: "NEWLOBBY", commandId }, 300);
   expect(game.rematch).toMatchObject({ code: "NEWLOBBY", by: "p0" });
+  expect(view(game, "p1").rematch).toEqual(game.rematch);
+  expect(view(game, "p2").rematch).toEqual(game.rematch);
+  expect(view(game, "watcher").rematch).toBeUndefined();
 });
