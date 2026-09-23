@@ -161,6 +161,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       {
         id: "rematch-invite",
         duration: current.rematch!.expiresAt - current.serverTime,
+        countdown: "Expires in",
         action: { label: "Join", onClick: () => void moveTo(code) },
       },
     );

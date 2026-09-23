@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Clock3 } from "lucide-react";
 import { findPlayer, ROUND_PAUSE_MS, type GameView, type Rematch } from "../../shared/game";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "./ui/button";
+import { Countdown } from "./ui/countdown";
 
 const cellClass = "px-1 py-3 text-center align-middle whitespace-normal wrap-anywhere sm:px-2";
 
@@ -45,7 +45,6 @@ export function ResultsPanel({
   onReset: () => void;
 }) {
   const remaining = useCountdown(game, preview);
-  const seconds = Math.ceil(remaining / 1000);
   const finished = game.phase === "finished";
   const winner = finished && game.winner ? findPlayer(game, game.winner) : undefined;
   if (winner)
@@ -143,18 +142,14 @@ export function ResultsPanel({
           Back to tables
         </Button>
       ) : (
-        <div className="mt-3 border-t pt-4">
-          <p className="flex flex-wrap items-center justify-center gap-2 text-sm text-muted-foreground">
-            <Clock3 className="size-4" aria-hidden="true" />
-            Next round in {seconds}s
-          </p>
-          <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-primary/10" aria-hidden="true">
-            <div
-              className="h-full rounded-full bg-primary/60"
-              style={{ width: `${(remaining / ROUND_PAUSE_MS) * 100}%` }}
-            />
-          </div>
-        </div>
+        <Countdown
+          className="mt-3 border-t pt-4"
+          textClassName="justify-center"
+          barClassName="mt-4"
+          label="Next round in"
+          remaining={remaining}
+          total={ROUND_PAUSE_MS}
+        />
       )}
     </section>
   );

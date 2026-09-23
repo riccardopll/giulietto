@@ -175,9 +175,16 @@ test("three players complete a game, including round results and elimination", a
   );
   await expect(invites[1]).toBeVisible();
   await expect(invites[2]).toBeVisible();
+  const expiry = invites[1].getByText(/^Expires in \d+s$/);
+  await expect(expiry).toHaveText(/^Expires in (60|59|58)s$/);
+  const expiryBar = expiry.locator("..").locator("[aria-hidden='true'] > div");
+  expect(await expiryBar.evaluate((element) => parseFloat(element.style.width))).toBeGreaterThan(
+    90,
+  );
+  await expect(invites[1]).toHaveCSS("opacity", "1");
+  await screenshot(players[1].page, testInfo, "rematch-invite", { fullPage: true });
   await expect(otherTab.getByRole("button", { name: "Join rematch", exact: true })).toBeVisible();
   await expect(otherTab.getByText("invited you to a rematch")).toHaveCount(0);
-  await screenshot(players[1].page, testInfo, "rematch-invite", { fullPage: true });
   await invites[1].getByRole("button", { name: "Join", exact: true }).click();
   await synced(
     players.slice(0, 2),
