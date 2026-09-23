@@ -1,7 +1,10 @@
 import type { Env } from "./env";
 import { roomCode } from "./protocol";
 
-type SiteEnv = { ASSETS: Pick<Fetcher, "fetch">; ROOMS: Pick<Env["ROOMS"], "getByName"> };
+type SiteEnv = Pick<Env, "REQUEST_LIMIT"> & {
+  ASSETS: Pick<Fetcher, "fetch">;
+  ROOMS: Pick<Env["ROOMS"], "getByName">;
+};
 
 export async function serveSite(req: Request, env: SiteEnv) {
   const url = new URL(req.url);
@@ -20,9 +23,13 @@ export async function serveSite(req: Request, env: SiteEnv) {
     inviteUrl.searchParams.set("table", table);
     let host = null;
     try {
-      host = await env.ROOMS.getByName(roomCode(table)).hostName();
+      const code = roomCode(table);
+      // Each lookup can create a table object, so it shares the API request limit.
+      const key = req.headers.get("cf-connecting-ip") || "anonymous";
+      if ((await env.REQUEST_LIMIT.limit({ key })).success)
+        host = await env.ROOMS.getByName(code).hostName();
     } catch {
-      /* Invalid or unavailable tables keep the default description. */
+      /* Invalid, unavailable, or rate-limited lookups keep the default description. */
     }
     response = new HTMLRewriter()
       .on('meta[property="og:title"]', {
