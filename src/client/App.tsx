@@ -167,7 +167,6 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 chat={chat}
                 invite={table.invite}
                 onRematch={() => void table.rematch()}
-                onJoinRematch={table.joinRematch}
                 onReset={table.reset}
               />
             ) : (

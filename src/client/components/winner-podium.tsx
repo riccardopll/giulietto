@@ -14,7 +14,6 @@ export function WinnerPodium({
   busy,
   invite,
   onRematch,
-  onJoinRematch,
   onReset,
 }: {
   game: GameView;
@@ -22,7 +21,6 @@ export function WinnerPodium({
   busy: boolean;
   invite?: Rematch;
   onRematch: () => void;
-  onJoinRematch: () => void;
   onReset: () => void;
 }) {
   const groups = standings(game.players, winner.id);
@@ -117,21 +115,15 @@ export function WinnerPodium({
         </div>
       )}
       <div className="mt-6 grid gap-3">
-        {invite ? (
-          <Button className={buttonClass} disabled={busy} onClick={onJoinRematch}>
+        {canRematch && (
+          // A live invite greys the button out; the notification is the way in.
+          <Button className={buttonClass} disabled={busy || !!invite} onClick={onRematch}>
             <RotateCcw className="size-5" />
-            Join rematch
+            Rematch
           </Button>
-        ) : (
-          canRematch && (
-            <Button className={buttonClass} disabled={busy} onClick={onRematch}>
-              <RotateCcw className="size-5" />
-              Rematch
-            </Button>
-          )
         )}
         <Button
-          variant={invite || canRematch ? "outline" : "default"}
+          variant={canRematch ? "outline" : "default"}
           className={buttonClass}
           onClick={onReset}
         >

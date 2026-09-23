@@ -32,7 +32,6 @@ export function ResultsPanel({
   chat,
   invite,
   onRematch,
-  onJoinRematch,
   onReset,
 }: {
   game: GameView;
@@ -41,7 +40,6 @@ export function ResultsPanel({
   chat: ChatState;
   invite?: Rematch;
   onRematch: () => void;
-  onJoinRematch: () => void;
   onReset: () => void;
 }) {
   const remaining = useCountdown(game, preview);
@@ -55,7 +53,6 @@ export function ResultsPanel({
         busy={busy}
         invite={invite}
         onRematch={onRematch}
-        onJoinRematch={onJoinRematch}
         onReset={onReset}
       />
     );

@@ -332,6 +332,5 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     play,
     rematch,
     invite,
-    joinRematch: () => void moveTo(invite!.code),
   };
 }

@@ -183,7 +183,7 @@ test("three players complete a game, including round results and elimination", a
   );
   await expect(invites[1]).toHaveCSS("opacity", "1");
   await screenshot(players[1].page, testInfo, "rematch-invite", { fullPage: true });
-  await expect(otherTab.getByRole("button", { name: "Join rematch", exact: true })).toBeVisible();
+  await expect(otherTab.getByRole("button", { name: "Rematch", exact: true })).toBeDisabled();
   await expect(otherTab.getByText("invited you to a rematch")).toHaveCount(0);
   await invites[1].getByRole("button", { name: "Join", exact: true }).click();
   await synced(
@@ -196,8 +196,8 @@ test("three players complete a game, including round results and elimination", a
   await invites[2].getByRole("button", { name: "Dismiss", exact: true }).click();
   await expect(invites[2]).toBeHidden();
   await expect(
-    players[2].page.getByRole("button", { name: "Join rematch", exact: true }),
-  ).toBeVisible();
+    players[2].page.getByRole("button", { name: "Rematch", exact: true }),
+  ).toBeDisabled();
 
   for (const [i, { page }] of players.entries()) {
     const state = finished[i];
