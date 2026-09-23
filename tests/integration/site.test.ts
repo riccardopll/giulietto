@@ -1,6 +1,7 @@
-import { SELF } from "cloudflare:test";
+import { SELF, env } from "cloudflare:test";
 import { afterEach, expect, test, vi } from "vitest";
 import { serveSite } from "../../src/server/site";
+import { api, guest } from "./helpers";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -14,7 +15,7 @@ test("public assets keep their body, status, content type, and caching", async (
         }),
     ),
   };
-  const response = await serveSite(request, assets);
+  const response = await serveSite(request, { ASSETS: assets, ROOMS: env.ROOMS });
   expect(assets.fetch).toHaveBeenCalledWith(request);
   expect(await response.text()).toBe("User-agent: *\nAllow: /");
   expect(response.headers.get("Content-Type")).toBe("text/plain");
@@ -23,7 +24,8 @@ test("public assets keep their body, status, content type, and caching", async (
 
   for (const status of [404, 304]) {
     const response = await serveSite(new Request("https://giulietto.online/missing"), {
-      fetch: async () => new Response(null, { status }),
+      ASSETS: { fetch: async () => new Response(null, { status }) },
+      ROOMS: env.ROOMS,
     });
     expect(response.status).toBe(status);
     expect(await response.text()).toBe("");
@@ -44,7 +46,7 @@ test("invite pages and alternate workers.dev hosts remain accessible but unindex
           }),
       ),
     };
-    const response = await serveSite(request, assets);
+    const response = await serveSite(request, { ASSETS: assets, ROOMS: env.ROOMS });
     expect(assets.fetch).toHaveBeenCalledWith(request);
     expect(response.status).toBe(200);
     expect(await response.text()).toBe("home");
@@ -64,10 +66,10 @@ test("preview loads the application only in development and is never indexed", a
         });
       }),
     };
-    const response = await serveSite(
-      new Request("https://giulietto.online/preview?people=6"),
-      assets,
-    );
+    const response = await serveSite(new Request("https://giulietto.online/preview?people=6"), {
+      ASSETS: assets,
+      ROOMS: env.ROOMS,
+    });
     expect(response.status).toBe(dev ? 200 : 404);
     expect(response.headers.get("X-Robots-Tag")).toBe("noindex");
   }
@@ -85,15 +87,18 @@ test("homepage and room invites expose distinct link previews in HTML", async ()
   expect(home.headers.has("X-Robots-Tag")).toBe(false);
 
   expect(html).not.toContain('property="og:image');
-  for (const code of ["ABCD2345", "VWJ68J8G"]) {
-    const url = `https://giulietto.online/?table=${code}`;
+  const { code } = await api.state(guest(1), { action: "create" });
+  for (const [table, description] of [
+    [code, "bot_1's table"],
+    ["ABCD2345", "An online card game for 2 to 6 players."],
+    ["invalid", "An online card game for 2 to 6 players."],
+  ]) {
+    const url = `https://giulietto.online/?table=${table}`;
     const invite = await SELF.fetch(url);
     const body = await invite.text();
     expect(invite.status).toBe(200);
     expect(body).toContain('<meta property="og:title" content="Join me on Giulietto"');
-    expect(body).toContain(
-      '<meta property="og:description" content="Open the link to join the room."',
-    );
+    expect(body).toContain(`<meta property="og:description" content="${description}"`);
     expect(body).toContain(`<meta property="og:url" content="${url}"`);
     expect(body).not.toContain('property="og:image');
     expect(body).not.toContain('<meta property="og:title" content="Giulietto"');
