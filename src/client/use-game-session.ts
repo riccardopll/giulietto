@@ -161,7 +161,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       duration: current.rematch!.expiresAt - current.serverTime,
       countdown: "Expires in",
       decline: "Decline",
-      action: { label: "Join rematch", onClick: () => void moveTo(code) },
+      action: { label: "Join", onClick: () => void moveTo(code) },
     });
   });
   useEffect(() => {

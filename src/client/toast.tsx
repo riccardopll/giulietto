@@ -65,15 +65,17 @@ function PromptCard({ entry, prompt }: { entry: Toast; prompt: Prompt }) {
   }, []);
   return (
     <>
-      <p className="text-lg font-semibold wrap-anywhere">{entry.message}</p>
-      <Countdown
-        className="mt-1"
-        textClassName="gap-1.5 text-xs"
-        barClassName="absolute inset-x-0 bottom-0 rounded-none"
-        label={prompt.countdown}
-        remaining={Math.min(entry.duration, entry.expiresAt - now)}
-        total={entry.duration}
-      />
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 text-lg font-semibold wrap-anywhere">{entry.message}</p>
+        <Countdown
+          className="shrink-0 pt-1"
+          textClassName="gap-1.5 text-xs whitespace-nowrap"
+          barClassName="absolute inset-x-0 bottom-0 rounded-none"
+          label={prompt.countdown}
+          remaining={Math.min(entry.duration, entry.expiresAt - now)}
+          total={entry.duration}
+        />
+      </div>
       <div className="mt-3 grid grid-cols-[1fr_2fr] gap-2">
         <Button variant="outline" className="min-h-11" onClick={() => toast.dismiss(entry.id)}>
           {prompt.decline}

@@ -185,7 +185,7 @@ test("three players complete a game, including round results and elimination", a
   await screenshot(players[1].page, testInfo, "rematch-invite", { fullPage: true });
   await expect(otherTab.getByRole("button", { name: "Rematch", exact: true })).toBeDisabled();
   await expect(otherTab.getByText("Rematch with bot_1?")).toHaveCount(0);
-  await invites[1].getByRole("button", { name: "Join rematch", exact: true }).click();
+  await invites[1].getByRole("button", { name: "Join", exact: true }).click();
   await synced(
     players.slice(0, 2),
     (state) => state.code === rematchCode && state.phase === "lobby" && state.players.length === 2,
