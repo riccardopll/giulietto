@@ -12,7 +12,7 @@ export default {
   async fetch(req: Request, env: Env): Promise<Response> {
     try {
       const url = new URL(req.url);
-      if (!url.pathname.startsWith("/api/")) return serveSite(req, env.ASSETS);
+      if (!url.pathname.startsWith("/api/")) return serveSite(req, env);
       const profile = url.pathname === "/api/profile";
       const stats = url.pathname === "/api/stats";
       const socket = url.pathname === "/api/game/socket";
