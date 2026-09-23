@@ -6,7 +6,7 @@ import { AceSelection } from "../components/ace-selection";
 import type { TableCommand } from "../../shared/commands";
 import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
-import { inviteRematch } from "../../shared/rematch";
+import { inviteRematch, REMATCH_INVITE_MS } from "../../shared/rematch";
 import { Button } from "../components/ui/button";
 import {
   bid,
@@ -301,6 +301,19 @@ export function Preview({ bot }: { bot: Bot }) {
     setControlsOpen(false);
   }
 
+  function showInvite() {
+    const game = structuredClone(entry.game);
+    const sender = game.players.find((_, index) => index !== viewer)!;
+    game.rematch = {
+      code: crypto.randomUUID().slice(0, 8).toUpperCase(),
+      by: sender.id,
+      expiresAt: Date.now() + REMATCH_INVITE_MS,
+    };
+    game.revision++;
+    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    setControlsOpen(false);
+  }
+
   function show(patch: Partial<PreviewOptions>) {
     configure(patch);
     setControlsOpen(false);
@@ -432,6 +445,14 @@ export function Preview({ bot }: { bot: Bot }) {
             onClick={() => show({ phase: "finished" })}
           >
             Show winning screen
+          </Button>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full"
+            disabled={viewer === -1}
+            onClick={showInvite}
+          >
+            Show rematch invite
           </Button>
           <div className="grid grid-cols-2 gap-3">
             {controls.map((control) => (

@@ -156,15 +156,13 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const inviteCode = invite && invite.by !== game!.you ? invite.code : undefined;
   const announceInvite = useEffectEvent((code: string) => {
     const current = game!;
-    toast.notify(
-      `${findPlayer(current, current.rematch!.by)?.name ?? "A player"} invited you to a rematch.`,
-      {
-        id: "rematch-invite",
-        duration: current.rematch!.expiresAt - current.serverTime,
-        countdown: "Expires in",
-        action: { label: "Join", onClick: () => void moveTo(code) },
-      },
-    );
+    toast.prompt(`Rematch with ${findPlayer(current, current.rematch!.by)?.name ?? "them"}?`, {
+      id: "rematch-invite",
+      duration: current.rematch!.expiresAt - current.serverTime,
+      countdown: "Expires in",
+      decline: "Decline",
+      action: { label: "Join rematch", onClick: () => void moveTo(code) },
+    });
   });
   useEffect(() => {
     if (inviteCode) announceInvite(inviteCode);
