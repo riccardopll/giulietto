@@ -3,6 +3,7 @@ import type { Env } from "./env";
 import { isTableCommand, type Command } from "../shared/commands";
 import { GameError } from "../shared/game-error";
 import { createBot } from "../shared/bot";
+import { checkRematch } from "../shared/rematch";
 import weights from "../../public/bot/weights.json";
 import {
   makeGame,
@@ -17,7 +18,7 @@ import {
 } from "../shared/game";
 import { historyStatements } from "./match-history";
 import { eventStatements, gameEvents, type EventSource, type GameEvent } from "./game-events";
-import { apply, command, displayName, failure } from "./protocol";
+import { apply, command, displayName, failure, lobbyCode } from "./protocol";
 
 type Room = {
   game: Game;
@@ -126,6 +127,7 @@ export class GameTable extends DurableObject<Env> {
         .filter((spectator) => !connected.has(spectator.id))
         .map((spectator) => spectator.seen + SPECTATOR_RETENTION_MS),
       game.deadline || Infinity,
+      game.rematch?.expiresAt ?? Infinity,
       botTurnAt(game),
       room.updated + TABLE_RETENTION_MS,
     );
@@ -220,6 +222,26 @@ export class GameTable extends DurableObject<Env> {
       for (const socket of this.ctx.getWebSockets(id))
         socket.close(4001, "You left the table. You can rejoin as a spectator.");
   }
+  /** Opens the rematch lobby before the invite is recorded; retries reuse the same code. */
+  private async openRematch(game: Game, id: string, commandId: string) {
+    checkRematch(game, id, Date.now());
+    const player = findPlayer(game, id)!;
+    const code = await lobbyCode(`rematch:${game.code}:${commandId}`);
+    const response = await this.env.ROOMS.getByName(code).fetch(`https://internal/${code}/create`, {
+      method: "POST",
+      headers: { "x-player-id": id },
+      body: JSON.stringify({
+        action: "create",
+        name: player.name,
+        avatar: player.avatar,
+        commandId,
+      }),
+    });
+    if (response.ok) return code;
+    const body = (await response.json().catch(() => null)) as { error?: string } | null;
+    const message = body?.error ?? "Could not open the rematch lobby.";
+    throw response.status === 400 ? new GameError(message) : new Error(message);
+  }
   private async execute(room: Room, id: string, input: Command) {
     const duplicate = this.ctx.storage.sql
       .exec("SELECT 1 FROM receipts WHERE player=? AND command=?", id, input.commandId)
@@ -227,6 +249,8 @@ export class GameTable extends DurableObject<Env> {
     let persist: (() => Promise<void>) | undefined;
     if (!duplicate) {
       const game = structuredClone(room.game);
+      if (input.action === "rematch")
+        input = { ...input, code: await this.openRematch(game, id, input.commandId) };
       apply(game, id, input, Date.now());
       if (input.action === "rename") {
         // D1 runs after the table unblocks so a slow write cannot stall other players.

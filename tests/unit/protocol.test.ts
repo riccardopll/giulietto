@@ -182,6 +182,11 @@ test("normalizes accepted commands and drops unknown fields", () => {
     text: "good luck",
     commandId,
   });
+  expect(command({ action: "rematch", code: "ABCDEFGH", commandId, name: "x" })).toEqual({
+    action: "rematch",
+    code: "ABCDEFGH",
+    commandId,
+  });
   expect(command({ action: "join", name: "bot_2", avatar: "king-cups", commandId })).toEqual({
     action: "join",
     name: "bot_2",

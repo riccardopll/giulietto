@@ -3,7 +3,15 @@ import { X } from "lucide-react";
 import { Button } from "./components/ui/button";
 
 type Action = { label: string; onClick: () => void };
-type Toast = { id: string; message: string; action?: Action; expiresAt: number; leaving?: boolean };
+type Toast = {
+  id: string;
+  message: string;
+  action?: Action;
+  expiresAt: number;
+  status?: boolean;
+  leaving?: boolean;
+};
+type Options = { id?: string; action?: Action; duration?: number };
 const DURATION_MS = 4500;
 const EXIT_MS = 200;
 let toasts: Toast[] = [];
@@ -18,17 +26,22 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
+function show(message: string, options: Options, status: boolean) {
+  const { id = crypto.randomUUID(), action, duration = DURATION_MS } = options;
+  const next: Toast = { id, message, action, status, expiresAt: Date.now() + duration };
+  publish(
+    toasts.some((entry) => entry.id === id)
+      ? toasts.map((entry) => (entry.id === id ? next : entry))
+      : [...toasts, next],
+  );
+}
+
 export const toast = {
-  error(
-    message: string,
-    { id = crypto.randomUUID(), action }: { id?: string; action?: Action } = {},
-  ) {
-    const next: Toast = { id, message, action, expiresAt: Date.now() + DURATION_MS };
-    publish(
-      toasts.some((entry) => entry.id === id)
-        ? toasts.map((entry) => (entry.id === id ? next : entry))
-        : [...toasts, next],
-    );
+  error(message: string, options: Options = {}) {
+    show(message, options, false);
+  },
+  notify(message: string, options: Options = {}) {
+    show(message, options, true);
   },
   dismiss(id: string) {
     if (!toasts.some((entry) => entry.id === id && !entry.leaving)) return;
@@ -59,7 +72,7 @@ export function Toaster() {
       {items.map((entry) => (
         <div
           key={entry.id}
-          role="alert"
+          role={entry.status ? "status" : "alert"}
           data-leaving={entry.leaving || undefined}
           className="pointer-events-auto flex w-full max-w-sm items-center gap-2 rounded-lg border bg-card py-2 pr-2 pl-4 text-sm shadow-lg animate-[toast-in_.25s_ease-out_both] data-leaving:animate-[toast-out_.2s_ease-in_both]"
         >

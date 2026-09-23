@@ -1,6 +1,6 @@
 import { Avatar } from "./avatar";
-import { Crown } from "lucide-react";
-import type { GameView } from "../../shared/game";
+import { Crown, RotateCcw } from "lucide-react";
+import { findPlayer, type GameView, type Rematch } from "../../shared/game";
 import { standings } from "../standings";
 import { cn } from "../utils";
 import { Button } from "./ui/button";
@@ -11,14 +11,25 @@ type Player = GameView["players"][number];
 export function WinnerPodium({
   game,
   winner,
+  busy,
+  invite,
+  onRematch,
+  onJoinRematch,
   onReset,
 }: {
   game: GameView;
   winner: Player;
+  busy: boolean;
+  invite?: Rematch;
+  onRematch: () => void;
+  onJoinRematch: () => void;
   onReset: () => void;
 }) {
   const groups = standings(game.players, winner.id);
   const others = groups.filter((group) => group.place > 3);
+  const me = findPlayer(game, game.you);
+  const canRematch = !!me && !me.bot && !me.forfeited;
+  const buttonClass = "min-h-12 w-full whitespace-normal rounded-xl px-4 py-3 text-xl font-bold";
   return (
     <section className="mx-auto my-4 w-full max-w-lg px-2 py-3 text-center sm:px-6">
       <h1 className="text-3xl font-bold wrap-anywhere sm:text-4xl">
@@ -105,12 +116,28 @@ export function WinnerPodium({
           </ul>
         </div>
       )}
-      <Button
-        className="mt-6 min-h-12 w-full whitespace-normal rounded-xl px-4 py-3 text-xl font-bold"
-        onClick={onReset}
-      >
-        Back to tables
-      </Button>
+      <div className="mt-6 grid gap-3">
+        {invite ? (
+          <Button className={buttonClass} disabled={busy} onClick={onJoinRematch}>
+            <RotateCcw className="size-5" />
+            Join rematch
+          </Button>
+        ) : (
+          canRematch && (
+            <Button className={buttonClass} disabled={busy} onClick={onRematch}>
+              <RotateCcw className="size-5" />
+              Rematch
+            </Button>
+          )
+        )}
+        <Button
+          variant={invite || canRematch ? "outline" : "default"}
+          className={buttonClass}
+          onClick={onReset}
+        >
+          Back to tables
+        </Button>
+      </div>
     </section>
   );
 }

@@ -15,6 +15,7 @@ export type TableCommand =
   | { action: "play"; card?: number; mode?: "high" | "low" }
   | { action: "emote"; emote: Emote["id"] }
   | { action: "chat"; text: string }
+  | { action: "rematch" }
   | { action: "leave" };
 export type Command = (EntryCommand | TableCommand) & { commandId: string; code?: string };
 

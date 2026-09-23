@@ -25,6 +25,7 @@ export type Player = {
 };
 export type Spectator = { id: string; name: string; seen: number; emote?: Emote };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
+export type Rematch = { code: string; by: string; expiresAt: number };
 export type Result = {
   id: string;
   name: string;
@@ -59,6 +60,7 @@ export type Game = {
   deadline: number;
   winner: string | null;
   tie: boolean;
+  rematch?: Rematch;
 };
 export const DEFAULT_TURN_SECONDS = 30;
 export const MIN_TURN_SECONDS = 15;
@@ -299,6 +301,7 @@ export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
     game.spectators = game.spectators.filter(
       (spectator) => connected?.has(spectator.id) || now - spectator.seen < SPECTATOR_RETENTION_MS,
     );
+  if (game.rematch && now >= game.rematch.expiresAt) delete game.rematch;
   if (game.phase === "lobby") {
     game.players = game.players.filter((player) => player.bot || now - player.seen < 120000);
     if (!findPlayer(game, game.host))

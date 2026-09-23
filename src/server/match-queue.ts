@@ -2,7 +2,7 @@ import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { GameError } from "../shared/game-error";
 import { TABLE_RETENTION_MS } from "../shared/game";
-import { command, displayName, failure } from "./protocol";
+import { command, displayName, failure, lobbyCode } from "./protocol";
 export class MatchQueue extends DurableObject<Env> {
   async fetch(req: Request) {
     // Serialize the seat reservation through the room's commit, including concurrent strangers.
@@ -43,14 +43,7 @@ export class MatchQueue extends DurableObject<Env> {
             unavailable.add(candidate.code);
           }
         }
-        // Deterministic code makes creation retry-safe even after a crash between the two objects.
-        const bytes = new Uint8Array(
-          await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)),
-        );
-        const code = Array.from(
-          bytes.slice(0, 8),
-          (byte) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[byte % 32],
-        ).join("");
+        const code = await lobbyCode(key);
         const response = await send(code, input.action, true);
         if (!response.ok) return response;
         if (input.action === "match") candidates.push({ code, at: Date.now() });

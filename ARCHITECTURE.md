@@ -21,6 +21,10 @@ scans. Update totals and `matches.stats_counted` in the same finalization batch
 so a retry cannot count a match twice. Keep timing totals and sample counts
 separate. Matches with bots do not contribute to player statistics or rankings.
 
+The finished table opens rematch lobbies itself, with a code derived from the
+command ID, so one invite exists per table and retries reuse the same lobby.
+Invites expire after a minute; the table then accepts a new one.
+
 Deploy workers before applying remote migrations. Worker changes must run against the
 previous schema until migrations finish. This keeps old finalizers from restoring
 bot-match totals after the statistics rebuild.

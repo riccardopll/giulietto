@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Clock3 } from "lucide-react";
-import { findPlayer, ROUND_PAUSE_MS, type GameView } from "../../shared/game";
+import { findPlayer, ROUND_PAUSE_MS, type GameView, type Rematch } from "../../shared/game";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
@@ -28,19 +28,38 @@ function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
 export function ResultsPanel({
   game,
   preview,
+  busy,
   chat,
+  invite,
+  onRematch,
+  onJoinRematch,
   onReset,
 }: {
   game: GameView;
   preview: boolean;
+  busy: boolean;
   chat: ChatState;
+  invite?: Rematch;
+  onRematch: () => void;
+  onJoinRematch: () => void;
   onReset: () => void;
 }) {
   const remaining = useCountdown(game, preview);
   const seconds = Math.ceil(remaining / 1000);
   const finished = game.phase === "finished";
   const winner = finished && game.winner ? findPlayer(game, game.winner) : undefined;
-  if (winner) return <WinnerPodium game={game} winner={winner} onReset={onReset} />;
+  if (winner)
+    return (
+      <WinnerPodium
+        game={game}
+        winner={winner}
+        busy={busy}
+        invite={invite}
+        onRematch={onRematch}
+        onJoinRematch={onJoinRematch}
+        onReset={onReset}
+      />
+    );
   return (
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center sm:p-6">
       <div className="mb-4 flex items-center gap-3 px-1 pt-2">

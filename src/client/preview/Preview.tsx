@@ -6,6 +6,7 @@ import { AceSelection } from "../components/ace-selection";
 import type { TableCommand } from "../../shared/commands";
 import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
+import { inviteRematch } from "../../shared/rematch";
 import { Button } from "../components/ui/button";
 import {
   bid,
@@ -278,7 +279,8 @@ export function Preview({ bot }: { bot: Bot }) {
       else if (input.action === "play") {
         const card = input.card ?? -1;
         play(game, id, card === -1 ? game.players[viewer].hand[0] : card, input.mode, now);
-      } else return;
+      } else if (input.action === "rematch") inviteRematch(game, id, "PREVIEW0", now);
+      else return;
     }
     game.revision++;
     setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));

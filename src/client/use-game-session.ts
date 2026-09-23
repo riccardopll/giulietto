@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { toast } from "./toast";
 import { isTableCommand, type EntryCommand, type TableCommand } from "../shared/commands";
-import type { GameView } from "../shared/game";
+import { findPlayer, type GameView } from "../shared/game";
 import { GameConnection } from "./game-connection";
 import { GameRequestError, requestGame } from "./game-request";
 import {
@@ -151,6 +151,24 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       window.removeEventListener("beforeunload", onUnload);
     };
   }, [isPreview]);
+  // Seated players see the live invite; only those who did not open it are notified.
+  const invite = game?.rematch && findPlayer(game, game.you) ? game.rematch : undefined;
+  const inviteCode = invite && invite.by !== game!.you ? invite.code : undefined;
+  const announceInvite = useEffectEvent((code: string) => {
+    const current = game!;
+    toast.notify(
+      `${findPlayer(current, current.rematch!.by)?.name ?? "A player"} invited you to a rematch.`,
+      {
+        id: "rematch-invite",
+        duration: current.rematch!.expiresAt - current.serverTime,
+        action: { label: "Join", onClick: () => void moveTo(code) },
+      },
+    );
+  });
+  useEffect(() => {
+    if (inviteCode) announceInvite(inviteCode);
+    else toast.dismiss("rematch-invite");
+  }, [inviteCode]);
   useEffect(() => {
     if (!game?.code) return;
     for (let i = 0; i <= 40; i++) {
@@ -219,6 +237,34 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       setPendingCard(null);
     }
   }
+  /** Switches tables in place, replacing the current history entry. */
+  async function moveTo(code: string) {
+    if (preview || !ready || busyRef.current) return;
+    setBusy(true);
+    showError("");
+    try {
+      const s = await requestGame(session.token, { action: "join", code, name: name || "Guest" });
+      transport.current?.stop();
+      transport.current = null;
+      gameRef.current = null;
+      setAce(null);
+      setLeaveOpen(false);
+      history.replaceState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
+      accept(s);
+    } catch (e) {
+      toast.error((e as Error).message, {
+        id: "game-error",
+        action: { label: "Retry", onClick: () => void moveTo(code) },
+      });
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function rematch() {
+    if (!(await act({ action: "rematch" }))) return;
+    const code = gameRef.current?.rematch?.code;
+    if (code) await moveTo(code);
+  }
   function reset() {
     if (preview) {
       preview.reset();
@@ -283,5 +329,8 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     reset,
     renameSeat,
     play,
+    rematch,
+    invite,
+    joinRematch: () => void moveTo(invite!.code),
   };
 }
