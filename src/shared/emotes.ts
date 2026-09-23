@@ -3,7 +3,7 @@ import { GameError } from "./game-error";
 import type { Game } from "./game";
 
 export const EMOTE_DURATION_MS = 1560;
-export const EMOTE_COOLDOWN_MS = 3000;
+export const EMOTE_COOLDOWN_MS = 1500;
 export const EMOTE_IDS = ["chicken", "perso", "goblin"] as const;
 export type Emote = { id: (typeof EMOTE_IDS)[number]; sentAt: number };
 
