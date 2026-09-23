@@ -65,10 +65,10 @@ function PromptCard({ entry, prompt }: { entry: Toast; prompt: Prompt }) {
   }, []);
   return (
     <>
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 text-lg font-semibold wrap-anywhere">{entry.message}</p>
         <Countdown
-          className="shrink-0 pt-1"
+          className="shrink-0"
           textClassName="gap-1.5 text-xs whitespace-nowrap"
           barClassName="absolute inset-x-0 bottom-0 rounded-none"
           label={prompt.countdown}
