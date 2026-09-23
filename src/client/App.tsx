@@ -11,6 +11,7 @@ import { ResultsPanel } from "./components/results-panel";
 import { TableHeader } from "./components/table-header";
 import { ActionDialog } from "./components/ui/action-dialog";
 import { Button } from "./components/ui/button";
+import { PageFooter } from "./components/ui/page-footer";
 import { PageHeader, Wordmark } from "./components/ui/page-header";
 import { Toaster } from "./toast";
 import { useGameSession, type PreviewSession } from "./use-game-session";
@@ -64,7 +65,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         className={
           game && !waiting
             ? "match-screen safe-area mx-auto grid h-dvh max-w-6xl grid-rows-[auto_minmax(0,1fr)]"
-            : "safe-area mx-auto min-h-svh max-w-6xl [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
+            : "safe-area mx-auto flex min-h-svh max-w-6xl flex-col [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
         }
       >
         {game ? (
@@ -175,6 +176,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
             )}
           </main>
         )}
+        {!game && page === "home" && <PageFooter />}
         {game && (
           <ChatSheet
             open={chat.open}
