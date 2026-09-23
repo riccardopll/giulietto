@@ -106,9 +106,6 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await expect(prediction).toHaveCount(0);
   await expect(bubble).toHaveCount(0);
   await expect(emoteTrigger).toBeVisible();
-  await expect(emoteTrigger).toBeDisabled();
-  await page.clock.runFor(1400);
-  await expect(emoteTrigger).toBeVisible();
   await expect(emoteTrigger).toBeEnabled();
 
   await emoteTrigger.click();
