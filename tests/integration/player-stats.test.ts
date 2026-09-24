@@ -146,7 +146,6 @@ test("decision stats combine completed-match samples, omit missing timing, and s
     { type: "bid", payload: { bid: 0 } },
     { type: "play", payload: { card: 31 } },
   ]);
-  // Simulate the pre-migration summaries, then backfill the counts from old events.
   await db
     .prepare(
       "UPDATE match_results SET aces_of_coins_played=NULL, prediction_total=NULL, prediction_count=NULL WHERE match_id='older'",
@@ -265,7 +264,6 @@ test("aggregate migration preserves historical samples and retries count each co
     prediction_time_ms=2000,timed_predictions=1
     WHERE match_id='backfill-0' AND player_id='p0'`)
     .run();
-  // Recreate the pre-migration schema in this isolated test database.
   await db.batch([
     db.prepare("DROP TABLE player_stats"),
     db.prepare("ALTER TABLE matches DROP COLUMN stats_counted"),
@@ -331,7 +329,6 @@ test("bot exclusion migration rebuilds every total from human-only matches", asy
       .bind(bot ? 10 : 1, bot ? 20 : 4, bot ? 40000 : 4000, bot ? 20000 : 2000, matchId)
       .run();
   }
-  // Rebuild the totals as they existed before bot matches were excluded.
   await db.prepare("DELETE FROM player_stats").run();
   await db.prepare(migration("0008_player_stats.sql")[3]).run();
   expect((await playerStats(db, "p0")).player).toMatchObject({ matches: 2, xp: 60 });

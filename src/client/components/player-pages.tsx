@@ -1,30 +1,24 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { toast } from "../toast";
 import { ArrowLeft, Pencil, PlayingCard, Target, Timer } from "lucide-react";
 import type { Profile, StatsResponse } from "../../shared/player-stats";
 import { type AvatarId } from "../../shared/avatars";
 import { Avatar } from "./avatar";
 import { AvatarPicker } from "./avatar-picker";
-import { Button } from "./ui/button";
-import { NameChangeInput } from "./ui/name-change-input";
-import { ActionDialog } from "./ui/action-dialog";
-import { PageHeader } from "./ui/page-header";
+import { Button } from "@ui/button";
+import { NameChangeInput } from "@ui/name-change-input";
+import { ActionDialog } from "@ui/action-dialog";
 import { Leaderboard } from "./leaderboard";
 import { cn } from "../utils";
 
 function PageHeading({ title, onBack }: { title: string; onBack: () => void }) {
   return (
-    <PageHeader className="mb-6 flex gap-2">
-      <Button
-        variant="ghost"
-        className="size-11 shrink-0 p-0"
-        aria-label="Back to home"
-        onClick={onBack}
-      >
+    <header className="mb-6 flex min-h-16 items-center gap-2 py-1">
+      <Button variant="ghost" size="icon" aria-label="Back to home" onClick={onBack}>
         <ArrowLeft />
       </Button>
       <h1 className="min-w-0 flex-1 text-2xl font-semibold">{title}</h1>
-    </PageHeader>
+    </header>
   );
 }
 
@@ -51,7 +45,6 @@ function ProfileEditor({
       }}
       title={mode === "name" ? "Edit your name" : "Choose your avatar"}
       hideTitle={mode === "name"}
-      centerTitle={mode === "avatar"}
       actionLabel={saving ? "Saving…" : "Save"}
       busy={saving}
       actionDisabled={mode === "name" && !name.trim()}
@@ -63,7 +56,7 @@ function ProfileEditor({
           );
           onClose();
         } catch (e) {
-          toast.error((e as Error).message, { id: "profile-error" });
+          toast.show((e as Error).message, { id: "profile-error" });
         }
       }}
     >
@@ -103,7 +96,8 @@ export function PlayerPages({
           <div className="flex flex-col items-center">
             <Button
               variant="ghost"
-              className="relative h-auto rounded-full p-1"
+              size="pill"
+              className="relative"
               aria-label="Edit your avatar"
               disabled={!data || saving}
               onClick={() => setEditing("avatar")}
@@ -115,12 +109,14 @@ export function PlayerPages({
             </Button>
             <Button
               variant="ghost"
-              className="mt-2 h-auto max-w-full gap-2 whitespace-normal text-2xl font-semibold"
+              className="mt-2 h-auto max-w-full"
               aria-label="Edit your name"
               disabled={!data || saving}
               onClick={() => setEditing("name")}
             >
-              {profile.name || "Guest"}
+              <span className="text-2xl font-semibold whitespace-normal">
+                {profile.name || "Guest"}
+              </span>
               <Pencil className="size-4 shrink-0 text-muted-foreground" />
             </Button>
             {stats && (
@@ -136,8 +132,8 @@ export function PlayerPages({
                     className="h-2.5 overflow-hidden rounded-full bg-muted"
                   >
                     <div
-                      className="h-full rounded-full bg-primary transition-[width]"
-                      style={{ width: `${stats.xp % 100}%` }}
+                      className="h-full w-(--progress) rounded-full bg-primary transition-[width]"
+                      style={{ "--progress": `${stats.xp % 100}%` } as CSSProperties}
                     />
                   </div>
                   <p className="mt-2 text-center text-sm text-muted-foreground">

@@ -11,9 +11,9 @@ import {
 } from "../../shared/game";
 import { cn } from "../utils";
 import { Lives } from "./lives";
-import { Button } from "./ui/button";
-import { NameChangeInput } from "./ui/name-change-input";
-import { ActionDialog } from "./ui/action-dialog";
+import { Button } from "@ui/button";
+import { NameChangeInput } from "@ui/name-change-input";
+import { ActionDialog } from "@ui/action-dialog";
 
 const options = [
   {
@@ -46,7 +46,7 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
   }
   return (
     <section
-      className="mt-5 rounded-xl border border-border bg-card p-4 text-sm sm:px-5"
+      className="mt-5 rounded-xl border border-border bg-card p-4 text-sm"
       aria-labelledby="lobby-options-heading"
     >
       <h2 id="lobby-options-heading" className="mb-3 text-xs font-semibold text-muted-foreground">
@@ -70,7 +70,7 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
                 max={max}
                 step={step}
                 value={selected}
-                className="range-slider m-0 h-12 w-full rounded accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="range-slider m-0 h-12 w-full rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 aria-valuetext={
                   name === "startingLives"
                     ? `${selected} ${selected === 1 ? "life" : "lives"}`
@@ -124,7 +124,7 @@ export function Lobby({
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState("");
   return (
-    <section className="mx-auto w-full max-w-xl py-3 sm:py-5">
+    <section className="mx-auto w-full max-w-xl py-3">
       <ActionDialog
         open={editing}
         onOpenChange={setEditing}
@@ -159,7 +159,7 @@ export function Lobby({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="group relative -m-1 size-11 rounded-full focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                      className="group relative -m-1"
                       aria-label={`Remove ${player.name}`}
                       title={`Remove ${player.name}`}
                       disabled={busy}
@@ -188,7 +188,7 @@ export function Lobby({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="-my-3 size-11 shrink-0"
+                          className="-my-3"
                           aria-label="Edit your name"
                           disabled={busy}
                           onClick={() => {
@@ -215,8 +215,8 @@ export function Lobby({
                   <span className="flex-1 text-sm">Open seat</span>
                   {game.host === game.you && (
                     <Button
-                      variant="ghost"
-                      className="-my-3 min-h-11 font-semibold text-primary"
+                      variant="accent"
+                      className="-my-3"
                       disabled={busy || !onAddBot}
                       onClick={onAddBot}
                     >
@@ -231,21 +231,13 @@ export function Lobby({
         })}
       </ul>
       <LobbyOptions game={game} busy={busy} save={onSettings} />
-      <div className="mt-5 grid gap-2.5 sm:grid-cols-2">
-        <Button
-          variant="outline"
-          className="h-auto min-h-12 whitespace-normal rounded-xl bg-card px-4 py-3"
-          onClick={onCopy}
-        >
+      <div className="mt-5 grid gap-2.5">
+        <Button variant="outline" size="lg" onClick={onCopy}>
           {copied ? <Check /> : <Link />}
           {copied ? "Copied" : "Copy invite link"}
         </Button>
         {game.host === game.you && (
-          <Button
-            className="h-auto min-h-12 whitespace-normal rounded-xl px-4 py-3"
-            onClick={onStart}
-            disabled={busy || game.players.length < 2}
-          >
+          <Button size="lg" onClick={onStart} disabled={busy || game.players.length < 2}>
             Start game
             <ArrowRight />
           </Button>

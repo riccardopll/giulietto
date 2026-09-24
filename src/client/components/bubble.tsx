@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { EMOTE_DURATION_MS } from "../../shared/emotes";
 import { cn } from "../utils";
 
@@ -13,7 +13,7 @@ const SIDE_TAIL = "M1.25 32.5C1.25 39 -3 45 -11 49C0 46.5 10 44.5 26 43.75L26 36
 function bubbleArtwork(children: ReactNode, tail: Tail | undefined, className: string) {
   const shapes = tail ? [tail === "bottom" ? BOTTOM_TAIL : SIDE_TAIL, BODY] : [BODY];
   return (
-    <span className={cn("emote-artwork relative block h-[45px] w-[60px] shrink-0", className)}>
+    <span className={cn("relative block h-[45px] w-[60px] shrink-0", className)}>
       <svg
         className={cn(
           "absolute inset-0 size-full overflow-visible stroke-foreground",
@@ -49,8 +49,8 @@ export function Bubble({ children, label }: { children: ReactNode; label: string
     <span
       role="status"
       aria-label={label}
-      className="seat-bubble pointer-events-none block origin-bottom shrink-0 overflow-visible pb-2.5 animate-[emote-bubble_ease-out_both]"
-      style={{ animationDuration: `${EMOTE_DURATION_MS}ms` }}
+      className="pointer-events-none block origin-bottom shrink-0 overflow-visible pb-2.5 animate-[emote-bubble_var(--emote-duration)_ease-out_both]"
+      style={{ "--emote-duration": `${EMOTE_DURATION_MS}ms` } as CSSProperties}
     >
       {bubbleArtwork(children, "bottom", "origin-bottom scale-90")}
     </span>
@@ -66,7 +66,6 @@ export function SideBubble({
   children: ReactNode;
   label: string;
   side: Side;
-  /** Resting height as a percentage of the rail. */
   top: number;
 }) {
   return (
@@ -74,12 +73,14 @@ export function SideBubble({
       role="status"
       aria-label={label}
       className={cn(
-        "side-bubble pointer-events-none absolute block h-[27px] w-[36px] animate-[reaction-slide_ease-out_both]",
+        "pointer-events-none absolute top-(--bubble-top) block h-[27px] w-[36px] animate-[reaction-slide_var(--emote-duration)_ease-out_both]",
         side === "left"
           ? "left-2 origin-left [--slide-from:-1]"
           : "right-2 origin-right [--slide-from:1]",
       )}
-      style={{ top: `${top}%`, animationDuration: `${EMOTE_DURATION_MS}ms` }}
+      style={
+        { "--bubble-top": `${top}%`, "--emote-duration": `${EMOTE_DURATION_MS}ms` } as CSSProperties
+      }
     >
       {bubbleArtwork(children, side, "absolute bottom-0 left-0 origin-bottom-left scale-[.6]")}
     </span>

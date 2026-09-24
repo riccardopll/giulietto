@@ -351,7 +351,6 @@ export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
       ),
     })),
     legalBids: game.phase === "bidding" && game.order[game.turn] === id ? legalBids(game) : [],
-    // Invites are for seated players; spectators must not learn the lobby code.
     rematch: me ? game.rematch : undefined,
     serverTime: Date.now(),
   };

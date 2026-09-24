@@ -35,14 +35,11 @@ export function storeRoom(code: string | null) {
   try {
     if (code) localStorage.setItem("giulietto-room", code);
     else localStorage.removeItem("giulietto-room");
-  } catch {
-    // The player can still join by invite when only cookies are available.
-  }
+  } catch {}
 }
 
 export function restorePlayer() {
   const savedToken = readCookie(tokenKey);
-  // The server derives the public player ID from this private credential.
   const token =
     savedToken && /^[0-9a-f-]{36,80}$/i.test(savedToken)
       ? savedToken
@@ -56,7 +53,6 @@ export function restorePlayer() {
 }
 
 export function savePlayerName(name: string) {
-  // Replace incomplete Unicode characters before encoding the cookie.
   writeCookie(nameKey, new TextDecoder().decode(new TextEncoder().encode(name)));
 }
 

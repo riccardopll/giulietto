@@ -32,7 +32,6 @@ test("expired turns are played automatically and recorded as timeouts", async ()
   expect(playing.phase).toBe("playing");
   expect(playing.players.map((player) => player.bid)).toEqual([0, 0]);
 
-  // Delivery to D1 waits for its own alarm, before the next turn expires.
   expect(await alarmAt(code, playing.deadline - 1)).toBe(true);
   const events = await env.DB.prepare(
     "SELECT player_id, source FROM match_events WHERE match_id=? AND type='bid' ORDER BY sequence",

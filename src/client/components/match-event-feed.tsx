@@ -22,7 +22,6 @@ export function MatchEventFeed({ game }: { game: GameView }) {
 
   useEffect(() => {
     const before = previous.current;
-    // Repeated acknowledgements must not restart an event's lifetime.
     if (before && before.revision > game.revision) return;
     previous.current = game;
     const additions = matchEvents(before, game);
@@ -50,33 +49,28 @@ export function MatchEventFeed({ game }: { game: GameView }) {
 
   return (
     <div
-      className="match-events pointer-events-none relative min-h-0 min-w-0 overflow-hidden"
+      className="pointer-events-none relative min-h-0 min-w-0 overflow-hidden"
       role="log"
       aria-label="Game events"
       aria-relevant="additions"
     >
       {events.map((event, index) => (
         <div
-          className="match-event-slot absolute inset-x-0 bottom-0 flex h-11 justify-center -translate-y-[calc(var(--event-position)*2.75rem)] transition-transform duration-200"
+          className="absolute inset-x-0 bottom-0 flex h-11 justify-center -translate-y-[calc(var(--event-position)*2.75rem)] transition-transform duration-200"
           key={event.id}
           style={{ "--event-position": events.length - index - 1 } as CSSProperties}
         >
           <div
-            className="match-event grid max-w-full animate-[match-event-rise_var(--event-duration)_ease-out_both] items-center px-2 py-0.5 text-xs leading-tight text-muted-foreground"
+            className="grid max-w-full animate-[match-event-rise_var(--event-duration)_ease-out_both] items-center px-2 py-0.5 text-xs leading-tight text-muted-foreground"
             data-event-type={event.type}
             style={{ "--event-duration": `${EVENT_DURATION}ms` } as CSSProperties}
           >
             <span className="sr-only">{description(event, game.you)}</span>
-            <div
-              className="match-event-content flex min-w-0 items-center justify-center gap-1.5"
-              aria-hidden="true"
-            >
-              {event.type === "trick-won" && (
-                <Trophy className="event-trophy size-3.5 shrink-0 text-primary" />
-              )}
-              <span className="match-event-copy min-w-0">
+            <div className="flex min-w-0 items-center justify-center gap-1.5" aria-hidden="true">
+              {event.type === "trick-won" && <Trophy className="size-3.5 shrink-0 text-primary" />}
+              <span className="min-w-0">
                 <strong
-                  className="match-event-name inline-block max-w-32 truncate align-bottom text-foreground"
+                  className="inline-block max-w-32 truncate align-bottom text-foreground"
                   title={event.name}
                 >
                   {event.player === game.you ? "You" : event.name}
@@ -95,12 +89,10 @@ export function MatchEventFeed({ game }: { game: GameView }) {
                 <strong>{event.bid}</strong>
               ) : event.type === "play" || event.type === "trick-won" ? (
                 <>
-                  <span className="match-event-card w-6 shrink-0">
+                  <span className="w-6 shrink-0">
                     <PlayingCard card={event.card} className="rounded-[.2rem]" />
                   </span>
-                  {event.mode && (
-                    <span className="match-event-mode text-[10px] capitalize">{event.mode}</span>
-                  )}
+                  {event.mode && <span className="text-2xs capitalize">{event.mode}</span>}
                 </>
               ) : null}
             </div>

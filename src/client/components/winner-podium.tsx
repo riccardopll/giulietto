@@ -3,8 +3,8 @@ import { Crown, RotateCcw } from "lucide-react";
 import { findPlayer, type GameView, type Rematch } from "../../shared/game";
 import { standings } from "../standings";
 import { cn } from "../utils";
-import { Button } from "./ui/button";
-import { PlacementMedal } from "./ui/placement-medal";
+import { Button } from "@ui/button";
+import { PlacementMedal } from "@ui/placement-medal";
 
 type Player = GameView["players"][number];
 
@@ -27,13 +27,12 @@ export function WinnerPodium({
   const others = groups.filter((group) => group.place > 3);
   const me = findPlayer(game, game.you);
   const canRematch = !!me && !me.bot && !me.forfeited;
-  const buttonClass = "min-h-12 w-full whitespace-normal rounded-xl px-4 py-3 text-xl font-bold";
   return (
-    <section className="mx-auto my-4 w-full max-w-lg px-2 py-3 text-center sm:px-6">
-      <h1 className="text-3xl font-bold wrap-anywhere sm:text-4xl">
+    <section className="mx-auto my-4 w-full max-w-lg px-2 py-3 text-center">
+      <h1 className="text-3xl font-bold wrap-anywhere">
         {winner.id === game.you ? "You win" : `${winner.name} wins`}
       </h1>
-      <div className="mt-6 grid grid-cols-3 items-end gap-2 sm:gap-3" aria-label="Podium">
+      <div className="mt-6 grid grid-cols-3 items-end gap-2" aria-label="Podium">
         {[2, 1, 3].map((place) => {
           const group = groups.find((entry) => entry.place === place);
           if (!group) return <div key={place} />;
@@ -52,19 +51,14 @@ export function WinnerPodium({
                     avatar={group.players[0].avatar}
                     bot={group.players[0].bot}
                     id={group.players[0].id}
-                    className={cn(
-                      "mx-auto size-12 sm:size-16",
-                      place === 1 && "size-16 sm:size-20",
-                    )}
+                    className={cn("mx-auto size-12", place === 1 && "size-16")}
                   />
                 )}
                 {group.players.map((player) => (
-                  <p key={player.id} className="text-sm font-bold wrap-anywhere sm:text-base">
+                  <p key={player.id} className="text-sm font-bold wrap-anywhere">
                     {player.name}
                     {player.id === game.you && (
-                      <span className="block text-[10px] font-normal text-muted-foreground">
-                        You
-                      </span>
+                      <span className="block text-2xs font-normal text-muted-foreground">You</span>
                     )}
                   </p>
                 ))}
@@ -72,14 +66,10 @@ export function WinnerPodium({
               <div
                 className={cn(
                   "rounded-t-2xl bg-accent px-2 pt-5",
-                  place === 1
-                    ? "h-52 bg-primary sm:h-64"
-                    : place === 2
-                      ? "h-40 sm:h-48"
-                      : "h-28 sm:h-32",
+                  place === 1 ? "h-52 bg-primary" : place === 2 ? "h-40" : "h-28",
                 )}
               >
-                <PlacementMedal place={place} className="mx-auto h-[70px] w-14 sm:h-20 sm:w-16" />
+                <PlacementMedal place={place} className="mx-auto h-[70px] w-14" />
               </div>
             </section>
           );
@@ -100,7 +90,7 @@ export function WinnerPodium({
                     avatar={group.players[0].avatar}
                     bot={group.players[0].bot}
                     id={group.players[0].id}
-                    className="mx-auto size-12 sm:size-16"
+                    className="mx-auto size-12"
                   />
                 )}
                 {group.players.map((player) => (
@@ -116,14 +106,15 @@ export function WinnerPodium({
       )}
       <div className="mt-6 grid gap-3">
         {canRematch && (
-          <Button className={buttonClass} disabled={busy || !!invite} onClick={onRematch}>
+          <Button size="lg" className="w-full" disabled={busy || !!invite} onClick={onRematch}>
             <RotateCcw className="size-5" />
             Rematch
           </Button>
         )}
         <Button
           variant={canRematch ? "outline" : "default"}
-          className={buttonClass}
+          size="lg"
+          className="w-full"
           onClick={onReset}
         >
           Back to tables

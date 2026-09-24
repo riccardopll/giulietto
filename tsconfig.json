@@ -12,7 +12,8 @@
     "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "types": []
+    "types": [],
+    "paths": { "@ui/*": ["./src/client/components/ui/*"] }
   },
   "files": [],
   "references": [

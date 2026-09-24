@@ -38,7 +38,6 @@ test("profile edits recover from failed saves and stats loads without shifting l
     page.locator("[role=alert]").filter({ hasText: "Could not save your profile." }),
   ).toBeVisible();
   expect(await avatarDialog.boundingBox()).toEqual(dialogBounds);
-  // A failed save must still let the pending stats request report its result.
   await statsRefresh!.fulfill({ status: 503 });
   await page.unroute("**/api/stats");
   const statsError = page

@@ -33,7 +33,6 @@ test("entry retries reuse the create command, refresh the join command, and leav
           commandId = command.commandId;
           committed = await (await route.fetch()).json();
           if (expires) {
-            // Creation recovery records a join receipt; then membership expires while offline.
             if (action === "create") expect((await route.fetch()).ok()).toBe(true);
             const removed = await route.fetch({
               postData: {

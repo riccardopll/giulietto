@@ -1,6 +1,5 @@
 import type { Game } from "../shared/game";
 
-/** Idempotent outbox delivery; older snapshots cannot overwrite newer history. */
 export function historyStatements(db: D1Database, game: Game, eventCount: number) {
   const guard = "EXISTS (SELECT 1 FROM matches WHERE id=? AND history_revision=?)";
   const uncounted =

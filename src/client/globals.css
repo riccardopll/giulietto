@@ -24,6 +24,8 @@
   --silver: #c6cbd1;
   --bronze: #c68c65;
   --felt: #b16b80;
+  --ace-low: #155dfc;
+  --ace-high: #f54a00;
   --radius: 0.75rem;
 }
 @theme inline {
@@ -46,14 +48,22 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-gold: var(--gold);
+  --color-gold-light: color-mix(in oklab, var(--gold), var(--card) 60%);
+  --color-gold-dark: color-mix(in oklab, var(--gold), var(--bronze) 70%);
   --color-silver: var(--silver);
   --color-bronze: var(--bronze);
+  --color-bronze-dark: color-mix(in oklab, var(--bronze), var(--foreground) 45%);
   --color-felt: var(--felt);
+  --color-ace-low: var(--ace-low);
+  --color-ace-high: var(--ace-high);
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
   --font-sans: Arial, Helvetica, sans-serif;
+  --text-2xs: 0.625rem;
+  --animate-dialog-in: dialog-in 0.2s ease-out;
+  --animate-dialog-out: dialog-out 0.2s ease-in;
 }
 @keyframes toast-in {
   from {
@@ -101,8 +111,6 @@
     background: var(--color-primary);
   }
 }
-/* Trims a tab to the table outline. The nearest size container must be the table, and the tab
-   sets mask-position so the outline lands on the table. */
 @utility table-edge {
   mask-image: var(--table-outline);
   mask-size: 100cqw 100cqh;
@@ -135,13 +143,6 @@
   }
   button:not(:disabled) {
     cursor: pointer;
-  }
-  button:focus,
-  a:focus,
-  input:focus,
-  select:focus,
-  textarea:focus {
-    outline: none;
   }
 }
 .wordmark {
@@ -216,13 +217,75 @@
     transform: translateY(-28px) scale(0.22);
   }
 }
-@keyframes tutorial-timer {
+@keyframes tutorial-win {
   0%,
-  10% {
-    stroke-dasharray: 100 100;
-  }
-  90%,
+  38%,
+  74%,
   100% {
-    stroke-dasharray: 0 100;
+    box-shadow: 0 0 0 0 transparent;
+    translate: 0;
+  }
+  44%,
+  68% {
+    box-shadow: 0 0 0 3px var(--color-primary);
+    translate: 0 -0.375rem;
+  }
+}
+@keyframes tutorial-tap {
+  0%,
+  28%,
+  80%,
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+    scale: 1;
+  }
+  34% {
+    scale: 0.9;
+  }
+  40%,
+  72% {
+    box-shadow: 0 0 0 3px var(--color-primary);
+    scale: 1;
+  }
+}
+@keyframes tutorial-rise {
+  0%,
+  20%,
+  100% {
+    translate: 0;
+  }
+  10% {
+    translate: 0 -0.5rem;
+  }
+}
+@keyframes tutorial-life {
+  0%,
+  30%,
+  95%,
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+  40% {
+    scale: 1.25;
+  }
+  55%,
+  85% {
+    opacity: 0;
+    scale: 0;
+  }
+}
+@keyframes tutorial-count {
+  0%,
+  15% {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    color: var(--color-primary-foreground);
+  }
+  18%,
+  100% {
+    background-color: var(--color-card);
+    border-color: var(--color-border);
+    color: var(--color-foreground);
   }
 }

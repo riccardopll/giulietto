@@ -1,4 +1,5 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
+import { Check, RotateCw } from "lucide-react";
 import { toast } from "./toast";
 import { isTableCommand, type EntryCommand, type TableCommand } from "../shared/commands";
 import { findPlayer, type GameView } from "../shared/game";
@@ -20,7 +21,7 @@ export type PreviewSession = {
 };
 
 function showError(message: string) {
-  if (message) toast.error(message, { id: "game-error" });
+  if (message) toast.show(message, { id: "game-error" });
   else toast.dismiss("game-error");
 }
 
@@ -47,7 +48,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const game = preview?.state ?? liveGame;
   const ready = !session.error;
 
-  // The ref guards re-entrant commands before React commits the state.
   function setBusy(value: boolean) {
     busyRef.current = value;
     setBusyState(value);
@@ -67,12 +67,10 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       rename(s.viewerName);
     gameRef.current = s;
     if (!previous && history.state?.giuliettoTable !== s.code) {
-      // Keep a dashboard entry below the table, including direct invite links.
       history.replaceState({ ...history.state, giuliettoTable: null }, "", location.pathname);
       history.pushState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
     }
     setGame(s);
-    // Only entering a table saves it; updates in another tab must not undo an exit.
     if (!previous || previous.code !== s.code) storeRoom(s.code);
   }
 
@@ -122,7 +120,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     };
   }, [game?.code, isPreview, session.token]);
   useEffect(() => {
-    if (connection) toast.error(connection, { id: "connection-error" });
+    if (connection) toast.show(connection, { id: "connection-error" });
     else toast.dismiss("connection-error");
   }, [connection]);
   useEffect(() => {
@@ -130,7 +128,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     const onBack = () => {
       const current = gameRef.current;
       if (!current) return;
-      // popstate cannot be cancelled. Restore the table entry before asking.
       history.pushState(
         { ...history.state, giuliettoTable: current.code },
         "",
@@ -155,12 +152,11 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const inviteCode = invite && invite.by !== game!.you ? invite.code : undefined;
   const announceInvite = useEffectEvent((code: string) => {
     const current = game!;
-    toast.prompt(`Rematch with ${findPlayer(current, current.rematch!.by)?.name ?? "them"}?`, {
+    toast.show(`Rematch with ${findPlayer(current, current.rematch!.by)?.name ?? "them"}?`, {
       id: "rematch-invite",
       duration: current.rematch!.expiresAt - current.serverTime,
       countdown: "Expires in",
-      decline: "Decline",
-      action: { label: "Join", onClick: () => void moveTo(code) },
+      action: { label: "Join", icon: Check, onClick: () => void moveTo(code) },
     });
   });
   useEffect(() => {
@@ -206,7 +202,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       } else {
         const command = { name: name || "Guest", code: gameRef.current?.code || code, ...input };
         const payload = JSON.stringify(command);
-        // Reuse mutation IDs after failures; a fresh join must restore expired membership.
         if (input.action === "join" || httpAttempt.current?.payload !== payload)
           httpAttempt.current = { payload, commandId: crypto.randomUUID() };
         s = await requestGame(session.token, {
@@ -224,9 +219,9 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       if (input.action === "leave" && gameRef.current?.phase === "lobby") reset();
       else if (input.action === "leave") {
         setLeaveOpen(false);
-        toast.error((e as Error).message, {
+        toast.show((e as Error).message, {
           id: "game-error",
-          action: { label: "Retry", onClick: () => void act(input) },
+          action: { label: "Retry", icon: RotateCw, onClick: () => void act(input) },
         });
       } else showError((e as Error).message);
       return false;
@@ -249,9 +244,9 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       history.replaceState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
       accept(s);
     } catch (e) {
-      toast.error((e as Error).message, {
+      toast.show((e as Error).message, {
         id: "game-error",
-        action: { label: "Retry", onClick: () => void moveTo(code) },
+        action: { label: "Retry", icon: RotateCw, onClick: () => void moveTo(code) },
       });
     } finally {
       setBusy(false);

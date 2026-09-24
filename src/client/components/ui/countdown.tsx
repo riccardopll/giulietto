@@ -1,4 +1,5 @@
 import { Clock3 } from "lucide-react";
+import type { CSSProperties } from "react";
 import { cn } from "../../utils";
 
 export function Countdown({
@@ -33,8 +34,8 @@ export function CountdownBar({
       aria-hidden="true"
     >
       <div
-        className="h-full rounded-full bg-primary/60"
-        style={{ width: `${(Math.max(0, remaining) / total) * 100}%` }}
+        className="h-full w-(--progress) rounded-full bg-primary/60"
+        style={{ "--progress": `${(Math.max(0, remaining) / total) * 100}%` } as CSSProperties}
       />
     </div>
   );

@@ -172,7 +172,6 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     if (game.count !== 1 && input.card === undefined) throw new GameError("Choose a valid card.");
     play(game, id, game.count === 1 ? player.hand[0] : input.card!, input.mode, now);
   } else if (input.action === "rematch") {
-    // The table assigns the lobby code; clients never choose it.
     if (!input.code) throw new GameError("Invalid request.");
     inviteRematch(game, id, input.code, now);
   } else if (input.action === "leave" && game.phase === "lobby") {
@@ -191,7 +190,6 @@ export function roomCode(value: unknown) {
     throw new GameError("Enter a valid eight-character lobby code.");
   return code;
 }
-/** Deterministic codes make lobby creation retry-safe across objects. */
 export async function lobbyCode(key: string) {
   const bytes = new Uint8Array(
     await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)),

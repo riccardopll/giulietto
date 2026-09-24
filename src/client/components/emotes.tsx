@@ -3,7 +3,7 @@ import { Popover } from "radix-ui";
 import { Smile } from "lucide-react";
 import { EMOTE_COOLDOWN_MS, EMOTE_DURATION_MS, EMOTE_IDS, type Emote } from "../../shared/emotes";
 import type { GameView } from "../../shared/game";
-import { Button } from "./ui/button";
+import { Button } from "@ui/button";
 import { Bubble, MenuBubble, SideBubble, type Side } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
 import { cn } from "../utils";
@@ -84,7 +84,6 @@ function SideReaction({
   );
 }
 
-// A random side and height per reaction; the timestamp keeps every client in agreement.
 function placement(emote: Emote): { side: Side; top: number } {
   return {
     side: emote.sentAt % 2 ? "right" : "left",
@@ -104,7 +103,7 @@ export function ReactionRail({ game }: { game: GameView }) {
     )
     .sort((a, b) => a.emote.sentAt - b.emote.sentAt);
   return (
-    <div className="reaction-rail pointer-events-none relative z-50 col-span-full row-start-2 row-end-5 min-h-0">
+    <div className="pointer-events-none relative z-50 col-span-full row-start-2 row-end-5 min-h-0">
       {reactions.map((sender) => (
         <SideReaction
           key={`${sender.id}-${sender.emote.sentAt}`}
@@ -140,20 +139,19 @@ export function EmotePicker({
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Trigger asChild>
         <Button
-          variant="ghost"
+          variant="tab"
           size="icon"
-          className="pointer-events-auto absolute right-[2%] top-1/2 -translate-y-1/2 h-11 w-11 shrink-0 rounded-none bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring disabled:text-muted-foreground disabled:opacity-100"
+          className="pointer-events-auto absolute right-[2%] top-1/2 -translate-y-1/2"
           disabled={disabled || coolingDown}
           aria-label="Emotes"
         >
           <span className="absolute inset-y-0 right-0 grid w-8 place-items-center drop-shadow-sm">
-            {/* The button sits at 98% of the table width; the mask trims this to the rim's curve. */}
             <span className="table-edge absolute inset-y-0 left-0 -right-2 -z-1 rounded-l-2xl bg-background [mask-position:calc(32px_-_98cqw)_50%]" />
             <Smile className="size-6" aria-hidden="true" />
           </span>
         </Button>
       </Popover.Trigger>
-      <Popover.Anchor className="pointer-events-none absolute left-1/2 -bottom-[4.5rem] size-px -translate-x-1/2 @min-2xl/board:-bottom-[5.5rem]" />
+      <Popover.Anchor className="pointer-events-none absolute left-1/2 -bottom-(--seat-row) size-px -translate-x-1/2" />
       <Popover.Portal>
         <Popover.Content
           side="top"

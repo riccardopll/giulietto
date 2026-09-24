@@ -27,7 +27,6 @@ export function AnimatedWebp({ src, poster }: { src: string; poster: string }) {
     void preloadWebp(src)
       .then((blob) => {
         if (disposed) return;
-        // A fresh URL restarts the cached animation on each mount.
         url = URL.createObjectURL(blob);
         setSource(url);
       })
@@ -41,7 +40,8 @@ export function AnimatedWebp({ src, poster }: { src: string; poster: string }) {
     <img
       src={source ?? poster}
       alt=""
-      className="emote-motion size-full object-contain"
+      className="size-full object-contain"
+      data-emote-motion
       draggable={false}
     />
   );

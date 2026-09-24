@@ -31,7 +31,6 @@ export default {
         return Response.json({ error: "Invalid origin." }, { status: 403 });
       if (socket && req.headers.get("upgrade")?.toLowerCase() !== "websocket")
         return new Response(null, { status: 426 });
-      // Browser WebSockets cannot set Authorization. Keep guest credentials out of URLs/logs.
       const protocols = req.headers
         .get("sec-websocket-protocol")
         ?.split(",")

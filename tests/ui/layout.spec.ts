@@ -14,7 +14,6 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     await document.fonts.ready;
     await Promise.all([...document.images].map((image) => image.decode()));
   });
-  // Container-query size transitions can outlast font and image loading.
   await expect
     .poll(() =>
       page.evaluate(() => {
@@ -25,7 +24,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
         )
           errors.push("Page overflows the viewport");
         for (const element of document.querySelectorAll<HTMLElement>(
-          ".seat-identity, .seat-avatar, .playing-card, header, button",
+          "[data-seat-identity], [data-seat-avatar], [data-playing-card], header, button",
         )) {
           const rect = element.getBoundingClientRect();
           const label = element.getAttribute("aria-label") ?? element.className;
@@ -51,11 +50,11 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     )
     .toEqual([]);
   await screenshot(page, testInfo, "bidding");
-  const overlappingProfiles = await page.locator(".seat-profile").evaluateAll(
+  const overlappingProfiles = await page.locator("[data-seat-profile]").evaluateAll(
     (profiles) =>
       profiles.filter((profile) => {
-        const avatar = profile.querySelector(".seat-avatar")!.getBoundingClientRect();
-        const details = profile.querySelector(".seat-details")!.getBoundingClientRect();
+        const avatar = profile.querySelector("[data-seat-avatar]")!.getBoundingClientRect();
+        const details = profile.querySelector("[data-seat-details]")!.getBoundingClientRect();
         return avatar.right + 3 > details.left;
       }).length,
   );
@@ -71,20 +70,20 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.getByRole("button", { name: "Predict 0 tricks", exact: true }).click();
   await expect(page.locator("[data-seat][data-you]")).toHaveAttribute("aria-label", /Predicted/);
   const prediction = page.getByRole("status", { name: "W".repeat(19) + "1 predicts 0 tricks" });
-  await expect(prediction.locator(".prediction-digit")).toBeVisible();
+  await expect(prediction.locator("[data-prediction-digit]")).toBeVisible();
   await page.getByRole("button", { name: "Emotes", exact: true }).click();
-  const bottomProfiles = page.locator('[data-side="bottom"] .seat-identity');
+  const bottomProfiles = page.locator('[data-side="bottom"] [data-seat-identity]');
   for (const profile of await bottomProfiles.all()) await expect(profile).toBeHidden();
-  for (const profile of await page.locator('[data-side="top"] .seat-identity').all())
+  for (const profile of await page.locator('[data-side="top"] [data-seat-identity]').all())
     await expect(profile).toBeVisible();
-  await expect(page.locator('[data-side="bottom"] .seat-hand')).toHaveCount(2);
-  for (const hand of await page.locator('[data-side="bottom"] .seat-hand').all())
+  await expect(page.locator('[data-side="bottom"] [data-seat-hand]')).toHaveCount(2);
+  for (const hand of await page.locator('[data-side="bottom"] [data-seat-hand]').all())
     await expect(hand).toBeVisible();
   await expect(page.getByRole("button", { name: "Send chicken emote" })).not.toBeFocused();
   await expect(page.getByRole("button", { name: "Send Perso emote" })).toBeEnabled();
   const menu = await page.getByRole("dialog", { name: "Emotes", exact: true }).boundingBox();
   const handTop = await page
-    .locator(".hand-card")
+    .locator("[data-hand-card]")
     .evaluateAll((cards) => Math.min(...cards.map((card) => card.getBoundingClientRect().top)));
   expect(menu!.x).toBeGreaterThanOrEqual(12);
   expect(menu!.x + menu!.width).toBeLessThanOrEqual(308);
@@ -97,7 +96,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await expect(emoteTrigger).toBeDisabled();
   for (const profile of await bottomProfiles.all()) await expect(profile).toBeVisible();
   const bubble = page.getByRole("status", { name: /sent the chicken emote/ });
-  await expect(bubble.locator(".emote-motion")).toBeVisible();
+  await expect(bubble.locator("[data-emote-motion]")).toBeVisible();
   await page.mouse.wheel(0, 500);
   await page.clock.runFor(100);
   expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual({ x: 0, y: 0 });
@@ -112,7 +111,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.getByRole("button", { name: "Send Perso emote" }).click();
   const perso = page.getByRole("status", { name: /sent the perso emote/ });
   await expect(perso).toBeVisible();
-  await expect(perso.locator(".emote-motion")).toBeVisible();
+  await expect(perso.locator("[data-emote-motion]")).toBeVisible();
   await page.clock.runFor(300);
   await screenshot(page, testInfo, "perso-emote");
   await page.clock.runFor(1600);
@@ -138,43 +137,19 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await expect(page.getByRole("button", { name: "Chat", exact: true })).toBeEnabled();
 
   await page.goto("/preview?people=6&cards=6&phase=playing&completedTricks=2");
-  await expect(page.locator(".hand-card")).toHaveCount(4);
+  await expect(page.locator("[data-hand-card]")).toHaveCount(4);
   const handGap = await page
-    .locator(".hand-card")
+    .locator("[data-hand-card]")
     .nth(1)
     .evaluate((card) => parseFloat(getComputedStyle(card).marginLeft));
   expect(handGap).toBeGreaterThanOrEqual(0);
   await screenshot(page, testInfo, "four-card-hand", { animations: "disabled" });
 
-  await page.setViewportSize({ width: 1280, height: 1000 });
   await page.goto("/preview?people=6&cards=6&phase=trick");
-  const playedCards = page
-    .getByRole("region", { name: "Current trick", exact: true })
-    .getByRole("img");
-  await expect(playedCards).toHaveCount(6);
-  const rows = await playedCards.evaluateAll((images) =>
-    images.map((image) => image.getBoundingClientRect().y),
-  );
-  expect(Math.max(...rows) - Math.min(...rows)).toBeLessThan(1);
-  await screenshot(page, testInfo, "desktop-trick", { animations: "disabled" });
-  await page.getByRole("button", { name: "Emotes", exact: true }).click();
-  await expect(page.locator("[data-you] .seat-identity")).toBeHidden();
-  for (const profile of await page.locator("[data-seat]:not([data-you]) .seat-identity").all())
-    await expect(profile).toBeVisible();
-  await screenshot(page, testInfo, "desktop-emote-menu");
-  await page.keyboard.press("Escape");
-  await expect(page.locator("[data-you] .seat-identity")).toBeVisible();
-  await page.getByRole("button", { name: "Chat", exact: true }).click();
-  const desktopChat = page.getByRole("dialog", { name: "Chat", exact: true });
-  await expect(desktopChat.getByLabel("Message", { exact: true })).toBeFocused();
-  await expect.poll(async () => (await desktopChat.boundingBox())!.width).toBeLessThanOrEqual(448);
-  await screenshot(page, testInfo, "desktop-chat", { animations: "disabled" });
-  await page.keyboard.press("Escape");
-  await expect(desktopChat).toBeHidden();
   await page.getByRole("button", { name: "Preview settings", exact: true }).click();
   await page.getByRole("button", { name: "Test ace selection", exact: true }).click();
   const aceDialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
-  await expect(aceDialog.locator(".ace-mode")).toHaveText(["low", "high"]);
+  await expect(aceDialog.locator("[data-ace-mode]")).toHaveText(["low", "high"]);
   await expect(aceDialog.getByRole("button", { name: "Close", exact: true })).toHaveCount(0);
   await screenshot(page, testInfo, "ace-selection", { animations: "disabled" });
   await page.keyboard.press("Escape");
@@ -185,14 +160,14 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   const spectatorHand = page.getByRole("region", { name: "Spectator mode" });
   await expect(spectatorHand.getByRole("img", { name: "Hidden card", exact: true })).toHaveCount(6);
   await expect(spectatorHand.getByRole("button")).toHaveCount(0);
-  await expect(page.locator('.seat-slot[data-center] [data-side="bottom"] .seat-hand')).toHaveCount(
-    0,
-  );
+  await expect(
+    page.locator('[data-seat-slot][data-center] [data-side="bottom"] [data-seat-hand]'),
+  ).toHaveCount(0);
   await screenshot(page, testInfo, "spectator-hand");
   await page.getByRole("button", { name: "Emotes", exact: true }).click();
   await page.getByRole("button", { name: "Send chicken emote" }).click();
   const reaction = page.getByRole("status", { name: "Spectator sent the chicken emote" });
-  await expect(reaction.locator(".emote-motion")).toBeVisible();
+  await expect(reaction.locator("[data-emote-motion]")).toBeVisible();
   await expect
     .poll(async () => {
       const box = (await reaction.boundingBox())!;

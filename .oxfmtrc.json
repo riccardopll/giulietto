@@ -1,4 +1,10 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["dist/**", ".wrangler/**", "package-lock.json", "public/**"]
+  "ignorePatterns": [
+    "dist/**",
+    ".wrangler/**",
+    "package-lock.json",
+    "public/**",
+    "src/client/cn-tables.ts"
+  ]
 }

@@ -106,12 +106,9 @@ export class GameTable extends DurableObject<Env> {
     const { id } = ws.deserializeAttachment() as Attachment;
     try {
       this.send(ws, { type: "state", state: this.view(game, id) });
-    } catch {
-      /* A leave acknowledgement is sent before the client closes its socket. */
-    }
+    } catch {}
   }
   private broadcast(game: Game) {
-    // Sockets stay listed until their close event runs; sending to them fails.
     for (const ws of this.ctx.getWebSockets())
       if (ws.readyState === WebSocket.OPEN) this.snapshot(ws, game);
   }
@@ -187,7 +184,6 @@ export class GameTable extends DurableObject<Env> {
   private async advance(room: Room) {
     const game = structuredClone(room.game);
     const now = Date.now();
-    // Connections survive hibernation. Open lobby seats should not time out while waiting.
     if (game.phase === "lobby") {
       const ids = new Set(
         this.ctx.getWebSockets().map((ws) => (ws.deserializeAttachment() as Attachment).id),
@@ -262,7 +258,6 @@ export class GameTable extends DurableObject<Env> {
         input = { ...input, code: await this.openRematch(game, id, input.commandId) };
       apply(game, id, input, Date.now());
       if (input.action === "rename") {
-        // D1 runs after the table unblocks so a slow write cannot stall other players.
         const name = findPlayer(game, id)!.name;
         persist = async () => {
           try {
@@ -310,7 +305,6 @@ export class GameTable extends DurableObject<Env> {
           return Response.json(this.view(room.game, id));
         }
         let room = this.load();
-        // Membership must be checked before reads can advance or broadcast a room.
         if (
           req.method === "GET" &&
           !findPlayer(room.game, id) &&
@@ -391,7 +385,6 @@ export class GameTable extends DurableObject<Env> {
         } catch {
           throw new GameError("Invalid JSON.");
         }
-        // Rejections should reach the pending command even when its fields are invalid.
         if (typeof value?.commandId === "string") commandId = value.commandId;
         const input = command(value);
         action = input.action;
@@ -410,7 +403,6 @@ export class GameTable extends DurableObject<Env> {
         reason = body.error;
         this.send(ws, { type: "error", commandId, ...body });
       } finally {
-        // Accepted commands are already recorded as match events.
         if (outcome !== "accepted") {
           const game = this.read()?.game;
           console.log({
@@ -436,7 +428,6 @@ export class GameTable extends DurableObject<Env> {
       reason,
       wasClean,
     });
-    // Complete the handshake without echoing reserved, diagnostic-only codes.
     ws.close([1004, 1005, 1006, 1015].includes(code) ? 1000 : code);
     await this.disconnected(ws);
   }
@@ -479,7 +470,6 @@ export class GameTable extends DurableObject<Env> {
         return;
       }
       room = await this.advance(room);
-      // Retry deadline is persisted before external I/O, including process failure.
       const pending =
         room.outbox && (room.retryAt ?? 0) <= Date.now() ? structuredClone(room.outbox) : undefined;
       if (pending) {

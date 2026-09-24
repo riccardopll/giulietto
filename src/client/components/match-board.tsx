@@ -1,4 +1,11 @@
-import { useEffect, useEffectEvent, useRef, useState, type CSSProperties } from "react";
+import {
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+  type ComponentProps,
+  type CSSProperties,
+} from "react";
 import { Target } from "lucide-react";
 import { EMOTE_DURATION_MS, type Emote } from "../../shared/emotes";
 import { findPlayer, type GameView } from "../../shared/game";
@@ -9,27 +16,43 @@ import { EmotePicker, ReactionRail, useRecent } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
 import { TableSurface, tableOutline } from "./table-surface";
-import { Button } from "./ui/button";
+import { Button } from "@ui/button";
 import { MatchEventFeed } from "./match-event-feed";
+
+export function BidButton({
+  n,
+  className,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & { n: number }) {
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      className={cn("size-14", className)}
+      aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
+      {...props}
+    >
+      <span className="text-xl font-semibold">{n}</span>
+    </Button>
+  );
+}
 
 function PredictionTally({ game, emote }: { game: GameView; emote?: Emote }) {
   const emoting = useRecent(emote?.sentAt, game.serverTime, EMOTE_DURATION_MS);
   const predicted = game.players.reduce((total, player) => total + (player.bid ?? 0), 0);
   const delta = predicted - game.count;
-  // The pill keeps its last value while it shrinks away at zero.
   const [pill, setPill] = useState(delta);
   if (delta !== 0 && delta !== pill) setPill(delta);
   const balance = delta > 0 ? `${delta} over` : delta < 0 ? `${-delta} under` : "even with";
   return (
     <div
       className={cn(
-        "prediction-tally absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm transition-opacity duration-300 ease-out @min-2xl/board:text-base",
+        "absolute bottom-[5%] left-1/2 flex -translate-x-1/2 items-center px-3 pt-1.5 pb-1 text-sm font-semibold tabular-nums drop-shadow-sm transition-opacity duration-300 ease-out",
         emoting && "opacity-0",
       )}
       role="status"
       aria-label={`${predicted} ${predicted === 1 ? "trick" : "tricks"} predicted, ${balance} the ${game.count} ${game.count === 1 ? "card" : "cards"}`}
     >
-      {/* The outline's bottom centre is at 95% of the table height; the mask trims this to the rim's curve. */}
       <span
         className="table-edge absolute inset-x-0 top-0 -bottom-4 -z-1 rounded-t-xl bg-background [mask-position:left_50%_bottom_calc(16px_-_5cqh)]"
         aria-hidden="true"
@@ -46,7 +69,7 @@ function PredictionTally({ game, emote }: { game: GameView; emote?: Emote }) {
         <span className="min-w-0 overflow-hidden">
           <span
             className={cn(
-              "ml-1 block rounded-full bg-destructive px-1.5 text-xs leading-5 whitespace-nowrap text-primary-foreground transition-[scale] duration-300 ease-out @min-2xl/board:text-sm",
+              "ml-1 block rounded-full bg-destructive px-1.5 text-xs leading-5 whitespace-nowrap text-primary-foreground transition-[scale] duration-300 ease-out",
               !delta && "scale-50",
             )}
           >
@@ -110,29 +133,31 @@ export function MatchBoard({
 
   const animateTrick = useEffectEvent(() => {
     if (preview || game.phase !== "trick") return;
-    const anchor = board.current?.querySelector(`[data-seat="${game.lastWinner}"] .seat-avatar`);
+    const anchor = board.current?.querySelector(
+      `[data-seat="${game.lastWinner}"] [data-seat-avatar]`,
+    );
     if (!anchor) return;
     const target = anchor.getBoundingClientRect();
-    const animations = Array.from(board.current!.querySelectorAll<HTMLElement>(".played-card")).map(
-      (card, i) => {
-        const rect = card.getBoundingClientRect();
-        return card.animate(
-          [
-            { transform: "translate(0,0) scale(1)", opacity: 1 },
-            {
-              transform: `translate(${target.x + target.width / 2 - rect.x - rect.width / 2}px,${target.y + target.height / 2 - rect.y - rect.height / 2}px) scale(.22)`,
-              opacity: 0,
-            },
-          ],
+    const animations = Array.from(
+      board.current!.querySelectorAll<HTMLElement>("[data-played-card]"),
+    ).map((card, i) => {
+      const rect = card.getBoundingClientRect();
+      return card.animate(
+        [
+          { transform: "translate(0,0) scale(1)", opacity: 1 },
           {
-            duration: 380,
-            delay: Math.max(0, game.deadline - game.serverTime - 520) + i * 18,
-            easing: "cubic-bezier(.4,0,.2,1)",
-            fill: "forwards",
+            transform: `translate(${target.x + target.width / 2 - rect.x - rect.width / 2}px,${target.y + target.height / 2 - rect.y - rect.height / 2}px) scale(.22)`,
+            opacity: 0,
           },
-        );
-      },
-    );
+        ],
+        {
+          duration: 380,
+          delay: Math.max(0, game.deadline - game.serverTime - 520) + i * 18,
+          easing: "cubic-bezier(.4,0,.2,1)",
+          fill: "forwards",
+        },
+      );
+    });
     return () => animations.forEach((animation) => animation.cancel());
   });
   useEffect(() => animateTrick(), [game.phase, game.round, game.lastWinner, trickNumber]);
@@ -160,12 +185,13 @@ export function MatchBoard({
     return (
       <div
         key={id}
-        className="seat-slot grid min-w-0 grid-rows-subgrid"
+        className="col-(--seat-column) row-(--seat-row) grid min-w-0 grid-rows-subgrid"
+        data-seat-slot
         data-center={position.column === 3 || undefined}
         style={
           {
-            gridColumn: `${position.column} / span 2`,
-            gridRow: `${position.side === "top" ? 1 : 4} / span 2`,
+            "--seat-column": `${position.column} / span 2`,
+            "--seat-row": `${position.side === "top" ? 1 : 4} / span 2`,
             "--seat-fan-rotation": `${position.side === "top" ? 180 + (position.column - 3) * 15 : (3 - position.column) * 15}deg`,
           } as CSSProperties
         }
@@ -192,15 +218,15 @@ export function MatchBoard({
   return (
     <div
       ref={board}
-      className="match-board @container/board mx-auto grid size-full max-h-[58rem] max-w-5xl grid-rows-[clamp(2.25rem,calc(50dvh-19.5rem),8.25rem)_minmax(0,1fr)_auto] gap-1.5
+      className="@container/board mx-auto grid size-full max-h-[58rem] max-w-5xl grid-rows-[clamp(2.25rem,calc(50dvh-19.5rem),8.25rem)_minmax(0,1fr)_auto] gap-1.5
         [--opponent-card-width:clamp(2.5rem,7dvh,4rem)] [--opponent-hand-height:calc(var(--opponent-card-width)*1.6)]"
       data-phase={game.phase}
       data-blind={game.count === 1 || undefined}
     >
       <MatchEventFeed key={`${game.code}-${game.matchId}-${game.you}`} game={game} />
       <section
-        className="table-arena relative isolate grid min-h-0 w-full grid-cols-6 gap-x-2 grid-rows-[4.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_4.5rem]
-          @min-2xl/board:grid-rows-[5.5rem_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_5.5rem]"
+        className="relative isolate grid min-h-0 w-full grid-cols-6 gap-x-2 [--seat-row:4.5rem]
+          grid-rows-[var(--seat-row)_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_var(--seat-row)]"
         style={{ "--table-outline": tableOutline } as CSSProperties}
         aria-label="Game table"
       >
@@ -225,13 +251,13 @@ export function MatchBoard({
           />
         </div>
         <ReactionRail game={game} />
-        <div className="seats contents">{seating.seats.map(seat)}</div>
+        <div className="contents">{seating.seats.map(seat)}</div>
         <section
-          className="play-table @container/play col-span-full row-start-3 grid min-h-0 min-w-0 place-items-center [container-type:size]"
+          className="@container/play col-span-full row-start-3 grid min-h-0 min-w-0 place-items-center [container-type:size]"
           aria-label={game.phase === "bidding" ? "Predictions" : "Current trick"}
         >
           {game.phase === "bidding" ? (
-            <div className="bid-options flex max-w-[90%] flex-col items-center justify-center gap-3 short-trick:gap-1.5 @min-2xl/board:flex-row">
+            <div className="flex max-w-[90%] flex-col items-center justify-center gap-3 short-trick:gap-1.5">
               {[0, 3]
                 .filter((start) => start <= game.count)
                 .map((start) => (
@@ -241,16 +267,13 @@ export function MatchBoard({
                       (_, i) => {
                         const n = start + i;
                         return (
-                          <Button
+                          <BidButton
                             key={n}
-                            variant="outline"
-                            className="size-14 rounded-lg bg-card p-0 text-xl font-semibold short-trick:size-11"
+                            n={n}
+                            className="short-trick:size-11"
                             disabled={!myTurn || busy || !game.legalBids.includes(n)}
-                            aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
                             onClick={() => onBid(n)}
-                          >
-                            {n}
-                          </Button>
+                          />
                         );
                       },
                     )}
@@ -259,7 +282,7 @@ export function MatchBoard({
             </div>
           ) : (
             <div
-              className="trick-cards trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1] @min-2xl/board:[--trick-columns:var(--trick-players)] @min-2xl/board:[--trick-rows:1] @min-2xl/board:[--played-card-max-width:5.5rem] @min-2xl/board:[--played-card-extra-height:0rem]"
+              className="trick-grid short-trick:[--trick-columns:var(--trick-players)] short-trick:[--trick-rows:1]"
               style={
                 {
                   "--trick-players": game.order.length,
@@ -271,8 +294,9 @@ export function MatchBoard({
             >
               {game.trick.map((play) => (
                 <div
-                  className="played-card min-w-0 animate-[card-land_.24s_ease-out_both]"
+                  className="min-w-0 animate-[card-land_.24s_ease-out_both]"
                   key={play.card}
+                  data-played-card
                   data-owner={play.player}
                 >
                   <PlayingCard card={play.card} mode={play.mode} />
@@ -284,12 +308,12 @@ export function MatchBoard({
       </section>
       <div className="@container/hand relative mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[2rem_minmax(0,1fr)_2rem] items-center pt-2">
         <section
-          className="hand-area col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] @min-2xl/board:[--hand-card-limit:6rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
+          className="col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
           style={{ "--hand-count": handPlayer?.hand.length ?? 0 } as CSSProperties}
           aria-label={game.spectating ? "Spectator mode" : "Your hand"}
         >
           <div
-            className="hand flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-[.hand-card]:scale-[1.08] transition-[filter] duration-300 ease-out data-[waiting]:brightness-[.8]"
+            className="flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-data-hand-card:scale-[1.08] transition-[filter] duration-300 ease-out data-[waiting]:brightness-[.8]"
             key={`hand-${game.round}`}
             data-waiting={
               ((game.phase === "playing" || game.phase === "trick") && !myTurn) || undefined
@@ -301,8 +325,9 @@ export function MatchBoard({
               const position = middle ? (i - middle) / middle : 0;
               return (
                 <div
-                  className="hand-card relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                  className="relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
                   key={card ?? i}
+                  data-hand-card
                   style={
                     {
                       "--hand-angle": `${position * 3}deg`,

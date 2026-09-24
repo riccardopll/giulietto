@@ -47,7 +47,6 @@ test("a rematch opens one private lobby that invited players can join until it e
     type: "error",
     error: "bot_1 already invited everyone to a rematch.",
   });
-  // A retried request reuses the same lobby instead of opening another.
   expect((await host.command({ action: "rematch", commandId })).type).toBe("ack");
 
   const lobby = await api.state(players[1], { action: "join", code: invite.code });
@@ -66,7 +65,6 @@ test("a rematch opens one private lobby that invited players can join until it e
   vi.useRealTimers();
   const second = await api.state(players[2], { action: "join", code: reopened.rematch!.code });
   expect(second.players.map((player) => player.name)).toEqual(["bot_3"]);
-  // Finish the close handshakes so the table's logs land before the file tears down.
   host.close();
   other.close();
   await Promise.all([host.closed, other.closed]);

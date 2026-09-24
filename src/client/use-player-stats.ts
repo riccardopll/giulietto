@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
+import { RotateCw } from "lucide-react";
 import { toast } from "./toast";
 import type { Profile, StatsResponse } from "../shared/player-stats";
 export function usePlayerStats(
@@ -37,7 +38,10 @@ export function usePlayerStats(
         if (controller.signal.aborted || current !== version.current) return;
         const message = "Could not load player stats.";
         setError(message);
-        toast.error(message, { id: "stats-error", action: { label: "Retry", onClick: refresh } });
+        toast.show(message, {
+          id: "stats-error",
+          action: { label: "Retry", icon: RotateCw, onClick: refresh },
+        });
       });
     return () => controller.abort();
   }, [token, active, attempt, refresh]);

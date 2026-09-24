@@ -4,10 +4,10 @@ import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
-import { Button } from "./ui/button";
-import { Countdown, CountdownBar } from "./ui/countdown";
+import { Button } from "@ui/button";
+import { Countdown, CountdownBar } from "@ui/countdown";
 
-const cellClass = "px-1 py-3 text-center align-middle whitespace-normal wrap-anywhere sm:px-2";
+const cellClass = "px-1 py-3 text-center align-middle whitespace-normal wrap-anywhere";
 
 function useCountdown({ deadline, serverTime }: GameView, frozen: boolean) {
   const [clock, setClock] = useState({ deadline, serverTime, elapsed: 0 });
@@ -57,7 +57,7 @@ export function ResultsPanel({
       />
     );
   return (
-    <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center sm:p-6">
+    <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center">
       <div className="mb-4 flex items-center gap-3 px-1 pt-2">
         <h1 className="min-w-0 text-left text-2xl font-semibold wrap-anywhere">
           {finished ? "Table closed" : game.tie ? "Everyone returns" : "Round results"}
@@ -67,8 +67,8 @@ export function ResultsPanel({
       {game.tie && (
         <p className="mb-5 text-sm text-muted-foreground">All players return with one life.</p>
       )}
-      <div className="-mx-3 sm:-mx-6">
-        <table className="w-full table-fixed text-sm sm:text-base">
+      <div className="-mx-3">
+        <table className="w-full table-fixed text-sm">
           <colgroup>
             <col className="w-[38%]" />
             <col />
@@ -81,9 +81,9 @@ export function ResultsPanel({
                 <th
                   key={label}
                   className={cn(
-                    "h-10 px-1 text-center align-middle text-xs font-medium whitespace-normal wrap-anywhere text-muted-foreground sm:px-2 sm:text-sm",
-                    i === 0 && "pl-4 text-left sm:pl-8",
-                    i === 3 && "pr-4 sm:pr-8",
+                    "h-10 px-1 text-center align-middle text-xs font-medium whitespace-normal wrap-anywhere text-muted-foreground",
+                    i === 0 && "pl-4 text-left",
+                    i === 3 && "pr-4",
                   )}
                 >
                   {label}
@@ -102,8 +102,8 @@ export function ResultsPanel({
                     player.id === game.you && "bg-accent/60",
                   )}
                 >
-                  <td className={cn(cellClass, "pl-4 text-left sm:pl-8")}>
-                    <div className="flex items-center gap-2 sm:gap-3">
+                  <td className={cn(cellClass, "pl-4 text-left")}>
+                    <div className="flex items-center gap-2">
                       <span className="w-5 shrink-0 text-xs text-muted-foreground">
                         {toRoman(i + 1)}
                       </span>
@@ -112,7 +112,7 @@ export function ResultsPanel({
                   </td>
                   <td className={cellClass}>{result?.bid ?? "–"}</td>
                   <td className={cellClass}>{result?.taken ?? "–"}</td>
-                  <td className={cn(cellClass, "pr-4 sm:pr-8")}>
+                  <td className={cn(cellClass, "pr-4")}>
                     <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
                       <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
                       {!!result?.lost && (
@@ -132,10 +132,7 @@ export function ResultsPanel({
         </table>
       </div>
       {finished ? (
-        <Button
-          className="mt-6 h-auto min-h-12 w-full max-w-68 whitespace-normal rounded-xl px-4 py-3"
-          onClick={onReset}
-        >
+        <Button size="lg" className="mt-6 w-full max-w-68" onClick={onReset}>
           Back to tables
         </Button>
       ) : (
