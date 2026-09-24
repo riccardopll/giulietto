@@ -1,7 +1,6 @@
 import { Clock3 } from "lucide-react";
 import { cn } from "../../utils";
 
-/** A labelled countdown with a depleting bar; the round pause and invite notifications share it. */
 export function Countdown({
   label,
   remaining,

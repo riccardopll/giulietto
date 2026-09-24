@@ -116,7 +116,6 @@ export function WinnerPodium({
       )}
       <div className="mt-6 grid gap-3">
         {canRematch && (
-          // A live invite greys the button out; the notification is the way in.
           <Button className={buttonClass} disabled={busy || !!invite} onClick={onRematch}>
             <RotateCcw className="size-5" />
             Rematch

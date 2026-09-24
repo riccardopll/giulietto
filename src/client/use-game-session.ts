@@ -151,7 +151,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       window.removeEventListener("beforeunload", onUnload);
     };
   }, [isPreview]);
-  // Only the players who did not open the invite are notified.
   const invite = game?.rematch;
   const inviteCode = invite && invite.by !== game!.you ? invite.code : undefined;
   const announceInvite = useEffectEvent((code: string) => {
@@ -236,7 +235,6 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       setPendingCard(null);
     }
   }
-  /** Switches tables in place, replacing the current history entry. */
   async function moveTo(code: string) {
     if (preview || !ready || busyRef.current) return;
     setBusy(true);

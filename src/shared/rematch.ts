@@ -3,7 +3,6 @@ import { GameError } from "./game-error";
 
 export const REMATCH_INVITE_MS = 60000;
 
-/** Throws unless this player may open a rematch lobby right now. */
 export function checkRematch(game: Game, id: string, now: number) {
   if (game.phase !== "finished") throw new GameError("A rematch can start once the game is over.");
   const player = findPlayer(game, id);

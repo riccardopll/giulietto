@@ -163,7 +163,6 @@ test("three players complete a game, including round results and elimination", a
     ).toBeVisible();
   }
 
-  // The winner opens a rematch lobby; one guest accepts the invite and the other stays.
   await players[0].page.getByRole("button", { name: "Rematch", exact: true }).click();
   await expect(players[0].page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
   await expect.poll(() => players[0].state?.code).not.toBe(finished[0].code);

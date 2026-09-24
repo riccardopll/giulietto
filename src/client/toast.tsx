@@ -12,7 +12,6 @@ type Toast = {
   action?: Action;
   expiresAt: number;
   duration: number;
-  /** Prompts show a countdown and a decline button instead of the close control. */
   prompt?: Prompt;
   leaving?: boolean;
 };

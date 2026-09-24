@@ -222,7 +222,6 @@ export class GameTable extends DurableObject<Env> {
       for (const socket of this.ctx.getWebSockets(id))
         socket.close(4001, "You left the table. You can rejoin as a spectator.");
   }
-  /** Opens the rematch lobby before the invite is recorded; retries reuse the same code. */
   private async openRematch(game: Game, id: string, commandId: string) {
     checkRematch(game, id, Date.now());
     const player = findPlayer(game, id)!;
