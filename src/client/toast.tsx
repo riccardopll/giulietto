@@ -114,7 +114,7 @@ export function Toaster() {
           className={cn(
             "pointer-events-auto flex w-full max-w-sm rounded-lg border bg-card text-sm shadow-lg animate-[toast-in_.25s_ease-out_both] data-leaving:animate-[toast-out_.2s_ease-in_both]",
             entry.prompt
-              ? "relative flex-col overflow-hidden p-4 pb-5"
+              ? "relative flex-col overflow-hidden px-4 pt-3 pb-5"
               : "items-center gap-2 py-2 pr-2 pl-4",
           )}
         >
