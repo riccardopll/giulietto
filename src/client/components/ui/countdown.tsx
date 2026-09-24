@@ -4,38 +4,38 @@ import { cn } from "../../utils";
 export function Countdown({
   label,
   remaining,
-  total,
   className,
-  barClassName,
-  textClassName,
 }: {
   label: string;
   remaining: number;
-  total: number;
   className?: string;
-  barClassName?: string;
-  textClassName?: string;
 }) {
   return (
-    <div className={className}>
-      <p
-        className={cn(
-          "flex flex-wrap items-center gap-2 text-sm text-muted-foreground",
-          textClassName,
-        )}
-      >
-        <Clock3 className="size-4" aria-hidden="true" />
-        {label} {Math.ceil(remaining / 1000)}s
-      </p>
+    <p className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
+      <Clock3 className="size-4" aria-hidden="true" />
+      {label} {Math.ceil(remaining / 1000)}s
+    </p>
+  );
+}
+
+export function CountdownBar({
+  remaining,
+  total,
+  className,
+}: {
+  remaining: number;
+  total: number;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("h-1.5 overflow-hidden rounded-full bg-primary/10", className)}
+      aria-hidden="true"
+    >
       <div
-        className={cn("h-1.5 overflow-hidden rounded-full bg-primary/10", barClassName)}
-        aria-hidden="true"
-      >
-        <div
-          className="h-full rounded-full bg-primary/60"
-          style={{ width: `${(Math.max(0, remaining) / total) * 100}%` }}
-        />
-      </div>
+        className="h-full rounded-full bg-primary/60"
+        style={{ width: `${(Math.max(0, remaining) / total) * 100}%` }}
+      />
     </div>
   );
 }

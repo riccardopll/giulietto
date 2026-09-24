@@ -176,7 +176,7 @@ test("three players complete a game, including round results and elimination", a
   await expect(invites[2]).toBeVisible();
   const expiry = invites[1].getByText(/^Expires in \d+s$/);
   await expect(expiry).toHaveText(/^Expires in (60|59|58)s$/);
-  const expiryBar = expiry.locator("..").locator("[aria-hidden='true'] > div");
+  const expiryBar = invites[1].locator("[aria-hidden='true'] > div");
   expect(await expiryBar.evaluate((element) => parseFloat(element.style.width))).toBeGreaterThan(
     90,
   );

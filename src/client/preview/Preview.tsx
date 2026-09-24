@@ -250,6 +250,11 @@ export function Preview({ bot }: { bot: Bot }) {
         ? TRICK_PAUSE_MS
         : snapshot.turnSeconds * 1000);
 
+  function commit(game: Game) {
+    game.revision++;
+    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+  }
+
   function command(input: TableCommand) {
     const now = Date.now();
     const game = structuredClone(entry.game);
@@ -282,8 +287,7 @@ export function Preview({ bot }: { bot: Bot }) {
       } else if (input.action === "rematch") inviteRematch(game, id, "PREVIEW0", now);
       else return;
     }
-    game.revision++;
-    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    commit(game);
   }
 
   const botLines = [
@@ -296,8 +300,7 @@ export function Preview({ bot }: { bot: Bot }) {
     const game = structuredClone(entry.game);
     const sender = game.players.find((_, index) => index !== viewer)!;
     sendChat(game, sender.id, botLines[(game.chat?.length ?? 0) % botLines.length], Date.now());
-    game.revision++;
-    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    commit(game);
     setControlsOpen(false);
   }
 
@@ -309,8 +312,7 @@ export function Preview({ bot }: { bot: Bot }) {
       by: sender.id,
       expiresAt: Date.now() + REMATCH_INVITE_MS,
     };
-    game.revision++;
-    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    commit(game);
     setControlsOpen(false);
   }
 

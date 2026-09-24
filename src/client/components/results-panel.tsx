@@ -5,7 +5,7 @@ import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "./ui/button";
-import { Countdown } from "./ui/countdown";
+import { Countdown, CountdownBar } from "./ui/countdown";
 
 const cellClass = "px-1 py-3 text-center align-middle whitespace-normal wrap-anywhere sm:px-2";
 
@@ -139,14 +139,10 @@ export function ResultsPanel({
           Back to tables
         </Button>
       ) : (
-        <Countdown
-          className="mt-3 border-t pt-4"
-          textClassName="justify-center"
-          barClassName="mt-4"
-          label="Next round in"
-          remaining={remaining}
-          total={ROUND_PAUSE_MS}
-        />
+        <div className="mt-3 border-t pt-4">
+          <Countdown className="justify-center" label="Next round in" remaining={remaining} />
+          <CountdownBar className="mt-4" remaining={remaining} total={ROUND_PAUSE_MS} />
+        </div>
       )}
     </section>
   );

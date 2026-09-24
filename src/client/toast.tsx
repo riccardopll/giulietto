@@ -1,7 +1,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { X } from "lucide-react";
 import { Button } from "./components/ui/button";
-import { Countdown } from "./components/ui/countdown";
+import { Countdown, CountdownBar } from "./components/ui/countdown";
 import { cn } from "./utils";
 
 type Action = { label: string; onClick: () => void };
@@ -62,17 +62,15 @@ function PromptCard({ entry, prompt }: { entry: Toast; prompt: Prompt }) {
     const timer = setInterval(() => setNow(Date.now()), 50);
     return () => clearInterval(timer);
   }, []);
+  const remaining = Math.min(entry.duration, entry.expiresAt - now);
   return (
     <>
       <div className="flex items-center justify-between gap-3">
         <p className="min-w-0 text-lg font-semibold wrap-anywhere">{entry.message}</p>
         <Countdown
-          className="shrink-0"
-          textClassName="gap-1.5 text-xs whitespace-nowrap"
-          barClassName="absolute inset-x-0 bottom-0 rounded-none"
+          className="shrink-0 gap-1.5 text-xs whitespace-nowrap"
           label={prompt.countdown}
-          remaining={Math.min(entry.duration, entry.expiresAt - now)}
-          total={entry.duration}
+          remaining={remaining}
         />
       </div>
       <div className="mt-3 grid grid-cols-[1fr_2fr] gap-2">
@@ -85,6 +83,11 @@ function PromptCard({ entry, prompt }: { entry: Toast; prompt: Prompt }) {
           </Button>
         )}
       </div>
+      <CountdownBar
+        className="absolute inset-x-0 bottom-0 rounded-none"
+        remaining={remaining}
+        total={entry.duration}
+      />
     </>
   );
 }
