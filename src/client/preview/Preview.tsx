@@ -6,6 +6,7 @@ import { AceSelection } from "../components/ace-selection";
 import type { TableCommand } from "../../shared/commands";
 import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
+import { inviteRematch, REMATCH_INVITE_MS } from "../../shared/rematch";
 import { Button } from "../components/ui/button";
 import {
   bid,
@@ -249,6 +250,11 @@ export function Preview({ bot }: { bot: Bot }) {
         ? TRICK_PAUSE_MS
         : snapshot.turnSeconds * 1000);
 
+  function commit(game: Game) {
+    game.revision++;
+    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+  }
+
   function command(input: TableCommand) {
     const now = Date.now();
     const game = structuredClone(entry.game);
@@ -278,10 +284,10 @@ export function Preview({ bot }: { bot: Bot }) {
       else if (input.action === "play") {
         const card = input.card ?? -1;
         play(game, id, card === -1 ? game.players[viewer].hand[0] : card, input.mode, now);
-      } else return;
+      } else if (input.action === "rematch") inviteRematch(game, id, "PREVIEW0", now);
+      else return;
     }
-    game.revision++;
-    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    commit(game);
   }
 
   const botLines = [
@@ -294,8 +300,19 @@ export function Preview({ bot }: { bot: Bot }) {
     const game = structuredClone(entry.game);
     const sender = game.players.find((_, index) => index !== viewer)!;
     sendChat(game, sender.id, botLines[(game.chat?.length ?? 0) % botLines.length], Date.now());
-    game.revision++;
-    setTables((tables) => ({ ...tables, [people]: { ...tables[people], game } }));
+    commit(game);
+    setControlsOpen(false);
+  }
+
+  function showInvite() {
+    const game = structuredClone(entry.game);
+    const sender = game.players.find((_, index) => index !== viewer)!;
+    game.rematch = {
+      code: crypto.randomUUID().slice(0, 8).toUpperCase(),
+      by: sender.id,
+      expiresAt: Date.now() + REMATCH_INVITE_MS,
+    };
+    commit(game);
     setControlsOpen(false);
   }
 
@@ -430,6 +447,14 @@ export function Preview({ bot }: { bot: Bot }) {
             onClick={() => show({ phase: "finished" })}
           >
             Show winning screen
+          </Button>
+          <Button
+            variant="outline"
+            className="min-h-11 w-full"
+            disabled={viewer === -1}
+            onClick={showInvite}
+          >
+            Show rematch invite
           </Button>
           <div className="grid grid-cols-2 gap-3">
             {controls.map((control) => (

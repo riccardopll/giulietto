@@ -161,7 +161,15 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onRemoveBot={(playerId) => void table.act({ action: "removeBot", playerId })}
               />
             ) : result ? (
-              <ResultsPanel game={game} preview={isPreview} chat={chat} onReset={table.reset} />
+              <ResultsPanel
+                game={game}
+                preview={isPreview}
+                busy={busy}
+                chat={chat}
+                invite={table.invite}
+                onRematch={() => void table.rematch()}
+                onReset={table.reset}
+              />
             ) : (
               <MatchBoard
                 game={game}

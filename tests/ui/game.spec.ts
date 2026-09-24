@@ -152,18 +152,64 @@ test("three players complete a game, including round results and elimination", a
   });
   await otherTab.goto(players[0].page.url());
   await expect(otherTab.getByRole("heading", { name: "You win", exact: true })).toBeVisible();
-  for (const { page, state } of players) {
-    expect(state!.winner).toBe(winner);
+  const finished = players.map((player) => player.state!);
+  for (const [i, { page }] of players.entries()) {
+    expect(finished[i].winner).toBe(winner);
     await expect(
       page.getByRole("heading", {
-        name: state!.you === winner ? "You win" : "bot_1 wins",
+        name: finished[i].you === winner ? "You win" : "bot_1 wins",
         exact: true,
       }),
     ).toBeVisible();
-    await page.getByRole("button", { name: "Back to tables", exact: true }).click();
+  }
+
+  await players[0].page.getByRole("button", { name: "Rematch", exact: true }).click();
+  await expect(players[0].page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
+  await expect.poll(() => players[0].state?.code).not.toBe(finished[0].code);
+  const rematchCode = players[0].state!.code;
+  await expect(players[0].page).toHaveURL(`/?table=${rematchCode}`);
+  await expect(players[0].page.getByText("bot_1 (you)")).toBeVisible();
+  const invites = players.map(({ page }) =>
+    page.getByRole("status").filter({ hasText: "Rematch with bot_1?" }),
+  );
+  await expect(invites[1]).toBeVisible();
+  await expect(invites[2]).toBeVisible();
+  const expiry = invites[1].getByText(/^Expires in \d+s$/);
+  await expect(expiry).toHaveText(/^Expires in (60|59|58)s$/);
+  const expiryBar = invites[1].locator("[aria-hidden='true'] > div");
+  expect(await expiryBar.evaluate((element) => parseFloat(element.style.width))).toBeGreaterThan(
+    90,
+  );
+  await expect(invites[1]).toHaveCSS("opacity", "1");
+  await screenshot(players[1].page, testInfo, "rematch-invite", { fullPage: true });
+  await expect(otherTab.getByRole("button", { name: "Rematch", exact: true })).toBeDisabled();
+  await expect(otherTab.getByText("Rematch with bot_1?")).toHaveCount(0);
+  await invites[1].getByRole("button", { name: "Join", exact: true }).click();
+  await synced(
+    players.slice(0, 2),
+    (state) => state.code === rematchCode && state.phase === "lobby" && state.players.length === 2,
+  );
+  await expect(players[1].page).toHaveURL(`/?table=${rematchCode}`);
+  await expect(invites[1]).toBeHidden();
+  await screenshot(players[1].page, testInfo, "rematch-lobby", { fullPage: true });
+  await invites[2].getByRole("button", { name: "Decline", exact: true }).click();
+  await expect(invites[2]).toBeHidden();
+  await expect(
+    players[2].page.getByRole("button", { name: "Rematch", exact: true }),
+  ).toBeDisabled();
+
+  for (const [i, { page }] of players.entries()) {
+    const state = finished[i];
+    if (i < 2) {
+      await page.getByRole("button", { name: "Leave table", exact: true }).click();
+      await page
+        .getByRole("alertdialog")
+        .getByRole("button", { name: "Leave table", exact: true })
+        .click();
+    } else await page.getByRole("button", { name: "Back to tables", exact: true }).click();
     await expect(page.getByRole("button", { name: "Open your profile" })).toHaveAttribute(
       "title",
-      state!.viewerName,
+      state.viewerName,
     );
     await expect(page).toHaveURL("/");
     expect(await page.evaluate(() => localStorage.getItem("giulietto-room"))).toBeNull();
@@ -171,18 +217,18 @@ test("three players complete a game, including round results and elimination", a
     await expect(async () => {
       await page.reload();
       await expect(
-        page.getByText(state!.you === winner ? "30 / 100 XP" : "10 / 100 XP", { exact: true }),
+        page.getByText(state.you === winner ? "30 / 100 XP" : "10 / 100 XP", { exact: true }),
       ).toBeVisible();
       await expect(
         page.locator("dl > div").filter({ hasText: "Average turn time" }).locator("dd"),
       ).toHaveText(/^\d+\.\d s$/);
     }).toPass();
-    await screenshot(page, testInfo, `stats-${state!.viewerName}`, { fullPage: true });
+    await screenshot(page, testInfo, `stats-${state.viewerName}`, { fullPage: true });
     await page.getByRole("button", { name: "Back to home" }).click();
     await page.getByRole("button", { name: "Leaderboard", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Leaderboard" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Leaderboard" })).toBeVisible();
-    await screenshot(page, testInfo, `leaderboard-${state!.viewerName}`, { fullPage: true });
+    await screenshot(page, testInfo, `leaderboard-${state.viewerName}`, { fullPage: true });
     await page.getByRole("button", { name: "Back to home" }).click();
   }
 

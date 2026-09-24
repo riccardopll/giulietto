@@ -3,6 +3,7 @@ import type { Command, EntryCommand, TableCommand } from "../shared/commands";
 import { chatText, sendChat } from "../shared/chat";
 import { EMOTE_IDS, sendEmote } from "../shared/emotes";
 import { GameError } from "../shared/game-error";
+import { inviteRematch } from "../shared/rematch";
 import {
   bid,
   forfeit,
@@ -52,6 +53,7 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
     }
     case "start":
     case "addBot":
+    case "rematch":
     case "leave":
       return { action: input.action };
     case "removeBot":
@@ -169,6 +171,10 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   else if (input.action === "play") {
     if (game.count !== 1 && input.card === undefined) throw new GameError("Choose a valid card.");
     play(game, id, game.count === 1 ? player.hand[0] : input.card!, input.mode, now);
+  } else if (input.action === "rematch") {
+    // The table assigns the lobby code; clients never choose it.
+    if (!input.code) throw new GameError("Invalid request.");
+    inviteRematch(game, id, input.code, now);
   } else if (input.action === "leave" && game.phase === "lobby") {
     game.players = game.players.filter((member) => member.id !== id);
     if (game.host === id) game.host = game.players.find((member) => !member.bot)?.id ?? "";
@@ -184,6 +190,16 @@ export function roomCode(value: unknown) {
   if (!/^[A-HJ-NP-Z2-9]{8}$/.test(code))
     throw new GameError("Enter a valid eight-character lobby code.");
   return code;
+}
+/** Deterministic codes make lobby creation retry-safe across objects. */
+export async function lobbyCode(key: string) {
+  const bytes = new Uint8Array(
+    await crypto.subtle.digest("SHA-256", new TextEncoder().encode(key)),
+  );
+  return Array.from(
+    bytes.slice(0, 8),
+    (byte) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[byte % 32],
+  ).join("");
 }
 export function failure(error: unknown) {
   if (error instanceof GameError) return Response.json({ error: error.message }, { status: 400 });
