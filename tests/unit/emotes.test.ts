@@ -2,7 +2,7 @@ import { expect, test } from "vitest";
 import { sendEmote } from "../../src/shared/emotes";
 import { gameFixture } from "./helpers";
 
-test.each(["chicken", "perso", "goblin"] as const)(
+test.each(["chicken", "perso", "goblin", "princess"] as const)(
   "%s preserves play state and enforces a per-player cooldown",
   (id) => {
     const game = gameFixture();

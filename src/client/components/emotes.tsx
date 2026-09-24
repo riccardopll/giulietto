@@ -19,32 +19,25 @@ export function useRecent(sentAt: number | undefined, serverTime: number, durati
   return sentAt !== undefined && expired !== sentAt && remaining > 0;
 }
 
-/** Placement of each emote's artwork inside the 60x45 bubble. */
-const EMOTES: Record<Emote["id"], { label: string; box: string; clip?: string; front?: boolean }> =
-  {
-    chicken: {
-      label: "Send chicken emote",
-      clip: "[clip-path:inset(-30px_0_2.5px_0)]",
-      box: "-bottom-[7.5px] left-1/2 h-[84.375px] w-[62.5px] -translate-x-[60%]",
-    },
-    perso: {
-      label: "Send Perso emote",
-      box: "-left-6 -top-[32.55px] h-[90px] w-[108px]",
-    },
-    goblin: {
-      label: "Send goblin emote",
-      clip: "[clip-path:inset(-30px_-12px_2.5px_-12px)]",
-      box: "-bottom-[1.5px] left-1/2 h-[53.7px] w-[76px] -translate-x-1/2",
-      front: true,
-    },
-  };
+const EMOTES: Record<Emote["id"], { label: string; size: string; bust?: boolean }> = {
+  chicken: { label: "Send chicken emote", size: "h-[78.5px] w-[51.5px]", bust: true },
+  perso: { label: "Send Perso emote", size: "h-[86px] w-[108px]" },
+  goblin: { label: "Send goblin emote", size: "h-[53.7px] w-[76px]", bust: true },
+  princess: { label: "Send princess emote", size: "h-[58.4px] w-[45.9px]", bust: true },
+};
 
 function EmoteArt({ id, animated = false }: { id: Emote["id"]; animated?: boolean }) {
-  const { box, clip } = EMOTES[id];
+  const { size, bust } = EMOTES[id];
   const still = `/emotes/${id}-still.webp`;
   return (
-    <span className={cn("absolute inset-0", clip)}>
-      <span className={cn("absolute", box)}>
+    <span className={cn("absolute inset-0", bust && "[clip-path:inset(-40px_-40px_2.5px)]")}>
+      <span
+        className={cn(
+          "absolute left-1/2 -translate-x-1/2",
+          bust ? "bottom-0" : "top-[21.5px] -translate-y-1/2",
+          size,
+        )}
+      >
         {animated ? (
           <AnimatedWebp src={`/emotes/${id}.webp`} poster={still} />
         ) : (
@@ -67,11 +60,7 @@ export function EmoteBubble({
   const visible = useRecent(emote?.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!emote || !visible) return null;
   return (
-    <Bubble
-      key={emote.sentAt}
-      label={`${name} sent the ${emote.id} emote`}
-      front={EMOTES[emote.id].front}
-    >
+    <Bubble key={emote.sentAt} label={`${name} sent the ${emote.id} emote`}>
       <EmoteArt id={emote.id} animated />
     </Bubble>
   );
@@ -89,11 +78,7 @@ function SideReaction({
   const visible = useRecent(emote.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!visible) return null;
   return (
-    <SideBubble
-      label={`${name} sent the ${emote.id} emote`}
-      front={EMOTES[emote.id].front}
-      {...placement(emote)}
-    >
+    <SideBubble label={`${name} sent the ${emote.id} emote`} {...placement(emote)}>
       <EmoteArt id={emote.id} animated />
     </SideBubble>
   );
@@ -177,7 +162,7 @@ export function EmotePicker({
           collisionPadding={12}
           aria-label="Emotes"
           onOpenAutoFocus={(event) => event.preventDefault()}
-          className="z-50 grid w-auto grid-cols-3 gap-4 bg-transparent p-2"
+          className="z-50 grid w-auto grid-cols-4 gap-3 bg-transparent p-2"
         >
           {EMOTE_IDS.map((id) => (
             <button
