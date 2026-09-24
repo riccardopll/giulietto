@@ -217,6 +217,16 @@ export class GameTable extends DurableObject<Env> {
       throw new GameError("Table not found or expired. Check the invite code.");
     return room;
   }
+  hostName() {
+    const room = this.read();
+    if (
+      this.ctx.storage.kv.get("expired") ||
+      !room ||
+      Date.now() - room.updated >= TABLE_RETENTION_MS
+    )
+      return null;
+    return findPlayer(room.game, room.game.host)?.name ?? null;
+  }
   private closeForfeited(id: string, input: Command) {
     if (input.action === "leave" && findPlayer(this.read()!.game, id)?.forfeited)
       for (const socket of this.ctx.getWebSockets(id))
