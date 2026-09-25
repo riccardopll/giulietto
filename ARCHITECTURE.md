@@ -1,8 +1,8 @@
 # Architecture
 
-Phones only, portrait only, at least 375px wide: style for phone widths and add
-no desktop breakpoints. During play, keep the table, hand, and controls within
-the viewport.
+Phones only, portrait only, at least 375×667: style for phone widths and add no
+desktop breakpoints. During play, keep the table, hand, and controls within the
+viewport.
 
 Keep table and seat geometry fixed across rounds, hand sizes, and player
 statuses. Only notification bubbles and the enlarged avatar of the player on turn
