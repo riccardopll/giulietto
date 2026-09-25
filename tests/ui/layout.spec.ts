@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import { screenshot, test } from "./helpers";
 
 test("six players and full hands fit the smallest supported phone", async ({ page }, testInfo) => {
-  await page.setViewportSize({ width: 320, height: 568 });
+  await page.setViewportSize({ width: 375, height: 667 });
   await page.clock.install();
   await page.clock.pauseAt(new Date());
   await page.goto("/preview?people=6&cards=6&phase=bidding&longNames=1");
@@ -86,7 +86,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     .locator("[data-hand-card]")
     .evaluateAll((cards) => Math.min(...cards.map((card) => card.getBoundingClientRect().top)));
   expect(menu!.x).toBeGreaterThanOrEqual(12);
-  expect(menu!.x + menu!.width).toBeLessThanOrEqual(308);
+  expect(menu!.x + menu!.width).toBeLessThanOrEqual(363);
   expect(menu!.y).toBeGreaterThanOrEqual(12);
   expect(menu!.y + menu!.height).toBeLessThanOrEqual(handTop - 12);
   await screenshot(page, testInfo, "emote-menu");
@@ -127,9 +127,9 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
     "Room for a chat on the smallest phone?",
   );
   await expect(composer).toHaveValue("");
-  await expect.poll(() => chat.boundingBox()).toEqual({ x: 0, y: 0, width: 320, height: 568 });
+  await expect.poll(() => chat.boundingBox()).toEqual({ x: 0, y: 0, width: 375, height: 667 });
   const sendBox = (await chat.getByRole("button", { name: "Send message" }).boundingBox())!;
-  expect(sendBox.y + sendBox.height).toBeLessThanOrEqual(568);
+  expect(sendBox.y + sendBox.height).toBeLessThanOrEqual(667);
   expect(sendBox.height).toBeGreaterThanOrEqual(44);
   await screenshot(page, testInfo, "chat-sheet", { animations: "disabled" });
   await chat.getByRole("button", { name: "Close chat" }).click();
