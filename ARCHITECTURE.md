@@ -4,7 +4,8 @@ Phones only, portrait only: style for phone widths and add no desktop
 breakpoints. During play, keep the table, hand, and controls within the viewport.
 
 Keep table and seat geometry fixed across rounds, hand sizes, and player
-statuses. Only notification bubbles may clip.
+statuses. Only notification bubbles and the enlarged avatar of the player on turn
+may clip.
 
 Use Tailwind for layout and component styles. Reserve shared CSS for theme
 tokens, reusable utilities, paint, and animations. Every colour comes from the
