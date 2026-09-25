@@ -22,7 +22,12 @@ test("a host fills seats with bots and plays against them online", async ({ page
   await expect(page.getByText("Connecting…", { exact: true })).toBeHidden();
   await screenshot(page, testInfo, "bot-lobby", { fullPage: true });
   await page.getByRole("button", { name: "Start game", exact: true }).click();
-  const prediction = page.getByRole("button", { name: "Predict 0 tricks", exact: true });
+  await expect.poll(() => host.state?.legalBids.length).toBeGreaterThan(0);
+  const bid = host.state!.legalBids[0];
+  const prediction = page.getByRole("button", {
+    name: `Predict ${bid} ${bid === 1 ? "trick" : "tricks"}`,
+    exact: true,
+  });
   await expect(prediction).toBeEnabled();
   await prediction.click();
   await expect.poll(() => host.state?.phase).toBe("playing");

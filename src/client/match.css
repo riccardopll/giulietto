@@ -63,9 +63,12 @@
   background-color: var(--color-felt);
 }
 
-:root .seat-timer circle {
+.seat-timer circle {
   stroke-dasharray: var(--timer-remaining) 100;
   animation: seat-countdown var(--timer-duration) linear forwards;
+}
+.seat-timer[data-loop] circle {
+  animation-iteration-count: infinite;
 }
 @keyframes seat-countdown {
   to {

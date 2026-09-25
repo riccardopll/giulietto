@@ -26,7 +26,6 @@ function actor(state: GameView, player: string, action: string): Actor {
   };
 }
 
-/** Announce observed actions only; reconnect snapshots do not replay old table activity. */
 export function matchEvents(before: GameView | null, after: GameView): MatchEvent[] {
   const sameContext = before !== null && context(before) === context(after);
   if (sameContext && after.revision < before.revision) return [];

@@ -33,24 +33,17 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
   return (
     <Bubble label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}>
       <svg
-        className="prediction-digit absolute bottom-1 left-1/2 h-[50px] w-12 origin-bottom -translate-x-1/2 overflow-visible animate-[digit-pop_.55s_cubic-bezier(.2,.8,.2,1)_both]"
+        className="absolute bottom-1 left-1/2 h-[50px] w-12 origin-bottom -translate-x-1/2 overflow-visible animate-[digit-pop_.55s_cubic-bezier(.2,.8,.2,1)_both]"
         viewBox="0 0 48 56"
         preserveAspectRatio="none"
+        data-prediction-digit
         aria-hidden="true"
       >
         <defs>
           <linearGradient id={`${id}-face`} x1=".15" y1="0" x2=".55" y2="1">
-            <stop
-              offset="0"
-              style={{ stopColor: "color-mix(in oklab, var(--color-gold), var(--color-card) 60%)" }}
-            />
-            <stop offset=".4" style={{ stopColor: "var(--color-gold)" }} />
-            <stop
-              offset="1"
-              style={{
-                stopColor: "color-mix(in oklab, var(--color-gold), var(--color-bronze) 70%)",
-              }}
-            />
+            <stop offset="0" stopColor="var(--color-gold-light)" />
+            <stop offset=".4" stopColor="var(--color-gold)" />
+            <stop offset="1" stopColor="var(--color-gold-dark)" />
           </linearGradient>
           <clipPath id={`${id}-face-clip`} clipRule="evenodd">
             <path d={digit} />
@@ -75,9 +68,7 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
               key={`side-${step}`}
               d={digit}
               transform={offset(step)}
-              style={{
-                fill: "color-mix(in oklab, var(--color-bronze), var(--color-foreground) 45%)",
-              }}
+              fill="var(--color-bronze-dark)"
             />
           ))}
           <path

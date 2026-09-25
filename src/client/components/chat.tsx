@@ -12,9 +12,9 @@ import { MessageCircleDashed, MessageCircleMore, SendHorizontal, X } from "lucid
 import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
 import type { GameView } from "../../shared/game";
 import { cn } from "../utils";
-import { overlayClass } from "./ui/action-dialog";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { overlayClass } from "@ui/action-dialog";
+import { Button } from "@ui/button";
+import { Input } from "@ui/input";
 
 export type ChatState = { open: boolean; setOpen: (open: boolean) => void; unread: number };
 
@@ -71,13 +71,9 @@ export function ChatButton({
   return (
     <Button
       ref={ref}
-      variant="ghost"
+      variant="tab"
       size="icon"
-      className={cn(
-        "h-11 w-11 shrink-0 bg-transparent p-0 text-primary hover:bg-transparent focus-visible:outline-ring",
-        edge ? "rounded-none" : "rounded-lg",
-        className,
-      )}
+      className={className}
       aria-label={unread ? `Chat, ${unread} unread` : "Chat"}
       onClick={onClick}
     >
@@ -88,14 +84,13 @@ export function ChatButton({
         )}
       >
         {edge && (
-          // The button sits at 2% of the table width; the mask trims this to the rim's curve.
           <span className="table-edge absolute inset-y-0 right-0 -left-2 -z-1 rounded-r-2xl bg-background [mask-position:calc(8px_-_2cqw)_50%]" />
         )}
         <MessageCircleMore className="size-6" aria-hidden="true" />
         {unread > 0 && (
           <span
             aria-hidden="true"
-            className="absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] leading-none font-semibold text-primary-foreground"
+            className="absolute -top-1 -right-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-2xs leading-none font-semibold text-primary-foreground"
           >
             {unread > 9 ? "9+" : unread}
           </span>
@@ -170,20 +165,12 @@ function Sheet({
           "--viewport-height": `${viewport.height}px`,
         } as CSSProperties)
       }
-      // The background extends a screen above and below the sheet. iOS Safari shows the page
-      // through the strip under its collapsed address pill, and pans the viewport during the
-      // keyboard animation before the sheet has moved with it.
-      className="chat-sheet fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none transition-[height] duration-300 ease-out after:pointer-events-none after:absolute after:inset-x-0 after:-inset-y-[100dvh] after:-z-10 after:bg-card data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:inset-x-auto sm:top-1/2 sm:left-1/2 sm:h-[min(40rem,calc(100dvh-2rem))] sm:w-full sm:max-w-md sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border sm:shadow-lg sm:after:hidden"
+      className="fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none transition-[height] duration-300 ease-out after:pointer-events-none after:absolute after:inset-x-0 after:-inset-y-[100dvh] after:-z-10 after:bg-card data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out"
     >
-      <header className="flex items-center px-4 pt-[env(safe-area-inset-top)] sm:pt-0">
+      <header className="flex items-center px-4 pt-[env(safe-area-inset-top)]">
         <Dialog.Title className="sr-only">Chat</Dialog.Title>
         <Dialog.Close asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="ml-auto size-11 rounded-lg text-muted-foreground"
-            aria-label="Close chat"
-          >
+          <Button variant="muted" size="icon" className="ml-auto" aria-label="Close chat">
             <X className="size-5" />
           </Button>
         </Dialog.Close>
@@ -228,7 +215,7 @@ function Sheet({
               <span className="text-base leading-snug">{message.text}</span>
               <time
                 dateTime={new Date(message.sentAt).toISOString()}
-                className="float-right mt-2 ml-2 text-[10px] leading-none whitespace-nowrap text-muted-foreground"
+                className="float-right mt-2 ml-2 text-2xs leading-none whitespace-nowrap text-muted-foreground"
               >
                 {new Date(message.sentAt).toLocaleTimeString([], {
                   hour: "2-digit",
@@ -241,7 +228,7 @@ function Sheet({
         })}
       </ol>
       <form
-        className="flex items-center gap-2 border-t px-3 pt-1.5 pb-[max(.375rem,env(safe-area-inset-bottom))] sm:pb-1.5"
+        className="flex items-center gap-2 border-t px-3 pt-1.5 pb-[max(.375rem,env(safe-area-inset-bottom))]"
         onSubmit={(event) => void submit(event)}
       >
         <Input
@@ -254,13 +241,7 @@ function Sheet({
           className="h-11 flex-1"
           onChange={(event) => setText(event.target.value)}
         />
-        <Button
-          type="submit"
-          size="icon"
-          className="size-11 shrink-0 rounded-lg"
-          aria-label="Send message"
-          disabled={busy || !text.trim()}
-        >
+        <Button type="submit" size="icon" aria-label="Send message" disabled={busy || !text.trim()}>
           <SendHorizontal className="size-5" />
         </Button>
       </form>

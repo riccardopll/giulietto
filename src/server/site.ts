@@ -24,13 +24,10 @@ export async function serveSite(req: Request, env: SiteEnv) {
     let host = null;
     try {
       const code = roomCode(table);
-      // Each lookup can create a table object, so it shares the API request limit.
       const key = req.headers.get("cf-connecting-ip") || "anonymous";
       if ((await env.REQUEST_LIMIT.limit({ key })).success)
         host = await env.ROOMS.getByName(code).hostName();
-    } catch {
-      /* Invalid, unavailable, or rate-limited lookups keep the default description. */
-    }
+    } catch {}
     response = new HTMLRewriter()
       .on('meta[property="og:title"]', {
         element(element) {

@@ -1,6 +1,6 @@
 import type { Leader } from "../../shared/player-stats";
 import { Avatar } from "./avatar";
-import { PlacementMedal } from "./ui/placement-medal";
+import { PlacementMedal } from "@ui/placement-medal";
 import { cn } from "../utils";
 
 function PlayerIdentity({ player, featured = false }: { player: Leader; featured?: boolean }) {
@@ -53,8 +53,8 @@ export function Leaderboard({ players }: { players: Leader[] }) {
                 avatar={player.avatar}
                 className={cn(
                   index === 0
-                    ? "size-20 ring-2 ring-gold/60 ring-offset-2 ring-offset-background shadow-[0_0_20px] shadow-gold/20 sm:size-24"
-                    : "size-16 sm:size-20",
+                    ? "size-20 ring-2 ring-gold/60 ring-offset-2 ring-offset-background shadow-[0_0_20px] shadow-gold/20"
+                    : "size-16",
                 )}
               />
               <PlacementMedal

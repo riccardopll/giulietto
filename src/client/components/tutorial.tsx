@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import {
-  ArrowDown,
+  ChevronLeft,
   CircleHelp,
   Copy,
+  Heart,
   LogOut,
   MessageCircleMore,
   Smile,
@@ -11,79 +12,385 @@ import {
 } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { Avatar } from "./avatar";
-import { PlayingCard } from "./playing-card";
 import { LifeCount } from "./lives";
-import { Button } from "./ui/button";
-import { overlayClass } from "./ui/action-dialog";
+import { BidButton } from "./match-board";
+import { Score, TurnRing } from "./player-seat";
+import { PlayingCard } from "./playing-card";
+import { cn } from "../utils";
+import { Button } from "@ui/button";
+import { overlayClass } from "@ui/action-dialog";
 
-function PredictionExample() {
-  const [bid, setBid] = useState<number | null>(null);
-  useEffect(() => {
-    const timer = setInterval(() => setBid((value) => (value === null ? 2 : null)), 2000);
-    return () => clearInterval(timer);
-  }, []);
+function Demo({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <figure className="my-4 rounded-xl bg-secondary px-3 py-4" aria-label="Prediction example">
-      <div aria-hidden="true">
-        <div className="flex flex-col items-center gap-2">
-          {[
-            [0, 1, 2],
-            [3, 4, 5, 6],
-          ].map((numbers) => (
-            <div key={numbers[0]} className="flex justify-center gap-2">
-              {numbers.map((number) => (
-                <span
-                  key={number}
-                  className={`grid size-11 place-items-center rounded-lg border text-xl font-semibold transition-colors ${bid === number ? "border-primary bg-primary text-primary-foreground" : "bg-card"}`}
-                >
-                  {number}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
+    <figure className="my-4 rounded-xl bg-secondary px-3 py-4">
+      <div inert>{children}</div>
+      <figcaption className="sr-only">{label}</figcaption>
     </figure>
   );
 }
 
-function TrickExample() {
+function TrickDemo() {
   return (
-    <figure className="my-4 rounded-xl bg-secondary px-3 py-4" aria-label="Trick example">
-      <div className="mb-4 text-center text-sm font-semibold">5 of Coins wins this trick</div>
-      <div className="flex justify-center gap-3 py-1" aria-hidden="true">
-        {[10, 22, 35].map((card, index) => (
+    <Demo label="Three players each play a card. The 5 of Coins is strongest and takes the trick.">
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { avatar: "king-clubs", card: 10 },
+          { avatar: "queen-cups", card: 22 },
+          { avatar: "queen-coins", card: 35, wins: true },
+        ].map(({ avatar, card, wins }, index) => (
+          <div key={card} className="flex min-w-0 flex-col items-center gap-3">
+            <Avatar avatar={avatar} />
+            <div
+              className="w-full max-w-16 animate-[tutorial-trick_4s_ease-in-out_var(--delay)_infinite]"
+              style={{ "--delay": `${index * 250}ms` } as CSSProperties}
+            >
+              <div
+                className={cn(
+                  "rounded-md",
+                  wins && "animate-[tutorial-win_4s_ease-in-out_infinite]",
+                )}
+              >
+                <PlayingCard card={card} />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </Demo>
+  );
+}
+
+function PredictDemo() {
+  return (
+    <Demo label="With three cards, the others predicted 1 and 0. You can predict 0, 1 or 3, but not 2.">
+      <div className="mb-4 flex justify-center">
+        {[4, 30, 38].map((card, index) => (
           <div
             key={card}
-            className="w-16 animate-[tutorial-trick_4s_ease-in-out_infinite]"
-            style={{ animationDelay: `${index * 300}ms` }}
+            className="-mx-1 w-14 origin-bottom rotate-(--angle)"
+            style={{ "--angle": `${(index - 1) * 6}deg` } as CSSProperties}
           >
             <PlayingCard card={card} />
           </div>
         ))}
       </div>
-    </figure>
+      <div className="flex justify-center gap-2">
+        {[0, 1, 2, 3].map((n) => (
+          <span
+            key={n}
+            className={cn(
+              "rounded-full",
+              n === 1 && "animate-[tutorial-tap_4s_ease-in-out_infinite]",
+            )}
+          >
+            <BidButton n={n} className="size-11" disabled={n === 2} />
+          </span>
+        ))}
+      </div>
+    </Demo>
   );
 }
 
-function TurnExample() {
+function StrengthDemo() {
   return (
-    <span className="relative mx-auto block size-11" aria-label="Turn timer">
-      <Avatar avatar="king-cups" />
-      <svg
-        viewBox="0 0 50 50"
-        className="absolute -inset-1 size-[calc(100%+8px)] -rotate-90"
-        aria-hidden="true"
+    <Demo label="From weakest to strongest suit: Clubs, Swords, Cups, Coins.">
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { card: 2, suit: "Clubs" },
+          { card: 12, suit: "Swords" },
+          { card: 22, suit: "Cups" },
+          { card: 32, suit: "Coins" },
+        ].map(({ card, suit }, index) => (
+          <div
+            key={card}
+            className="min-w-0 animate-[tutorial-rise_4s_ease-in-out_var(--delay)_infinite]"
+            style={{ "--delay": `${index * 250}ms` } as CSSProperties}
+          >
+            <PlayingCard card={card} />
+            <span className="mt-2 block text-center text-xs font-semibold">{suit}</span>
+          </div>
+        ))}
+      </div>
+    </Demo>
+  );
+}
+
+function LivesDemo() {
+  return (
+    <Demo label="Predict 2 and win 4: you lose 2 lives.">
+      <div className="grid grid-cols-3 items-center gap-2 text-center">
+        <div>
+          <span className="block text-xs text-muted-foreground">Predicted</span>
+          <strong className="text-2xl">2</strong>
+        </div>
+        <div>
+          <span className="block text-xs text-muted-foreground">Won</span>
+          <strong className="text-2xl">4</strong>
+        </div>
+        <div className="flex justify-center gap-1 text-destructive">
+          {[0, 1, 2].map((heart) => (
+            <Heart
+              key={heart}
+              className={cn(
+                "size-6",
+                heart > 0 && "animate-[tutorial-life_4s_ease-in-out_var(--delay)_infinite]",
+              )}
+              style={{ "--delay": `${(2 - heart) * 250}ms` } as CSSProperties}
+              fill="currentColor"
+            />
+          ))}
+        </div>
+      </div>
+    </Demo>
+  );
+}
+
+function RoundsDemo() {
+  return (
+    <Demo label="Cards per player each round: 6, 5, 4, 3, 2, 1, then back to 6.">
+      <ol className="flex justify-between">
+        {[6, 5, 4, 3, 2, 1].map((count, index) => (
+          <li
+            key={count}
+            className="grid h-12 w-9 place-items-center rounded-md border bg-card text-lg font-semibold tabular-nums animate-[tutorial-count_6s_ease-in-out_var(--delay)_infinite]"
+            style={{ "--delay": `${index}s` } as CSSProperties}
+          >
+            {count}
+          </li>
+        ))}
+      </ol>
+    </Demo>
+  );
+}
+
+function SeatDemo() {
+  return (
+    <Demo label="Your seat on the table: the ring shows it is your turn.">
+      <div className="flex items-center justify-center gap-3">
+        <div className="relative size-10 shrink-0">
+          <TurnRing remaining={100} duration={4000} loop />
+          <Avatar avatar="king-cups" className="size-full" />
+        </div>
+        <span className="flex flex-col gap-0.5">
+          <strong className="text-sm text-primary">You</strong>
+          <span className="flex items-center gap-1 text-xs">
+            <LifeCount n={3} />
+            <Score taken={1} bid={2} />
+          </span>
+        </span>
+      </div>
+    </Demo>
+  );
+}
+
+function Legend({ icon, children }: { icon: ReactNode; children: ReactNode }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className="flex w-16 shrink-0 justify-center gap-1 pt-0.5" aria-hidden="true">
+        {icon}
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+const steps: { title: string; body: ReactNode }[] = [
+  {
+    title: "The goal",
+    body: (
+      <>
+        <p>
+          Each round, predict how many tricks you will win. You lose a life for every trick you are
+          off by. The last player with lives wins.
+        </p>
+        <TrickDemo />
+        <p>A trick is one card from each player. The strongest card takes it.</p>
+      </>
+    ),
+  },
+  {
+    title: "Predict",
+    body: (
+      <>
+        <p>Look at your hand, then tap how many tricks you expect to win.</p>
+        <PredictDemo />
+        <p>
+          The last player can’t make the predictions add up to the cards in hand, so someone always
+          misses. Here the others said 1 and 0, so 2 is blocked.
+        </p>
+      </>
+    ),
+  },
+  {
+    title: "Play",
+    body: (
+      <>
+        <p>Take turns playing any card you like. The strongest card wins the trick.</p>
+        <StrengthDemo />
+        <p>
+          Suits beat ranks: any Coins card beats any Cups card. Within a suit, the Ace is lowest and
+          the King highest.
+        </p>
+      </>
+    ),
+  },
+  {
+    title: "The Ace of Coins",
+    body: (
+      <>
+        <p>When you play the Ace of Coins, you choose what it is worth.</p>
+        <Demo label="The Ace of Coins can be played low or high.">
+          <div className="flex justify-center gap-6">
+            <div className="w-20">
+              <PlayingCard card={31} mode="low" />
+            </div>
+            <div className="w-20">
+              <PlayingCard card={31} mode="high" />
+            </div>
+          </div>
+        </Demo>
+        <p>Low makes it the weakest card in the game. High makes it the strongest.</p>
+      </>
+    ),
+  },
+  {
+    title: "Lives",
+    body: (
+      <>
+        <p>After the last trick, you lose one life for each trick you are off by.</p>
+        <LivesDemo />
+        <p>
+          At zero lives, you watch the rest of the game. If everyone runs out at once, everyone
+          comes back with one life.
+        </p>
+      </>
+    ),
+  },
+  {
+    title: "Rounds",
+    body: (
+      <>
+        <p>Hands shrink by one card each round, then start again at six.</p>
+        <RoundsDemo />
+        <p>With one card each, you see everyone’s card except your own.</p>
+        <Demo label="In the one-card round, their card is visible and yours is hidden.">
+          <div className="flex justify-center gap-6 text-xs">
+            <div className="w-16 text-center">
+              <PlayingCard card={22} />
+              <span className="mt-2 block">Theirs</span>
+            </div>
+            <div className="w-16 text-center">
+              <PlayingCard card={null} />
+              <span className="mt-2 block">Yours</span>
+            </div>
+          </div>
+        </Demo>
+      </>
+    ),
+  },
+  {
+    title: "The table",
+    body: (
+      <>
+        <SeatDemo />
+        <ul className="space-y-3">
+          <Legend
+            icon={
+              <span className="flex items-center gap-1 text-xs">
+                <LifeCount n={3} />
+                <Score taken={1} bid={2} />
+              </span>
+            }
+          >
+            Lives left, then tricks won and predicted.
+          </Legend>
+          <Legend icon={<span className="size-5 rounded-full border-2 border-primary" />}>
+            Whose turn it is and the time left.
+          </Legend>
+          <Legend
+            icon={
+              <>
+                <Target className="size-5 text-foreground/60" strokeWidth={1.5} />
+                <span className="text-xs font-semibold">7</span>
+                <span className="rounded-full bg-destructive px-1.5 text-xs leading-5 font-semibold text-primary-foreground">
+                  +1
+                </span>
+              </>
+            }
+          >
+            All predictions added up, and how far they are from the cards in hand.
+          </Legend>
+          <Legend
+            icon={
+              <>
+                <MessageCircleMore className="size-5 text-primary" />
+                <Smile className="size-5 text-primary" />
+              </>
+            }
+          >
+            Chat and reactions.
+          </Legend>
+          <Legend
+            icon={
+              <>
+                <Copy className="size-5 text-muted-foreground" />
+                <LogOut className="size-5 text-muted-foreground" />
+              </>
+            }
+          >
+            Copy the invite, or leave.
+          </Legend>
+        </ul>
+      </>
+    ),
+  },
+];
+
+function Steps() {
+  const [step, setStep] = useState(0);
+  const last = step === steps.length - 1;
+  return (
+    <>
+      <div
+        key={step}
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 text-sm leading-relaxed animate-[page-in_.2s_ease-out]"
       >
-        <circle
-          cx="25"
-          cy="25"
-          r="23"
-          pathLength="100"
-          className="fill-none stroke-primary stroke-[3] animate-[tutorial-timer_4s_linear_infinite]"
-        />
-      </svg>
-    </span>
+        <h3 className="mb-2 text-base font-semibold">{steps[step].title}</h3>
+        {steps[step].body}
+      </div>
+      <div className="flex shrink-0 items-center gap-3 border-t px-3 py-3">
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(step === 0 && "invisible")}
+          aria-label="Previous"
+          onClick={() => setStep(step - 1)}
+        >
+          <ChevronLeft className="size-5" />
+        </Button>
+        <ol
+          className="flex flex-1 justify-center gap-1.5"
+          aria-label={`Step ${step + 1} of ${steps.length}`}
+        >
+          {steps.map(({ title }, index) => (
+            <li
+              key={title}
+              className={cn(
+                "h-2 w-2 rounded-full bg-border transition-all",
+                index === step && "w-5 bg-primary",
+              )}
+            />
+          ))}
+        </ol>
+        {last ? (
+          <Dialog.Close asChild>
+            <Button>Got it</Button>
+          </Dialog.Close>
+        ) : (
+          <Button onClick={() => setStep(step + 1)}>Next</Button>
+        )}
+      </div>
+    </>
   );
 }
 
@@ -91,7 +398,7 @@ export function Tutorial() {
   return (
     <Dialog.Root>
       <Dialog.Trigger asChild>
-        <Button variant="link" className="gap-2" aria-label="How to play">
+        <Button variant="link" aria-label="How to play">
           <CircleHelp className="size-5" /> How to play
         </Button>
       </Dialog.Trigger>
@@ -99,9 +406,9 @@ export function Tutorial() {
         <Dialog.Overlay className={overlayClass} />
         <Dialog.Content
           aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-card shadow-lg outline-none data-[state=open]:animate-[dialog-in_.2s_ease-out]"
+          className="fixed left-1/2 top-1/2 z-50 flex h-[min(38rem,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-card shadow-lg outline-none data-[state=open]:animate-dialog-in"
         >
-          <div className="flex shrink-0 items-center justify-between border-b px-5 py-2">
+          <div className="flex shrink-0 items-center justify-between border-b py-1 pr-2 pl-5">
             <Dialog.Title className="text-lg font-semibold">How to play</Dialog.Title>
             <Dialog.Close asChild>
               <Button variant="ghost" size="icon" aria-label="Close tutorial">
@@ -109,189 +416,7 @@ export function Tutorial() {
               </Button>
             </Dialog.Close>
           </div>
-          <div className="overflow-y-auto overscroll-contain px-5 py-4 text-sm leading-relaxed">
-            <p>
-              Win exactly as many tricks as you predict. The last player with lives wins.
-              <strong className="block">A trick is one card from each player.</strong>
-            </p>
-
-            <figure
-              className="my-4 rounded-xl bg-secondary px-3 py-4"
-              aria-label="One card from each player makes a trick"
-            >
-              <div className="grid grid-cols-3 gap-3" aria-hidden="true">
-                {[
-                  { avatar: "king-clubs", card: 10 },
-                  { avatar: "queen-cups", card: 22 },
-                  { avatar: "queen-coins", card: 35 },
-                ].map(({ avatar, card }, index) => (
-                  <div key={avatar} className="flex min-w-0 flex-col items-center gap-2">
-                    <Avatar avatar={avatar} />
-                    <span className="text-xs">Player {index + 1}</span>
-                    <ArrowDown className="size-4 text-muted-foreground" />
-                    <div className="w-full max-w-14">
-                      <PlayingCard card={card} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </figure>
-
-            <figure className="my-3" aria-label="Cards per player: 6, 5, 4, 3, 2, 1, then repeat">
-              <figcaption className="mb-2 text-xs text-muted-foreground">
-                Cards per player, each round
-              </figcaption>
-              <ol className="flex items-center" aria-hidden="true">
-                {[6, 5, 4, 3, 2, 1].map((count) => (
-                  <li key={count} className="flex flex-1 items-center last:flex-none">
-                    <span className="grid h-10 w-6 place-items-center rounded-sm border bg-secondary font-semibold tabular-nums">
-                      {count}
-                    </span>
-                    {count > 1 && (
-                      <span className="flex-1 text-center text-xs text-muted-foreground">→</span>
-                    )}
-                  </li>
-                ))}
-              </ol>
-              <p className="mt-1 text-center text-xs text-muted-foreground" aria-hidden="true">
-                ↻ Back to 6
-              </p>
-            </figure>
-            <h3 className="mb-1 mt-5 font-semibold">Prediction round</h3>
-            <p>Look at your hand. On your turn, tap the number of tricks you expect to win.</p>
-            <PredictionExample />
-            <p>
-              <strong>The last prediction can’t make the total equal the available tricks.</strong>
-            </p>
-
-            <h3 className="mb-1 mt-5 font-semibold">Playing round</h3>
-            <p>On your turn, tap a card. The strongest card wins the trick.</p>
-            <figure className="my-4" aria-label="Suit strength">
-              <figcaption className="mb-3 text-center text-xs text-muted-foreground">
-                Weakest → strongest. Suit beats rank.
-              </figcaption>
-              <div className="mx-auto grid max-w-xs grid-cols-4 gap-3">
-                {[
-                  { card: 2, suit: "Clubs" },
-                  { card: 12, suit: "Swords" },
-                  { card: 22, suit: "Cups" },
-                  { card: 32, suit: "Coins" },
-                ].map(({ card, suit }) => (
-                  <div key={card} className="min-w-0">
-                    <PlayingCard card={card} />
-                    <span className="mt-2 block text-center text-xs font-semibold">{suit}</span>
-                  </div>
-                ))}
-              </div>
-            </figure>
-            <TrickExample />
-            <p>
-              For the <strong>Ace of Coins</strong>, choose Low (weakest) or High (strongest).
-            </p>
-            <div className="my-3 flex justify-center gap-5" aria-label="Ace of Coins choices">
-              <div className="w-16">
-                <PlayingCard card={31} mode="low" />
-              </div>
-              <div className="w-16">
-                <PlayingCard card={31} mode="high" />
-              </div>
-            </div>
-            <p>Each trick above or below your prediction costs one life.</p>
-            <figure className="my-4 grid grid-cols-3 gap-2 rounded-xl bg-secondary px-3 py-3 text-center">
-              <div>
-                <span className="block text-xs text-muted-foreground">Predicted</span>
-                <strong className="text-xl">2</strong>
-              </div>
-              <div>
-                <span className="block text-xs text-muted-foreground">Won</span>
-                <strong className="text-xl">4</strong>
-              </div>
-              <div>
-                <span className="block text-xs text-muted-foreground">Lives lost</span>
-                <span className="inline-flex items-center gap-1 text-xl" aria-label="Lose 2 lives">
-                  <span aria-hidden="true">−</span>
-                  <span aria-hidden="true">
-                    <LifeCount n={2} className="flex-row-reverse" />
-                  </span>
-                </span>
-              </div>
-              <figcaption className="sr-only">Predict 2 and win 4: lose 2 lives.</figcaption>
-            </figure>
-            <p>Zero lives? You spectate. If everyone goes out, everyone returns with one life.</p>
-
-            <h3 className="mb-1 mt-5 font-semibold">Blind round</h3>
-            <p>With one card each, you see everyone’s card except your own.</p>
-            <figure className="my-4">
-              <div className="flex justify-center gap-5" aria-hidden="true">
-                <div className="w-16">
-                  <PlayingCard card={22} />
-                  <span className="mt-2 block text-center text-xs">Theirs</span>
-                </div>
-                <div className="w-16">
-                  <PlayingCard card={null} />
-                  <span className="mt-2 block text-center text-xs">Yours</span>
-                </div>
-              </div>
-              <figcaption className="sr-only">
-                In the one-card round, their card is visible and yours is hidden.
-              </figcaption>
-            </figure>
-
-            <h3 className="mb-2 mt-5 font-semibold">Reading the table</h3>
-            <dl className="grid grid-cols-[4rem_minmax(0,1fr)] items-start gap-x-3 gap-y-3">
-              <dt className="flex items-center justify-center gap-1 pt-1 text-xs">
-                <LifeCount n={3} />
-                <span
-                  className="inline-flex items-center gap-0.5 border-l border-foreground/10 pl-1 font-semibold whitespace-nowrap tabular-nums"
-                  aria-label="1 trick won, 2 predicted"
-                >
-                  <span className="text-destructive">1</span>
-                  <span className="font-normal text-muted-foreground/70">/</span>
-                  <span>2</span>
-                </span>
-              </dt>
-              <dd>
-                Lives remaining. <strong>1 / 2</strong> beside them means 1 trick won, 2 predicted.
-              </dd>
-              <dt className="py-1">
-                <TurnExample />
-              </dt>
-              <dd>
-                The ring marks the current turn and time left. Out of time? The game acts for you.
-              </dd>
-              <dt
-                className="flex items-center justify-center gap-1 pt-1 text-xs font-semibold tabular-nums"
-                aria-label="7 tricks predicted, 1 over the 6 available tricks"
-              >
-                <Target
-                  className="size-5 shrink-0 text-foreground/60"
-                  strokeWidth={1.5}
-                  aria-hidden="true"
-                />
-                <span aria-hidden="true">7</span>
-                <span
-                  className="rounded-full bg-destructive px-1.5 leading-5 text-primary-foreground"
-                  aria-hidden="true"
-                >
-                  +1
-                </span>
-              </dt>
-              <dd>Total predictions, and how far over or under the available tricks.</dd>
-              <dt className="flex justify-center gap-2 pt-1">
-                <MessageCircleMore className="size-5" aria-label="Chat" />
-                <Smile className="size-5" aria-label="Emotes" />
-              </dt>
-              <dd>Side tabs open chat and reactions.</dd>
-              <dt className="flex justify-center gap-2 pt-1">
-                <Copy className="size-5" aria-label="Copy invite" />
-                <LogOut className="size-5" aria-label="Leave table" />
-              </dt>
-              <dd>Copy an invite or leave. Leaving forfeits the game and all your lives.</dd>
-            </dl>
-            <Dialog.Close asChild>
-              <Button className="mt-5 w-full">Got it</Button>
-            </Dialog.Close>
-          </div>
+          <Steps />
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

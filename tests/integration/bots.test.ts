@@ -13,8 +13,6 @@ import { playerStats } from "../../src/server/player-stats";
 import { api, guest } from "./helpers";
 
 beforeEach(() => {
-  // workerd alarms use real time even when Date is mocked. Keep scheduled
-  // alarms in the future so only runDurableObjectAlarm advances these tests.
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(vi.getRealSystemTime() + 86_400_000);
 });

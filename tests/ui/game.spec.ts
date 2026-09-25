@@ -9,8 +9,6 @@ function predictions(players: Player[], eliminated: string) {
     return { id, cards: findPlayer(own, id)!.hand as number[] };
   });
   const bids = new Map(hands.map(({ id }) => [id, 0]));
-  // Plan against the dealt hands, playing each in order with Aces high. One wrong
-  // prediction per round gives a repeatable two-round finish without seeded deals.
   for (let i = 0; i < state.count; i++) {
     const value = (card: number) => (card === 31 ? 41 : card);
     const winner = hands.reduce((a, b) => (value(a.cards[i]) > value(b.cards[i]) ? a : b));
@@ -105,7 +103,8 @@ test("three players complete a game, including round results and elimination", a
       const countdown = page.getByText(/^Next round in/);
       await expect(countdown).toHaveText("Next round in 8s");
       const bar = countdown.locator("..").locator("[aria-hidden='true'] > div");
-      const width = () => bar.evaluate((element) => parseFloat(element.style.width));
+      const width = () =>
+        bar.evaluate((element) => parseFloat(element.style.getPropertyValue("--progress")));
       expect(await width()).toBeGreaterThan(85);
       await expect(countdown).toHaveText("Next round in 4s", { timeout: 5000 });
       expect(await width()).toBeGreaterThan(35);
@@ -177,9 +176,9 @@ test("three players complete a game, including round results and elimination", a
   const expiry = invites[1].getByText(/^Expires in \d+s$/);
   await expect(expiry).toHaveText(/^Expires in (60|59|58)s$/);
   const expiryBar = invites[1].locator("[aria-hidden='true'] > div");
-  expect(await expiryBar.evaluate((element) => parseFloat(element.style.width))).toBeGreaterThan(
-    90,
-  );
+  expect(
+    await expiryBar.evaluate((element) => parseFloat(element.style.getPropertyValue("--progress"))),
+  ).toBeGreaterThan(90);
   await expect(invites[1]).toHaveCSS("opacity", "1");
   await screenshot(players[1].page, testInfo, "rematch-invite", { fullPage: true });
   await expect(otherTab.getByRole("button", { name: "Rematch", exact: true })).toBeDisabled();
@@ -192,7 +191,7 @@ test("three players complete a game, including round results and elimination", a
   await expect(players[1].page).toHaveURL(`/?table=${rematchCode}`);
   await expect(invites[1]).toBeHidden();
   await screenshot(players[1].page, testInfo, "rematch-lobby", { fullPage: true });
-  await invites[2].getByRole("button", { name: "Decline", exact: true }).click();
+  await invites[2].getByRole("button", { name: "Dismiss", exact: true }).click();
   await expect(invites[2]).toBeHidden();
   await expect(
     players[2].page.getByRole("button", { name: "Rematch", exact: true }),
@@ -232,7 +231,6 @@ test("three players complete a game, including round results and elimination", a
     await page.getByRole("button", { name: "Back to home" }).click();
   }
 
-  // Another open tab must not restore the saved table when its connection resumes.
   const resumed = otherTab
     .waitForEvent("websocket")
     .then((socket) => socket.waitForEvent("framereceived"));

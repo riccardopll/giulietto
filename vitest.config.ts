@@ -18,7 +18,6 @@ export default defineConfig(async () => {
               wrangler: { configPath: "./wrangler.jsonc" },
               miniflare: {
                 bindings: { TEST_MIGRATIONS: migrations },
-                // The Vite plugin serves built assets in production; tests only need the page.
                 serviceBindings: {
                   ASSETS: () =>
                     new Response(site, {

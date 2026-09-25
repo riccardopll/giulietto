@@ -5,6 +5,7 @@
   "license": "Apache-2.0",
   "type": "module",
   "scripts": {
+    "postinstall": "cn build --content \"src/client/**/*.{ts,tsx}\" --css src/client/globals.css -o src/client/cn-tables.ts --quiet",
     "dev": "vite",
     "dev:lan": "vite --config vite.lan.config.ts",
     "build": "vite build",
@@ -26,18 +27,18 @@
     "test:integration": "vitest run --project integration"
   },
   "dependencies": {
-    "clsx": "2.1.1",
+    "cn": "0.4.0",
     "lucide-react": "1.42.0",
     "radix-ui": "1.6.7",
     "react": "19.2.8",
-    "react-dom": "19.2.8",
-    "tailwind-merge": "3.6.0"
+    "react-dom": "19.2.8"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "1.54.4",
     "@cloudflare/vitest-pool-workers": "0.22.0",
     "@cloudflare/workers-types": "5.20260907.1",
     "@playwright/test": "1.63.0",
+    "@shadcn/lint": "0.2.0",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "26.5.0",
     "@types/react": "19.2.18",

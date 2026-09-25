@@ -5,7 +5,6 @@ import { TABLE_RETENTION_MS } from "../shared/game";
 import { command, displayName, failure, lobbyCode } from "./protocol";
 export class MatchQueue extends DurableObject<Env> {
   async fetch(req: Request) {
-    // Serialize the seat reservation through the room's commit, including concurrent strangers.
     return this.ctx.blockConcurrencyWhile(async () => {
       try {
         const input = command(await req.json());
@@ -35,7 +34,6 @@ export class MatchQueue extends DurableObject<Env> {
         const unavailable = new Set<string>();
         if (input.action === "match") {
           for (const candidate of candidates) {
-            // Persist the reservation target before cross-object I/O so retries cannot lose a seat.
             this.ctx.storage.kv.put(key, { code: candidate.code, at: Date.now() });
             const response = await send(candidate.code, "join", false, true);
             if (response.status !== 400) return response;

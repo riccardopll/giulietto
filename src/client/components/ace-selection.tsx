@@ -1,7 +1,7 @@
 import { Dialog } from "radix-ui";
 import { cn } from "../utils";
 import { PlayingCard } from "./playing-card";
-import { contentClass, overlayClass } from "./ui/action-dialog";
+import { contentClass, overlayClass } from "@ui/action-dialog";
 
 export function AceSelection({
   open,
@@ -21,7 +21,7 @@ export function AceSelection({
         <Dialog.Content
           className={cn(
             contentClass,
-            "max-w-[min(20rem,calc(100%-2rem))] gap-0 border-0 bg-transparent p-2 shadow-none sm:max-w-80",
+            "max-w-[min(20rem,calc(100%-2rem))] gap-0 border-0 bg-transparent p-2 shadow-none",
           )}
         >
           <Dialog.Title className="sr-only">Ace of Coins</Dialog.Title>

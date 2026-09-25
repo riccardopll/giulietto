@@ -12,7 +12,6 @@ const PING_MS = 10000;
 const REPLY_MS = 5000;
 const CONNECT_MS = 10000;
 
-/** Retries keep the same command ID; the room acknowledges each mutation only once. */
 export class GameConnection {
   private socket?: WebSocket;
   private stopped = false;
@@ -44,7 +43,6 @@ export class GameConnection {
     if (typeof window !== "undefined") window.addEventListener("online", this.wake);
     this.connect();
   }
-  /** Any inbound message satisfies the earliest armed deadline; silence closes the socket. */
   private expect(ws: WebSocket, ms: number) {
     this.watchdog ??= setTimeout(() => {
       this.watchdog = undefined;
@@ -63,18 +61,15 @@ export class GameConnection {
     url.searchParams.set("code", this.code);
     const ws = (this.socket = new WebSocket(url, ["giulietto", this.token]));
     this.status("Connecting…");
-    // A hung handshake fires no event, so the first snapshot has a deadline too.
     this.expect(ws, CONNECT_MS);
     ws.onopen = () => {
       if (this.stopped || this.socket !== ws) return;
       this.heartbeat = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) this.send(ws, "ping");
       }, PING_MS);
-      // The server sends a current snapshot before we replay unacknowledged commands.
     };
     ws.onmessage = (event) => {
       if (this.stopped || this.socket !== ws) return;
-      // A pong proves the link, not the table; the first snapshot keeps its deadline.
       if (event.data === "pong" && !this.synced) return;
       clearTimeout(this.watchdog);
       this.watchdog = undefined;
@@ -124,7 +119,6 @@ export class GameConnection {
   }
   private async rejoin() {
     if (this.stopped) return;
-    // A socket that synced proves membership, so reconnect without the HTTP join.
     if (this.synced) {
       this.connect();
       return;

@@ -22,9 +22,11 @@ function CardFace({ card }: { card: number | null }) {
   return (
     <>
       <span
-        className="card-fallback absolute inset-0 flex size-full flex-col items-center justify-center gap-1 p-0.5 text-center text-[10px] leading-3 text-foreground [overflow-wrap:anywhere]"
+        className={cn(
+          "absolute inset-0 flex size-full flex-col items-center justify-center gap-1 p-0.5 text-center text-2xs leading-3 text-foreground [overflow-wrap:anywhere]",
+          loaded && "invisible",
+        )}
         aria-hidden="true"
-        style={{ visibility: loaded ? "hidden" : "visible" }}
       >
         {card === null ? (
           <span className="text-lg font-semibold">?</span>
@@ -36,13 +38,15 @@ function CardFace({ card }: { card: number | null }) {
         )}
       </span>
       <img
-        className="card-art pointer-events-none absolute inset-0 block size-full rounded-[inherit] object-contain"
+        className={cn(
+          "pointer-events-none absolute inset-0 block size-full rounded-[inherit] object-contain",
+          !loaded && "invisible",
+        )}
         src={`/cards/neapolitan/${card ?? "back"}.webp`}
         alt=""
         draggable={false}
         width={300}
         height={480}
-        style={{ visibility: loaded ? "visible" : "hidden" }}
         onLoad={() => setLoaded(true)}
         onError={() => setLoaded(false)}
       />
@@ -75,9 +79,10 @@ export function PlayingCard({
       {aceMode && (
         <span
           className={cn(
-            "ace-mode pointer-events-none absolute inset-0 grid place-items-center text-center",
-            aceMode === "low" ? "text-blue-600" : "text-orange-600",
+            "pointer-events-none absolute inset-0 grid place-items-center text-center",
+            aceMode === "low" ? "text-ace-low" : "text-ace-high",
           )}
+          data-ace-mode
           aria-hidden="true"
         >
           <span className="ace-stamp relative grid h-[56cqw] w-[84cqw] -rotate-6 place-items-center rounded-[50%] bg-background p-[2cqw]">
@@ -90,23 +95,24 @@ export function PlayingCard({
       )}
       {pending && (
         <span
-          className="card-pending absolute inset-0 animate-[pending-pulse_.8s_ease-in-out_infinite_alternate] rounded-[inherit] bg-primary/10"
+          className="absolute inset-0 animate-[pending-pulse_.8s_ease-in-out_infinite_alternate] rounded-[inherit] bg-primary/10"
           aria-hidden="true"
         />
       )}
     </>
   );
   const cardClassName = cn(
-    "playing-card @container relative isolate block aspect-[5/8] w-full shrink-0 rounded-md border-0 bg-card p-0 shadow-[0_2px_3px,0_7px_14px] shadow-foreground/10 select-none",
+    "@container relative isolate block aspect-[5/8] w-full shrink-0 rounded-md border-0 bg-card p-0 shadow-[0_2px_3px,0_7px_14px] shadow-foreground/10 select-none",
     onClick &&
       "outline-2 outline-offset-2 outline-transparent transition-transform enabled:hover:-translate-y-1 enabled:hover:outline-ring disabled:cursor-default",
-    { playable: !!onClick, "pending-card outline-ring": pending },
+    pending && "outline-ring",
     className,
   );
   return onClick ? (
     <button
       type="button"
       className={cardClassName}
+      data-playing-card
       aria-label={`Play ${label}`}
       title={label}
       onClick={onClick}
@@ -115,7 +121,7 @@ export function PlayingCard({
       {content}
     </button>
   ) : (
-    <div className={cardClassName} role="img" aria-label={label}>
+    <div className={cardClassName} data-playing-card role="img" aria-label={label}>
       {content}
     </div>
   );

@@ -140,7 +140,6 @@ export function makePreview(input: PreviewOptions, bot: Bot): Game {
     }
     const active = game.order.length;
     const played = phase === "trick" ? active : options.played;
-    // Rotate the trick's starting player so seat one can act after any partial trick.
     if (options.completedTricks === 0) game.turn = (active - played) % active;
     for (let i = 0; i < played; i++) game = advancePreview(game, bot);
   }

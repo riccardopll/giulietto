@@ -7,7 +7,7 @@ import type { TableCommand } from "../../shared/commands";
 import { chatOpen, sendChat } from "../../shared/chat";
 import { sendEmote, type Emote } from "../../shared/emotes";
 import { inviteRematch, REMATCH_INVITE_MS } from "../../shared/rematch";
-import { Button } from "../components/ui/button";
+import { Button } from "@ui/button";
 import {
   bid,
   deal,
@@ -397,11 +397,7 @@ export function Preview({ bot }: { bot: Bot }) {
 
   const exitControl = (
     <Dialog.Trigger asChild>
-      <Button
-        variant="ghost"
-        className="size-11 rounded-lg p-0 text-muted-foreground hover:bg-transparent"
-        aria-label="Preview settings"
-      >
+      <Button variant="muted" size="icon" aria-label="Preview settings">
         <Settings2 className="size-5" />
       </Button>
     </Dialog.Trigger>
@@ -424,7 +420,8 @@ export function Preview({ bot }: { bot: Bot }) {
             <Dialog.Close asChild>
               <Button
                 variant="ghost"
-                className="ml-auto size-11 p-0"
+                size="icon"
+                className="ml-auto"
                 aria-label="Close preview settings"
               >
                 <X />
@@ -433,7 +430,7 @@ export function Preview({ bot }: { bot: Bot }) {
           </div>
           <Button
             variant="outline"
-            className="min-h-11 w-full"
+            className="w-full"
             onClick={() => {
               setViewer(0);
               show({ phase: "lobby" });
@@ -441,16 +438,12 @@ export function Preview({ bot }: { bot: Bot }) {
           >
             Show lobby
           </Button>
-          <Button
-            variant="outline"
-            className="min-h-11 w-full"
-            onClick={() => show({ phase: "finished" })}
-          >
+          <Button variant="outline" className="w-full" onClick={() => show({ phase: "finished" })}>
             Show winning screen
           </Button>
           <Button
             variant="outline"
-            className="min-h-11 w-full"
+            className="w-full"
             disabled={viewer === -1}
             onClick={showInvite}
           >
@@ -493,7 +486,7 @@ export function Preview({ bot }: { bot: Bot }) {
             />
             <Button
               variant="outline"
-              className="h-11 w-full"
+              className="w-full"
               disabled={active <= 2}
               onClick={() =>
                 show({
@@ -519,7 +512,7 @@ export function Preview({ bot }: { bot: Bot }) {
           </label>
           <Button
             variant="outline"
-            className="h-11 w-full"
+            className="w-full"
             onClick={() => {
               setControlsOpen(false);
               setAceOpen(true);
@@ -529,7 +522,7 @@ export function Preview({ bot }: { bot: Bot }) {
           </Button>
           <Button
             variant="outline"
-            className="h-11 w-full"
+            className="w-full"
             disabled={!chatOpen(entry.game)}
             onClick={sendBotMessage}
           >
@@ -538,26 +531,24 @@ export function Preview({ bot }: { bot: Bot }) {
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant="outline"
-              className="h-11 gap-1 px-2 text-xs"
               onClick={step}
               disabled={entry.game.phase === "lobby"}
               aria-keyshortcuts="n"
               title="Next move (N)"
             >
               Next move
-              <kbd aria-hidden="true" className="font-mono text-[10px] text-muted-foreground">
+              <kbd aria-hidden="true" className="font-mono text-2xs text-muted-foreground">
                 N
               </kbd>
             </Button>
             <Button
               variant="outline"
-              className="h-11 gap-1 px-2 text-xs"
               onClick={() => configure()}
               aria-keyshortcuts="r"
               title="Reset table (R)"
             >
               Reset table
-              <kbd aria-hidden="true" className="font-mono text-[10px] text-muted-foreground">
+              <kbd aria-hidden="true" className="font-mono text-2xs text-muted-foreground">
                 R
               </kbd>
             </Button>

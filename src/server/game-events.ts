@@ -14,7 +14,6 @@ export type GameEvent = {
   payload: string;
 };
 
-// Private training data stays in storage, never in Game or its client-facing view.
 export function gameEvents(before: Game, after: Game, origin: EventSource, now: number) {
   const events: Omit<GameEvent, "sequence">[] = [];
   if (!after.matchId || before.phase === "finished") return events;
@@ -101,7 +100,6 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
 
 export function eventStatements(db: D1Database, game: Game, events: GameEvent[]) {
   return [
-    // Events may be delivered over several bounded batches before finalizing the summary.
     db
       .prepare(`INSERT INTO matches(id,room_code,status,public,player_count,started_at,has_bots)
       VALUES(?,?,'active',?,?,?,?) ON CONFLICT(id) DO NOTHING`)

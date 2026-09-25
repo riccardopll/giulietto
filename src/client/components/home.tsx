@@ -1,8 +1,8 @@
-import { ChevronRight, Link, Loader2, Play, Trophy, Users } from "lucide-react";
+import { ChevronRight, Loader2, Play, Trophy, Users } from "lucide-react";
 import { Tutorial } from "./tutorial";
 import { toast } from "../toast";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "@ui/button";
+import { Input } from "@ui/input";
 import { PlayingCard } from "./playing-card";
 
 export function Home({
@@ -21,11 +21,8 @@ export function Home({
   onLeaderboard: () => void;
 }) {
   return (
-    <main className="mx-auto flex w-full max-w-sm flex-col pb-8 pt-7 sm:pt-10">
-      <div
-        className="relative mx-auto mb-9 h-52 w-64 sm:mb-12 sm:h-64 sm:w-80"
-        aria-label="Neapolitan cards"
-      >
+    <main className="mx-auto flex w-full max-w-sm flex-col pb-8 pt-7">
+      <div className="relative mx-auto mb-9 h-52 w-64" aria-label="Neapolitan cards">
         <div className="absolute left-3 top-4 w-[37%] -rotate-15">
           <PlayingCard card={1} />
         </div>
@@ -37,12 +34,12 @@ export function Home({
         </div>
       </div>
       <div className="grid gap-3">
-        <Button size="large" disabled={!ready || busy} onClick={() => void onAction("match")}>
+        <Button size="lg" disabled={!ready || busy} onClick={() => void onAction("match")}>
           {busy ? <Loader2 className="animate-spin" /> : <Play className="size-5 fill-current" />}
           Find a game
         </Button>
         <Button
-          size="large"
+          size="lg"
           variant="outline"
           disabled={!ready || busy}
           onClick={() => void onAction("create")}
@@ -67,13 +64,9 @@ export function Home({
           Lobby code
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
-          <div className="relative min-w-0">
-            <Link
-              className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
+          <div className="min-w-0">
             <Input
-              className="h-13 bg-card pl-11 pr-4 text-base tracking-wider uppercase placeholder:normal-case placeholder:tracking-normal md:text-base"
+              className="h-12"
               id="lobby-code"
               name="table-invite"
               autoComplete="off"
@@ -84,7 +77,7 @@ export function Home({
               required
               onInvalid={(event) => {
                 event.preventDefault();
-                toast.error("Enter an 8-character lobby code.", { id: "game-error" });
+                toast.show("Enter an 8-character lobby code.", { id: "game-error" });
               }}
               minLength={8}
               maxLength={8}
@@ -97,17 +90,17 @@ export function Home({
               }
             />
           </div>
-          <Button size="large" type="submit" disabled={!ready || busy}>
+          <Button size="lg" type="submit" disabled={!ready || busy}>
             Join
           </Button>
         </div>
       </form>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4">
         <Tutorial />
-        <Button variant="link" className="gap-3" onClick={onLeaderboard}>
-          <Trophy className="size-5" />
+        <Button variant="link" onClick={onLeaderboard}>
+          <Trophy className="mr-1 size-5" />
           Leaderboard
-          <ChevronRight className="-ml-2" />
+          <ChevronRight className="-ml-1" />
         </Button>
       </div>
     </main>

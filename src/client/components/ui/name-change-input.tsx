@@ -1,4 +1,4 @@
-import { Input } from "./input";
+import { Input } from "@ui/input";
 
 export function NameChangeInput({
   value,
@@ -13,7 +13,6 @@ export function NameChangeInput({
     <Input
       aria-label="New name"
       placeholder="Enter new name"
-      className="h-12 text-base md:text-base"
       autoComplete="off"
       maxLength={20}
       value={value}

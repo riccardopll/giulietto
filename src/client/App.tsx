@@ -9,10 +9,10 @@ import { MatchBoard } from "./components/match-board";
 import { PlayerPages } from "./components/player-pages";
 import { ResultsPanel } from "./components/results-panel";
 import { TableHeader } from "./components/table-header";
-import { ActionDialog } from "./components/ui/action-dialog";
-import { Button } from "./components/ui/button";
-import { PageFooter } from "./components/ui/page-footer";
-import { PageHeader, Wordmark } from "./components/ui/page-header";
+import { ActionDialog } from "@ui/action-dialog";
+import { Button } from "@ui/button";
+import { PageFooter } from "@ui/page-footer";
+import { Wordmark } from "./components/wordmark";
 import { Toaster } from "./toast";
 import { useGameSession, type PreviewSession } from "./use-game-session";
 import { usePlayerStats } from "./use-player-stats";
@@ -65,7 +65,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
         className={
           game && !waiting
             ? "match-screen safe-area mx-auto grid h-dvh max-w-6xl grid-rows-[auto_minmax(0,1fr)]"
-            : "safe-area mx-auto flex min-h-svh max-w-6xl flex-col [--page-bottom:1rem] [--page-gutter:1rem] sm:[--page-gutter:2rem]"
+            : "safe-area mx-auto flex min-h-svh max-w-6xl flex-col [--page-bottom:1rem] [--page-gutter:1rem]"
         }
       >
         {game ? (
@@ -78,26 +78,24 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           />
         ) : (
           page === "home" && (
-            <PageHeader className="mx-auto grid w-full max-w-md grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-1">
+            <header className="mx-auto grid min-h-16 w-full max-w-md grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1">
               <div className="col-start-1 row-start-1 flex items-center justify-self-start">
-                <Wordmark
-                  className="flex items-center gap-2 text-4xl"
-                  onClick={() => navigate("home")}
-                />
+                <Wordmark className="flex items-center text-4xl" onClick={() => navigate("home")} />
               </div>
               <Button
                 variant="ghost"
-                className="col-start-3 row-start-1 h-auto gap-2 rounded-full p-1 pr-2"
+                size="pill"
+                className="col-start-3 row-start-1"
                 aria-label="Open your profile"
                 title={profile.name}
                 onClick={() => navigate("profile")}
               >
                 <Avatar avatar={profile.avatar} />
-                <span className="text-sm font-medium tabular-nums text-muted-foreground">
+                <span className="pr-1 text-sm font-medium tabular-nums text-muted-foreground">
                   Lv. {account.data?.player.level ?? 1}
                 </span>
               </Button>
-            </PageHeader>
+            </header>
           )
         )}
         <ActionDialog

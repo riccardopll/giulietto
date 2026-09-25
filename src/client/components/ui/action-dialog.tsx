@@ -1,18 +1,17 @@
 import { useId, type ReactNode } from "react";
 import { AlertDialog as AlertPrimitive, Dialog as DialogPrimitive } from "radix-ui";
-import { Button } from "./button";
+import { Button } from "@ui/button";
 
 export const overlayClass =
   "fixed inset-0 z-50 bg-foreground/50 data-[state=open]:animate-[fade-in_.2s_ease-out] data-[state=closed]:animate-[fade-out_.2s_ease-in]";
 export const contentClass =
-  "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 max-h-[calc(100dvh-2rem)] min-w-0 gap-4 overflow-y-auto rounded-xl border bg-card p-5 shadow-lg wrap-anywhere outline-none data-[state=open]:animate-[dialog-in_.2s_ease-out] data-[state=closed]:animate-[dialog-out_.2s_ease-in] sm:max-w-lg";
+  "fixed top-1/2 left-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 max-h-[calc(100dvh-2rem)] min-w-0 gap-4 overflow-y-auto rounded-xl border bg-card p-5 shadow-lg wrap-anywhere outline-none data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out";
 
 export function ActionDialog({
   open,
   onOpenChange,
   title,
   hideTitle = false,
-  centerTitle = false,
   description,
   children,
   actionLabel,
@@ -26,7 +25,6 @@ export function ActionDialog({
   onOpenChange: (open: boolean) => void;
   title: string;
   hideTitle?: boolean;
-  centerTitle?: boolean;
   description?: ReactNode;
   children?: ReactNode;
   actionLabel: string;
@@ -56,7 +54,7 @@ export function ActionDialog({
             className={
               hideTitle && !description && !confirmation
                 ? "sr-only"
-                : `flex flex-col gap-2 text-center ${centerTitle ? "" : "sm:text-left"}`
+                : "flex flex-col gap-2 text-center"
             }
           >
             <Primitive.Title className={hideTitle ? "sr-only" : "text-lg font-semibold"}>
@@ -81,11 +79,11 @@ export function ActionDialog({
             {children}
             <div className="grid grid-cols-2 gap-2">
               <Cancel asChild>
-                <Button type="button" variant="outline" className="min-h-11" disabled={busy}>
+                <Button type="button" variant="outline" disabled={busy}>
                   {cancelLabel}
                 </Button>
               </Cancel>
-              <Button type="submit" className="min-h-11" disabled={busy || actionDisabled}>
+              <Button type="submit" disabled={busy || actionDisabled}>
                 {actionLabel}
               </Button>
             </div>

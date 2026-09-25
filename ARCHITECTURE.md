@@ -1,7 +1,7 @@
 # Architecture
 
-Mobile first, portrait only. During play, keep the table, hand, and controls
-within the viewport.
+Phones only, portrait only: style for phone widths and add no desktop
+breakpoints. During play, keep the table, hand, and controls within the viewport.
 
 Keep table and seat geometry fixed across rounds, hand sizes, and player
 statuses. Only notification bubbles may clip.
@@ -9,7 +9,9 @@ statuses. Only notification bubbles may clip.
 Use Tailwind for layout and component styles. Reserve shared CSS for theme
 tokens, reusable utilities, paint, and animations. Every colour comes from the
 token block in `src/client/globals.css`; add a token only when no existing one
-is close.
+is close. Pass runtime values through CSS custom properties, not inline styles.
+Callers may only position design-system components; appearance comes from their
+variants and sizes.
 
 Show all errors in the shared toast notifications, with retry actions inside the
 notification. Errors must never shift the page or dialog layout.

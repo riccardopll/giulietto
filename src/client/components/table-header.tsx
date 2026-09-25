@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { Check, Copy, LogOut } from "lucide-react";
 import type { GameView } from "../../shared/game";
 import { toRoman } from "../utils";
-import { Button } from "./ui/button";
-import { PageHeader, Wordmark } from "./ui/page-header";
+import { Button } from "@ui/button";
+import { Wordmark } from "./wordmark";
 
 function SpectatorCount({ count }: { count: number }) {
   return (
@@ -53,13 +53,13 @@ export function TableHeader({
 }) {
   const waiting = game.phase === "lobby";
   return (
-    <PageHeader className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-1">
+    <header className="grid min-h-16 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-1 py-1">
       <div className="col-start-1 row-start-1 flex items-center justify-self-start">
-        <Wordmark className="text-xl min-[360px]:text-2xl sm:text-4xl" />
+        <Wordmark className="text-xl min-[360px]:text-2xl" />
       </div>
       {!waiting && (
         <div className="col-start-2 row-start-1 min-w-0">
-          <h2 className="shrink-0 whitespace-nowrap text-center text-sm leading-tight font-semibold min-[360px]:text-base sm:text-2xl">
+          <h2 className="shrink-0 whitespace-nowrap text-center text-sm leading-tight font-semibold min-[360px]:text-base">
             Round {toRoman(game.round)}
           </h2>
         </div>
@@ -67,14 +67,13 @@ export function TableHeader({
       <div className="col-start-3 row-start-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center">
         {!waiting && game.spectatorCount > 0 && <SpectatorCount count={game.spectatorCount} />}
         <Button
-          variant="ghost"
-          size="icon"
-          className="col-start-2 row-start-1 h-11 w-auto min-w-11 flex-nowrap gap-1 rounded-lg p-0 text-muted-foreground hover:bg-transparent sm:gap-2 sm:px-3"
+          variant="muted"
+          className="col-start-2 row-start-1"
           onClick={onCopy}
           aria-label="Copy lobby invite"
         >
           <span
-            className={`font-mono text-[10px] leading-none min-[360px]:text-xs sm:text-sm sm:tracking-wide ${!waiting ? "hidden min-[440px]:inline" : ""}`}
+            className={`font-mono text-2xs leading-none min-[360px]:text-xs ${!waiting ? "hidden min-[440px]:inline" : ""}`}
           >
             {game.code}
           </span>
@@ -82,17 +81,12 @@ export function TableHeader({
         </Button>
         <div className="col-start-3 row-start-1">
           {exitControl ?? (
-            <Button
-              variant="ghost"
-              className="size-11 rounded-lg p-0 text-muted-foreground"
-              aria-label="Leave table"
-              onClick={onLeave}
-            >
+            <Button variant="muted" size="icon" aria-label="Leave table" onClick={onLeave}>
               <LogOut className="size-5" />
             </Button>
           )}
         </div>
       </div>
-    </PageHeader>
+    </header>
   );
 }
