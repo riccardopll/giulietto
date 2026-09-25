@@ -65,7 +65,12 @@ export function PlayerSeat({
             )}
             <PredictionEmote key={`${round}-${player.id}`} bid={player.bid} name={player.name} />
           </div>
-          <div className="relative size-10 shrink-0">
+          <div
+            className={cn(
+              "relative size-10 shrink-0 origin-right transition-[scale] duration-500 ease-[cubic-bezier(.34,1.56,.64,1)]",
+              current && player.lives > 0 && "scale-125",
+            )}
+          >
             {current && player.lives > 0 && (
               <TurnRing
                 key={`${deadline}-${serverTime}`}
