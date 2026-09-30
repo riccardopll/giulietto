@@ -132,7 +132,7 @@ export class GameConnection {
     try {
       await requestGame(
         this.token,
-        { action: "join", code: this.code, name: this.name },
+        { action: "join", code: this.code, name: this.name, resume: true },
         controller,
       );
       if (this.stopped) return;

@@ -33,7 +33,13 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
     case "match":
       return { action: input.action, name, avatar };
     case "join":
-      return { action: "join", name, avatar, matchmaking: input.matchmaking === true };
+      return {
+        action: "join",
+        name,
+        avatar,
+        matchmaking: input.matchmaking === true,
+        resume: input.resume === true,
+      };
     case "rename":
       if (typeof input.name !== "string") throw new GameError("Enter a display name.");
       return { action: "rename", name: displayName(input.name) };
@@ -91,8 +97,17 @@ export function command(value: unknown): Command {
     ...(typeof input.code === "string" ? { code: input.code } : {}),
   };
 }
-export function join(game: Game, id: string, name: string, now: number, matchmaking = false) {
-  if (game.kicked?.includes(id)) throw new GameError("The host removed you from the table.");
+export function join(
+  game: Game,
+  id: string,
+  name: string,
+  now: number,
+  { matchmaking = false, resume = false } = {},
+) {
+  if (game.kicked?.includes(id)) {
+    if (resume) throw new GameError("The host removed you from the table.");
+    game.kicked = game.kicked.filter((kicked) => kicked !== id);
+  }
   const seated = findPlayer(game, id);
   if (matchmaking && game.phase !== "lobby" && !seated)
     throw new GameError("This table is no longer available.");
@@ -112,7 +127,7 @@ export function join(game: Game, id: string, name: string, now: number, matchmak
 }
 export function apply(game: Game, id: string, input: Command, now: number) {
   if (input.action === "join") {
-    join(game, id, displayName(input.name), now, input.matchmaking);
+    join(game, id, displayName(input.name), now, input);
     const seated = findPlayer(game, id);
     if (seated && input.avatar) seated.avatar = input.avatar;
     if (seated && game.phase === "lobby") seated.name = displayName(input.name);

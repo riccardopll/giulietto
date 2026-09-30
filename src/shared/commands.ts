@@ -3,7 +3,13 @@ import type { Emote } from "./emotes";
 
 export type EntryCommand =
   | { action: "create" | "match"; name?: string; avatar?: AvatarId }
-  | { action: "join"; name?: string; avatar?: AvatarId; matchmaking?: boolean };
+  | {
+      action: "join";
+      name?: string;
+      avatar?: AvatarId;
+      matchmaking?: boolean;
+      resume?: boolean;
+    };
 export type LobbyOption = "startingLives" | "turnSeconds";
 export type TableCommand =
   | { action: "rename"; name: string }

@@ -460,9 +460,11 @@ test("the lobby host removes other players and closes their sockets", async () =
   });
   await expect.poll(() => findPlayer(hosting.latest()!, joined.you)).toBeUndefined();
   expect((await api.get(other, code)).status).toBe(400);
-  const rejoin = await api.post(other, { action: "join", code });
-  expect(rejoin.status).toBe(400);
-  expect(await rejoin.json()).toEqual({ error: "The host removed you from the table." });
+  const resumed = await api.post(other, { action: "join", resume: true, code });
+  expect(resumed.status).toBe(400);
+  expect(await resumed.json()).toEqual({ error: "The host removed you from the table." });
+  expect(findPlayer(await api.state(other, { action: "join", code }), joined.you)).toBeDefined();
+  expect((await api.post(other, { action: "join", resume: true, code })).status).toBe(200);
 });
 
 test.each(["http", "socket"])(

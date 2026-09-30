@@ -107,6 +107,7 @@ test("rejoins over HTTP with the current name when a direct socket is refused", 
     action: "join",
     code: "ABCDEFGH",
     name: "bot_2",
+    resume: true,
   });
   expect(Socket.sockets).toHaveLength(3);
 });

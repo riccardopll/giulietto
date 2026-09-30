@@ -127,9 +127,11 @@ test("counts only connected spectators and eliminated players", () => {
 
 test("resumes an owned seat on a matchmaking retry but rejects new spectators", () => {
   const game = gameFixture();
-  join(game, "p0", "bot_1", 200, true);
+  join(game, "p0", "bot_1", 200, { matchmaking: true });
   expect(game.players[0].seen).toBe(200);
-  expect(() => join(game, "watcher", "Observer", 200, true)).toThrow("no longer available");
+  expect(() => join(game, "watcher", "Observer", 200, { matchmaking: true })).toThrow(
+    "no longer available",
+  );
   expect(game.spectators).toBeUndefined();
 });
 
@@ -192,6 +194,7 @@ test("normalizes accepted commands and drops unknown fields", () => {
     name: "bot_2",
     avatar: "king-cups",
     matchmaking: false,
+    resume: false,
     commandId,
   });
 });
