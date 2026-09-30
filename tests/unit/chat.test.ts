@@ -11,7 +11,7 @@ test("normalizes message text and rejects blank or oversized messages", () => {
   expect(() => chatText("x".repeat(CHAT_MAX_LENGTH + 1))).toThrow("within");
 });
 
-test("anyone at the table chats during play and messages keep their order", () => {
+test("anyone at the table chats until it closes and messages keep their order", () => {
   const game = gameFixture();
   game.spectators = [{ id: "watcher", name: "Observer", seen: 0 }];
   game.players[2].lives = 0;
@@ -28,14 +28,14 @@ test("anyone at the table chats during play and messages keep their order", () =
   const withoutChat = structuredClone(game);
   delete withoutChat.chat;
   expect(withoutChat).toEqual(before);
-  game.phase = "results";
-  sendChat(game, "p1", "gg", 2000);
-  expect(game.chat?.at(-1)).toMatchObject({ sender: "p1", text: "gg" });
-  for (const phase of ["lobby", "finished"] as const) {
+  for (const phase of ["lobby", "results"] as const) {
     game.phase = phase;
-    expect(() => sendChat(game, "p1", "hi", 2000)).toThrow("until the table closes");
-    expect(() => sendChat(game, "watcher", "hi", 2000)).toThrow("until the table closes");
+    sendChat(game, "p1", phase, 2000);
+    expect(game.chat?.at(-1)).toMatchObject({ sender: "p1", text: phase });
   }
+  game.phase = "finished";
+  expect(() => sendChat(game, "p1", "hi", 2000)).toThrow("until the table closes");
+  expect(() => sendChat(game, "watcher", "hi", 2000)).toThrow("until the table closes");
 });
 
 test("keeps only the newest messages while ids keep growing", () => {

@@ -10,6 +10,7 @@ import {
   type GameView,
 } from "../../shared/game";
 import { cn } from "../utils";
+import { ChatButton, type ChatState } from "./chat";
 import { Lives } from "./lives";
 import { Button } from "@ui/button";
 import { NameChangeInput } from "@ui/name-change-input";
@@ -103,6 +104,7 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
 export function Lobby({
   game,
   busy,
+  chat,
   copied,
   onCopy,
   onStart,
@@ -113,6 +115,7 @@ export function Lobby({
 }: {
   game: GameView;
   busy: boolean;
+  chat: ChatState;
   copied: boolean;
   onCopy: () => void;
   onStart: () => void;
@@ -139,8 +142,9 @@ export function Lobby({
       >
         <NameChangeInput value={draftName} disabled={busy} onChange={setDraftName} />
       </ActionDialog>
-      <div className="mb-4">
+      <div className="mb-4 flex items-center gap-3">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
+        <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />
       </div>
       <ul className="grid gap-2" aria-label="Players">
         {Array.from({ length: 6 }, (_, i) => {

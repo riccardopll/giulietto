@@ -1,4 +1,4 @@
-import { findPlayer, inPlay, type Game } from "./game";
+import { findPlayer, type Game } from "./game";
 import { GameError } from "./game-error";
 
 export const CHAT_MAX_LENGTH = 200;
@@ -12,7 +12,7 @@ export type ChatMessage = {
 };
 
 export function chatOpen(game: { phase: Game["phase"] }) {
-  return inPlay(game) || game.phase === "results";
+  return game.phase !== "finished";
 }
 
 export function chatText(value: unknown) {
@@ -26,8 +26,7 @@ export function chatText(value: unknown) {
 export function sendChat(game: Game, id: string, text: string, now: number) {
   const sender = findPlayer(game, id) ?? game.spectators?.find((spectator) => spectator.id === id);
   if (!sender) throw new GameError("Join this table first.");
-  if (!chatOpen(game))
-    throw new GameError("Chat is open from the first deal until the table closes.");
+  if (!chatOpen(game)) throw new GameError("Chat is open until the table closes.");
   const chat = (game.chat ??= []);
   chat.push({ id: (chat.at(-1)?.id ?? 0) + 1, sender: id, name: sender.name, text, sentAt: now });
   if (chat.length > CHAT_HISTORY) chat.splice(0, chat.length - CHAT_HISTORY);
