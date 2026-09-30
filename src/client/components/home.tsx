@@ -1,5 +1,4 @@
-import { ChevronRight, Loader2, Play, Trophy, Users } from "lucide-react";
-import { Tutorial } from "./tutorial";
+import { ChevronRight, CircleHelp, Loader2, Play, Trophy, Users } from "lucide-react";
 import { toast } from "../toast";
 import { Button } from "@ui/button";
 import { Input } from "@ui/input";
@@ -11,6 +10,7 @@ export function Home({
   busy,
   onCodeChange,
   onAction,
+  onHowToPlay,
   onLeaderboard,
 }: {
   code: string;
@@ -18,6 +18,7 @@ export function Home({
   busy: boolean;
   onCodeChange: (code: string) => void;
   onAction: (action: "match" | "create" | "join") => void | Promise<void>;
+  onHowToPlay: () => void;
   onLeaderboard: () => void;
 }) {
   return (
@@ -96,7 +97,9 @@ export function Home({
         </div>
       </form>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4">
-        <Tutorial />
+        <Button variant="link" onClick={onHowToPlay}>
+          <CircleHelp className="size-5" /> How to play
+        </Button>
         <Button variant="link" onClick={onLeaderboard}>
           <Trophy className="mr-1 size-5" />
           Leaderboard
