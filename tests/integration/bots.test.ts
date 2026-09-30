@@ -28,7 +28,7 @@ test("only the lobby host manages bots, with unique names, seat limits, and retr
   const host = guest(1);
   const other = guest(2);
   const { code } = await api.state(host, { action: "create" });
-  const joined = await api.state(other, { action: "join", code });
+  await api.state(other, { action: "join", code });
   const socket = await api.connect(host, code);
   expect((await api.post(other, { action: "addBot", code })).status).toBe(400);
   const input = { action: "addBot", commandId: crypto.randomUUID() };
@@ -36,13 +36,8 @@ test("only the lobby host manages bots, with unique names, seat limits, and retr
   expect((await socket.command(input)).type).toBe("ack");
   expect((await read(code)).players).toHaveLength(3);
   const first = (await read(code)).players.find((player) => player.bot)!;
-  expect((await api.post(other, { action: "removeBot", playerId: first.id, code })).status).toBe(
-    400,
-  );
-  expect((await api.post(host, { action: "removeBot", playerId: joined.you, code })).status).toBe(
-    400,
-  );
-  await api.state(host, { action: "removeBot", playerId: first.id, code });
+  expect((await api.post(other, { action: "kick", playerId: first.id, code })).status).toBe(400);
+  await api.state(host, { action: "kick", playerId: first.id, code });
   for (let i = 0; i < 4; i++) await api.state(host, { action: "addBot", code });
   const game = await read(code);
   expect(game.players).toHaveLength(6);
@@ -54,9 +49,7 @@ test("only the lobby host manages bots, with unique names, seat limits, and retr
   expect((await api.post(host, { action: "addBot", code })).status).toBe(400);
   await api.state(host, { action: "start", code });
   expect((await api.post(host, { action: "addBot", code })).status).toBe(400);
-  expect((await api.post(host, { action: "removeBot", playerId: bots[0].id, code })).status).toBe(
-    400,
-  );
+  expect((await api.post(host, { action: "kick", playerId: bots[0].id, code })).status).toBe(400);
 });
 
 test("bots survive lobby inactivity and never inherit the host role", async () => {

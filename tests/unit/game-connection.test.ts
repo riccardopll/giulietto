@@ -34,6 +34,7 @@ const state = () => view(gameFixture(), "p0");
 let request: ReturnType<typeof vi.fn<typeof fetch>>;
 let accept: ReturnType<typeof vi.fn<(snapshot: ReturnType<typeof state>) => void>>;
 let status: ReturnType<typeof vi.fn<(message: string) => void>>;
+let closed: ReturnType<typeof vi.fn<(message: string) => void>>;
 
 const page = Object.assign(new EventTarget(), { visibilityState: "visible" });
 
@@ -49,7 +50,8 @@ beforeEach(() => {
   Socket.sockets = [];
   accept = vi.fn();
   status = vi.fn();
-  connection = new GameConnection("ABCDEFGH", "guest-token", "bot_1", accept, status);
+  closed = vi.fn();
+  connection = new GameConnection("ABCDEFGH", "guest-token", "bot_1", accept, status, closed);
 });
 
 afterEach(() => {
@@ -105,8 +107,24 @@ test("rejoins over HTTP with the current name when a direct socket is refused", 
     action: "join",
     code: "ABCDEFGH",
     name: "bot_2",
+    resume: true,
   });
   expect(Socket.sockets).toHaveLength(3);
+});
+
+test("stops without rejoining when the host removes the player", async () => {
+  const first = Socket.sockets[0];
+  first.open();
+  first.receive({ type: "state", state: state() });
+  first.receive({ type: "removed", message: "The host removed you from the table." });
+  expect(closed).toHaveBeenCalledWith("The host removed you from the table.");
+  first.disconnect(1006);
+  await vi.advanceTimersByTimeAsync(30000);
+  expect(Socket.sockets).toHaveLength(1);
+  expect(request).not.toHaveBeenCalled();
+  await expect(connection.command({ action: "bid", bid: 0 })).rejects.toThrow(
+    "The host removed you from the table.",
+  );
 });
 
 test("pings every ten seconds and drops a socket that stops replying", async () => {
@@ -215,11 +233,11 @@ test.each([
     response: new Response("Forbidden", { status: 403 }),
     error: "Could not reach the table. Please try again.",
   },
-])("stops on a permanent rejoin rejection: $error", async ({ response, error }) => {
+])("leaves the table on a permanent rejoin rejection: $error", async ({ response, error }) => {
   request.mockResolvedValue(response);
   Socket.sockets[0].disconnect();
   await vi.advanceTimersByTimeAsync(500);
-  expect(status).toHaveBeenLastCalledWith(error);
+  expect(closed).toHaveBeenCalledWith(error);
   await expect(connection.command({ action: "bid", bid: 0 })).rejects.toThrow(error);
   await vi.advanceTimersByTimeAsync(60000);
   expect(request).toHaveBeenCalledTimes(1);

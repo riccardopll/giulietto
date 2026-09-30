@@ -38,6 +38,7 @@ export class GameConnection {
     private name: string,
     private accept: (state: GameView) => void,
     private status: (message: string) => void,
+    private closed: (message: string) => void,
   ) {
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", this.wake);
     if (typeof window !== "undefined") window.addEventListener("online", this.wake);
@@ -84,6 +85,10 @@ export class GameConnection {
           this.synced = true;
           for (const p of this.pending.values()) this.send(ws, p.message);
         }
+      } else if (message.type === "removed") {
+        this.closedReason = message.message;
+        this.stop();
+        this.closed(message.message);
       } else if (message.type === "ack" || message.type === "error") {
         const p = this.pending.get(message.commandId);
         if (!p) return;
@@ -127,7 +132,7 @@ export class GameConnection {
     try {
       await requestGame(
         this.token,
-        { action: "join", code: this.code, name: this.name },
+        { action: "join", code: this.code, name: this.name, resume: true },
         controller,
       );
       if (this.stopped) return;
@@ -136,8 +141,8 @@ export class GameConnection {
       if (this.stopped) return;
       if (error instanceof GameRequestError && !error.retryable) {
         this.closedReason = error.message;
-        this.status(this.closedReason);
         this.stop();
+        this.closed(error.message);
       } else this.reconnect();
     } finally {
       this.joining = undefined;

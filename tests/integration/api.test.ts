@@ -444,6 +444,29 @@ test.each([
   },
 );
 
+test("the lobby host removes other players and closes their sockets", async () => {
+  const host = guest(1);
+  const other = guest(2);
+  const { code, you } = await api.state(host, { action: "create" });
+  const joined = await api.state(other, { action: "join", code });
+  const hosting = await api.connect(host, code);
+  const removed = await api.connect(other, code);
+  expect((await api.post(other, { action: "kick", playerId: you, code })).status).toBe(400);
+  expect((await hosting.command({ action: "kick", playerId: you })).type).toBe("error");
+  expect((await hosting.command({ action: "kick", playerId: joined.you })).type).toBe("ack");
+  expect(await removed.closed).toMatchObject({
+    code: 4001,
+    reason: "The host removed you from the table.",
+  });
+  await expect.poll(() => findPlayer(hosting.latest()!, joined.you)).toBeUndefined();
+  expect((await api.get(other, code)).status).toBe(400);
+  const resumed = await api.post(other, { action: "join", resume: true, code });
+  expect(resumed.status).toBe(400);
+  expect(await resumed.json()).toEqual({ error: "The host removed you from the table." });
+  expect(findPlayer(await api.state(other, { action: "join", code }), joined.you)).toBeDefined();
+  expect((await api.post(other, { action: "join", resume: true, code })).status).toBe(200);
+});
+
 test.each(["http", "socket"])(
   "leaving over %s forfeits the game and allows reentry only as a spectator",
   async (transport) => {
