@@ -7,6 +7,7 @@ import { Home } from "./components/home";
 import { Lobby } from "./components/lobby";
 import { MatchBoard } from "./components/match-board";
 import { PlayerPages } from "./components/player-pages";
+import { HowToPlay } from "./components/how-to-play";
 import { ResultsPanel } from "./components/results-panel";
 import { TableHeader } from "./components/table-header";
 import { ActionDialog } from "@ui/action-dialog";
@@ -17,11 +18,11 @@ import { Toaster } from "./toast";
 import { useGameSession, type PreviewSession } from "./use-game-session";
 import { usePlayerStats } from "./use-player-stats";
 
-type Page = "home" | "profile" | "leaderboard";
+type Page = "home" | "profile" | "leaderboard" | "how-to-play";
 
 function readPage(): Page {
   const value = new URLSearchParams(location.search).get("page");
-  return value === "profile" || value === "leaderboard" ? value : "home";
+  return value === "profile" || value === "leaderboard" || value === "how-to-play" ? value : "home";
 }
 
 export default function App({ preview }: { preview?: PreviewSession }) {
@@ -123,8 +124,11 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               busy={busy}
               onCodeChange={table.setCode}
               onAction={(action) => void table.act({ action })}
+              onHowToPlay={() => navigate("how-to-play")}
               onLeaderboard={() => navigate("leaderboard")}
             />
+          ) : page === "how-to-play" ? (
+            <HowToPlay onBack={() => navigate("home")} />
           ) : (
             <PlayerPages
               page={page}

@@ -1,24 +1,12 @@
-import { useState, type CSSProperties, type ReactNode } from "react";
-import {
-  ChevronLeft,
-  CircleHelp,
-  Copy,
-  Heart,
-  LogOut,
-  MessageCircleMore,
-  Smile,
-  Target,
-  X,
-} from "lucide-react";
-import { Dialog } from "radix-ui";
+import { type CSSProperties, type ReactNode } from "react";
+import { Copy, Heart, LogOut, MessageCircleMore, Smile, Target } from "lucide-react";
 import { Avatar } from "./avatar";
 import { LifeCount } from "./lives";
 import { BidButton } from "./match-board";
 import { Score, TurnRing } from "./player-seat";
 import { PlayingCard } from "./playing-card";
 import { cn } from "../utils";
-import { Button } from "@ui/button";
-import { overlayClass } from "@ui/action-dialog";
+import { PageHeading } from "@ui/page-heading";
 
 function Demo({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -194,7 +182,7 @@ function Legend({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   );
 }
 
-const steps: { title: string; body: ReactNode }[] = [
+const sections: { title: string; body: ReactNode }[] = [
   {
     title: "The goal",
     body: (
@@ -346,79 +334,18 @@ const steps: { title: string; body: ReactNode }[] = [
   },
 ];
 
-function Steps() {
-  const [step, setStep] = useState(0);
-  const last = step === steps.length - 1;
+export function HowToPlay({ onBack }: { onBack: () => void }) {
   return (
-    <>
-      <div
-        key={step}
-        className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-4 text-sm leading-relaxed animate-[page-in_.2s_ease-out]"
-      >
-        <h3 className="mb-2 text-base font-semibold">{steps[step].title}</h3>
-        {steps[step].body}
+    <main className="mx-auto w-full max-w-md animate-[page-in_.2s_ease-out] pb-8">
+      <PageHeading title="How to play" onBack={onBack} />
+      <div className="space-y-8 px-1 text-sm leading-relaxed">
+        {sections.map(({ title, body }) => (
+          <section key={title}>
+            <h2 className="mb-2 text-lg font-semibold">{title}</h2>
+            {body}
+          </section>
+        ))}
       </div>
-      <div className="flex shrink-0 items-center gap-3 border-t px-3 py-3">
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(step === 0 && "invisible")}
-          aria-label="Previous"
-          onClick={() => setStep(step - 1)}
-        >
-          <ChevronLeft className="size-5" />
-        </Button>
-        <ol
-          className="flex flex-1 justify-center gap-1.5"
-          aria-label={`Step ${step + 1} of ${steps.length}`}
-        >
-          {steps.map(({ title }, index) => (
-            <li
-              key={title}
-              className={cn(
-                "h-2 w-2 rounded-full bg-border transition-all",
-                index === step && "w-5 bg-primary",
-              )}
-            />
-          ))}
-        </ol>
-        {last ? (
-          <Dialog.Close asChild>
-            <Button>Got it</Button>
-          </Dialog.Close>
-        ) : (
-          <Button onClick={() => setStep(step + 1)}>Next</Button>
-        )}
-      </div>
-    </>
-  );
-}
-
-export function Tutorial() {
-  return (
-    <Dialog.Root>
-      <Dialog.Trigger asChild>
-        <Button variant="link" aria-label="How to play">
-          <CircleHelp className="size-5" /> How to play
-        </Button>
-      </Dialog.Trigger>
-      <Dialog.Portal>
-        <Dialog.Overlay className={overlayClass} />
-        <Dialog.Content
-          aria-describedby={undefined}
-          className="fixed left-1/2 top-1/2 z-50 flex h-[min(38rem,calc(100dvh-2rem))] w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-xl border bg-card shadow-lg outline-none data-[state=open]:animate-dialog-in"
-        >
-          <div className="flex shrink-0 items-center justify-between border-b py-1 pr-2 pl-5">
-            <Dialog.Title className="text-lg font-semibold">How to play</Dialog.Title>
-            <Dialog.Close asChild>
-              <Button variant="ghost" size="icon" aria-label="Close tutorial">
-                <X />
-              </Button>
-            </Dialog.Close>
-          </div>
-          <Steps />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+    </main>
   );
 }
