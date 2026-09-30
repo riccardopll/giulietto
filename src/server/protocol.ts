@@ -56,9 +56,9 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
     case "rematch":
     case "leave":
       return { action: input.action };
-    case "removeBot":
-      if (typeof input.playerId !== "string") throw new GameError("Choose a bot to remove.");
-      return { action: "removeBot", playerId: input.playerId };
+    case "kick":
+      if (typeof input.playerId !== "string") throw new GameError("Choose a player to remove.");
+      return { action: "kick", playerId: input.playerId };
     case "bid":
       return { action: "bid", bid: integer(input.bid, "Enter a valid prediction.") };
     case "play":
@@ -146,22 +146,23 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     game[input.option] = input.value;
     if (input.option === "startingLives")
       for (const member of game.players) member.lives = input.value;
-  } else if (input.action === "addBot" || input.action === "removeBot") {
-    if (game.host !== id) throw new GameError("Only the host can add or remove bots.");
-    if (game.phase !== "lobby") throw new GameError("Bots can only change in the lobby.");
-    if (input.action === "addBot") {
-      if (game.players.length >= 6) throw new GameError("This table is full.");
-      const names = botNames.filter((name) => !game.players.some((member) => member.name === name));
-      const name = names[Math.floor(Math.random() * names.length)];
-      game.players.push({
-        ...makePlayer(`bot:${crypto.randomUUID()}`, name, now),
-        lives: game.startingLives,
-        bot: true,
-      });
-    } else {
-      if (!findPlayer(game, input.playerId)?.bot) throw new GameError("Choose a bot to remove.");
-      game.players = game.players.filter((member) => member.id !== input.playerId);
-    }
+  } else if (input.action === "addBot") {
+    if (game.host !== id) throw new GameError("Only the host can add bots.");
+    if (game.phase !== "lobby") throw new GameError("Bots can only join in the lobby.");
+    if (game.players.length >= 6) throw new GameError("This table is full.");
+    const names = botNames.filter((name) => !game.players.some((member) => member.name === name));
+    const name = names[Math.floor(Math.random() * names.length)];
+    game.players.push({
+      ...makePlayer(`bot:${crypto.randomUUID()}`, name, now),
+      lives: game.startingLives,
+      bot: true,
+    });
+  } else if (input.action === "kick") {
+    if (game.host !== id) throw new GameError("Only the host can remove players.");
+    if (game.phase !== "lobby") throw new GameError("Players can only be removed in the lobby.");
+    if (input.playerId === id || !findPlayer(game, input.playerId))
+      throw new GameError("Choose a player to remove.");
+    game.players = game.players.filter((member) => member.id !== input.playerId);
   } else if (input.action === "start") {
     if (game.host !== id) throw new GameError("Only the host can start.");
     if (game.phase !== "lobby" || game.players.length < 2)

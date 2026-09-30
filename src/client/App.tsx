@@ -161,7 +161,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 onSettings={(option, value) => table.act({ action: "settings", option, value })}
                 onRename={table.renameSeat}
                 onAddBot={isPreview ? undefined : () => void table.act({ action: "addBot" })}
-                onRemoveBot={(playerId) => void table.act({ action: "removeBot", playerId })}
+                onKick={(playerId) => table.act({ action: "kick", playerId })}
               />
             ) : result ? (
               <ResultsPanel

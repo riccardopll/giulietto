@@ -111,7 +111,7 @@ export function Lobby({
   onSettings,
   onRename,
   onAddBot,
-  onRemoveBot,
+  onKick,
 }: {
   game: GameView;
   busy: boolean;
@@ -122,10 +122,11 @@ export function Lobby({
   onSettings: SaveSettings;
   onRename: (name: string) => Promise<boolean>;
   onAddBot?: () => void;
-  onRemoveBot: (playerId: string) => void;
+  onKick: (playerId: string) => Promise<unknown>;
 }) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState("");
+  const [kicking, setKicking] = useState({ open: false, id: "", name: "" });
   return (
     <section className="mx-auto w-full max-w-xl py-3">
       <ActionDialog
@@ -142,6 +143,19 @@ export function Lobby({
       >
         <NameChangeInput value={draftName} disabled={busy} onChange={setDraftName} />
       </ActionDialog>
+      <ActionDialog
+        confirmation
+        open={kicking.open}
+        onOpenChange={(open) => setKicking({ ...kicking, open })}
+        title={`Remove ${kicking.name}?`}
+        cancelLabel="Keep"
+        actionLabel={busy ? "Removing…" : "Remove"}
+        busy={busy}
+        onSubmit={async () => {
+          await onKick(kicking.id);
+          setKicking({ ...kicking, open: false });
+        }}
+      />
       <div className="mb-4 flex items-center gap-3">
         <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
         <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />
@@ -159,7 +173,7 @@ export function Lobby({
             >
               {player ? (
                 <>
-                  {player.bot && game.host === game.you ? (
+                  {game.host === game.you && player.id !== game.you ? (
                     <Button
                       variant="ghost"
                       size="icon"
@@ -167,9 +181,18 @@ export function Lobby({
                       aria-label={`Remove ${player.name}`}
                       title={`Remove ${player.name}`}
                       disabled={busy}
-                      onClick={() => onRemoveBot(player.id)}
+                      onClick={() =>
+                        player.bot
+                          ? void onKick(player.id)
+                          : setKicking({ open: true, id: player.id, name: player.name })
+                      }
                     >
-                      <Avatar bot className="size-9 border-0 text-muted-foreground" />
+                      <Avatar
+                        avatar={player.avatar}
+                        bot={player.bot}
+                        id={player.id}
+                        className={cn("size-9", player.bot && "border-0 text-muted-foreground")}
+                      />
                       <span className="absolute right-0 bottom-0 grid size-5 place-items-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-colors group-hover:bg-primary/90">
                         <Minus className="size-3" strokeWidth={3} />
                       </span>

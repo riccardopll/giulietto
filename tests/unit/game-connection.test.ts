@@ -49,7 +49,7 @@ beforeEach(() => {
   Socket.sockets = [];
   accept = vi.fn();
   status = vi.fn();
-  connection = new GameConnection("ABCDEFGH", "guest-token", "bot_1", accept, status);
+  connection = new GameConnection("ABCDEFGH", "guest-token", "bot_1", accept, status, vi.fn());
 });
 
 afterEach(() => {

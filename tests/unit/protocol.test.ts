@@ -72,7 +72,7 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
       { action: "start" },
       { action: "settings", option: "startingLives", value: 3 },
       { action: "addBot" },
-      { action: "removeBot", playerId: "p0" },
+      { action: "kick", playerId: "p0" },
     ] as const) {
       expect(() =>
         apply(game, "watcher", { ...input, commandId: crypto.randomUUID() }, 400),

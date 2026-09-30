@@ -10,7 +10,7 @@ export type TableCommand =
   | { action: "settings"; option: LobbyOption; value: number }
   | { action: "start" }
   | { action: "addBot" }
-  | { action: "removeBot"; playerId: string }
+  | { action: "kick"; playerId: string }
   | { action: "bid"; bid: number }
   | { action: "play"; card?: number; mode?: "high" | "low" }
   | { action: "emote"; emote: Emote["id"] }

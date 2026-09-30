@@ -223,10 +223,14 @@ export class GameTable extends DurableObject<Env> {
       return null;
     return findPlayer(room.game, room.game.host)?.name ?? null;
   }
-  private closeForfeited(id: string, input: Command) {
-    if (input.action === "leave" && findPlayer(this.read()!.game, id)?.forfeited)
+  private closeRemoved(id: string, input: Command) {
+    const game = this.read()!.game;
+    if (input.action === "leave" && findPlayer(game, id)?.forfeited)
       for (const socket of this.ctx.getWebSockets(id))
         socket.close(4001, "You left the table. You can rejoin as a spectator.");
+    if (input.action === "kick" && !findPlayer(game, input.playerId))
+      for (const socket of this.ctx.getWebSockets(input.playerId))
+        socket.close(4003, "The host removed you from the table.");
   }
   private async openRematch(game: Game, id: string, commandId: string) {
     checkRematch(game, id, Date.now());
@@ -336,7 +340,7 @@ export class GameTable extends DurableObject<Env> {
         const input = command(await req.json());
         const result = await this.execute(room, id, input);
         persist = result.persist;
-        this.closeForfeited(id, input);
+        this.closeRemoved(id, input);
         return Response.json(result.state);
       } catch (error) {
         const response = failure(error);
@@ -394,7 +398,7 @@ export class GameTable extends DurableObject<Env> {
         const result = await this.execute(await this.advance(room), id, input);
         persist = result.persist;
         this.send(ws, { type: "ack", commandId, state: result.state });
-        this.closeForfeited(id, input);
+        this.closeRemoved(id, input);
         outcome = result.duplicate ? "duplicate" : "accepted";
       } catch (error) {
         const response = failure(error);
