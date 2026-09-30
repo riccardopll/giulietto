@@ -1,12 +1,4 @@
-import {
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type CSSProperties,
-  type FormEvent,
-  type RefObject,
-} from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { Dialog } from "radix-ui";
 import { MessageCircleDashed, MessageCircleMore, SendHorizontal, X } from "lucide-react";
 import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
@@ -31,30 +23,6 @@ export function useChat(game: GameView | null): ChatState {
   return { open, setOpen: (next) => setOpenKey(next ? key : null), unread };
 }
 
-let lastSpot: { rect: DOMRect; at: number } | undefined;
-
-function useSlideFromLastSpot(ref: RefObject<HTMLButtonElement | null>) {
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-    const from = lastSpot;
-    lastSpot = undefined;
-    if (from && performance.now() - from.at < 1000) {
-      const to = element.getBoundingClientRect();
-      const dx = from.rect.left - to.left;
-      const dy = from.rect.top - to.top;
-      if (dx || dy)
-        element.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "none" }], {
-          duration: 450,
-          easing: "cubic-bezier(.2,.8,.2,1)",
-        });
-    }
-    return () => {
-      lastSpot = { rect: element.getBoundingClientRect(), at: performance.now() };
-    };
-  }, [ref]);
-}
-
 export function ChatButton({
   unread,
   onClick,
@@ -66,11 +34,8 @@ export function ChatButton({
   edge?: boolean;
   className?: string;
 }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  useSlideFromLastSpot(ref);
   return (
     <Button
-      ref={ref}
       variant="tab"
       size="icon"
       className={className}
