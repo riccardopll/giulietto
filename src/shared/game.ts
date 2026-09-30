@@ -47,6 +47,7 @@ export type Game = {
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
   spectators?: Spectator[];
+  kicked?: string[];
   chat?: ChatMessage[];
   order: string[];
   round: number;

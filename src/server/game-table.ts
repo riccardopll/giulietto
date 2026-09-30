@@ -229,8 +229,11 @@ export class GameTable extends DurableObject<Env> {
       for (const socket of this.ctx.getWebSockets(id))
         socket.close(4001, "You left the table. You can rejoin as a spectator.");
     if (input.action === "kick" && !findPlayer(game, input.playerId))
-      for (const socket of this.ctx.getWebSockets(input.playerId))
-        socket.close(4003, "The host removed you from the table.");
+      for (const socket of this.ctx.getWebSockets(input.playerId)) {
+        const message = "The host removed you from the table.";
+        this.send(socket, { type: "removed", message });
+        socket.close(4001, message);
+      }
   }
   private async openRematch(game: Game, id: string, commandId: string) {
     checkRematch(game, id, Date.now());

@@ -104,7 +104,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     };
   }, [session, isPreview]);
   const receiveState = useEffectEvent((s: GameView) => accept(s));
-  const removed = useEffectEvent((message: string) => {
+  const closed = useEffectEvent((message: string) => {
     reset();
     showError(message);
   });
@@ -116,7 +116,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       gameRef.current!.viewerName,
       receiveState,
       setConnection,
-      removed,
+      closed,
     );
     transport.current = connection;
     return () => {

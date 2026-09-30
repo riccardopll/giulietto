@@ -92,6 +92,7 @@ export function command(value: unknown): Command {
   };
 }
 export function join(game: Game, id: string, name: string, now: number, matchmaking = false) {
+  if (game.kicked?.includes(id)) throw new GameError("The host removed you from the table.");
   const seated = findPlayer(game, id);
   if (matchmaking && game.phase !== "lobby" && !seated)
     throw new GameError("This table is no longer available.");
@@ -160,9 +161,10 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   } else if (input.action === "kick") {
     if (game.host !== id) throw new GameError("Only the host can remove players.");
     if (game.phase !== "lobby") throw new GameError("Players can only be removed in the lobby.");
-    if (input.playerId === id || !findPlayer(game, input.playerId))
-      throw new GameError("Choose a player to remove.");
-    game.players = game.players.filter((member) => member.id !== input.playerId);
+    const target = findPlayer(game, input.playerId);
+    if (!target || target.id === id) throw new GameError("Choose a player to remove.");
+    game.players = game.players.filter((member) => member !== target);
+    if (!target.bot) (game.kicked ??= []).push(target.id);
   } else if (input.action === "start") {
     if (game.host !== id) throw new GameError("Only the host can start.");
     if (game.phase !== "lobby" || game.players.length < 2)

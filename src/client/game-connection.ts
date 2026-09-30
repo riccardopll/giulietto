@@ -38,7 +38,7 @@ export class GameConnection {
     private name: string,
     private accept: (state: GameView) => void,
     private status: (message: string) => void,
-    private removed: (message: string) => void,
+    private closed: (message: string) => void,
   ) {
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", this.wake);
     if (typeof window !== "undefined") window.addEventListener("online", this.wake);
@@ -85,6 +85,10 @@ export class GameConnection {
           this.synced = true;
           for (const p of this.pending.values()) this.send(ws, p.message);
         }
+      } else if (message.type === "removed") {
+        this.closedReason = message.message;
+        this.stop();
+        this.closed(message.message);
       } else if (message.type === "ack" || message.type === "error") {
         const p = this.pending.get(message.commandId);
         if (!p) return;
@@ -99,12 +103,6 @@ export class GameConnection {
       clearTimeout(this.watchdog);
       this.watchdog = undefined;
       if (this.stopped) return;
-      if (event.code === 4003) {
-        this.closedReason = event.reason;
-        this.stop();
-        this.removed(event.reason);
-        return;
-      }
       if (event.code === 4001 || event.code === 4002) {
         this.closedReason = event.reason || "Connection closed.";
         this.status(this.closedReason);
@@ -143,8 +141,8 @@ export class GameConnection {
       if (this.stopped) return;
       if (error instanceof GameRequestError && !error.retryable) {
         this.closedReason = error.message;
-        this.status(this.closedReason);
         this.stop();
+        this.closed(error.message);
       } else this.reconnect();
     } finally {
       this.joining = undefined;
