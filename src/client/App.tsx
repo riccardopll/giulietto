@@ -154,6 +154,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
               <Lobby
                 game={game}
                 busy={busy}
+                chat={chat}
                 copied={table.copied}
                 onCopy={table.copyInvite}
                 onStart={() => void table.act({ action: "start" })}
