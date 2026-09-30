@@ -1,26 +1,16 @@
 import { useState, type CSSProperties } from "react";
 import { toast } from "../toast";
-import { ArrowLeft, Pencil, PlayingCard, Target, Timer } from "lucide-react";
+import { Pencil, PlayingCard, Target, Timer } from "lucide-react";
 import type { Profile, StatsResponse } from "../../shared/player-stats";
 import { type AvatarId } from "../../shared/avatars";
 import { Avatar } from "./avatar";
 import { AvatarPicker } from "./avatar-picker";
 import { Button } from "@ui/button";
+import { PageHeading } from "@ui/page-heading";
 import { NameChangeInput } from "@ui/name-change-input";
 import { ActionDialog } from "@ui/action-dialog";
 import { Leaderboard } from "./leaderboard";
 import { cn } from "../utils";
-
-function PageHeading({ title, onBack }: { title: string; onBack: () => void }) {
-  return (
-    <header className="mb-6 flex min-h-16 items-center gap-2 py-1">
-      <Button variant="ghost" size="icon" aria-label="Back to home" onClick={onBack}>
-        <ArrowLeft />
-      </Button>
-      <h1 className="min-w-0 flex-1 text-2xl font-semibold">{title}</h1>
-    </header>
-  );
-}
 
 function ProfileEditor({
   mode,
