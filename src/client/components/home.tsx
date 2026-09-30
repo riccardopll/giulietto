@@ -78,7 +78,7 @@ export function Home({
               required
               onInvalid={(event) => {
                 event.preventDefault();
-                toast.show("Enter an 8-character lobby code.", { id: "game-error" });
+                toast.show("Enter a lobby code.", { id: "game-error" });
               }}
               minLength={8}
               maxLength={8}
