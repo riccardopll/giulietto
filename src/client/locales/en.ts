@@ -45,7 +45,6 @@ export const en = {
     codePlaceholder: "Enter lobby code",
     howToPlay: "How to play",
     leaderboard: "Leaderboard",
-    source: "Source on GitHub",
     switchLanguage: "Italiano",
   },
   profile: {
@@ -305,7 +304,6 @@ export const en = {
     invalidResponse: "Invalid table response. Please try again.",
     statsFailed: "Could not load player stats.",
     profileFailed: "Could not save your profile.",
-    codeRequired: "Enter a lobby code.",
   } satisfies Record<ErrorCode, string>,
 };
 

@@ -56,8 +56,7 @@ export type ErrorCode =
   | "unreachable"
   | "invalidResponse"
   | "statsFailed"
-  | "profileFailed"
-  | "codeRequired";
+  | "profileFailed";
 
 export class GameError extends Error {
   constructor(readonly code: ErrorCode) {

@@ -43,7 +43,6 @@ export const it: Messages = {
     codePlaceholder: "Inserisci il codice",
     howToPlay: "Come si gioca",
     leaderboard: "Classifica",
-    source: "Codice su GitHub",
     switchLanguage: "English",
   },
   profile: {
@@ -192,13 +191,13 @@ export const it: Messages = {
     goal: {
       title: "L'obiettivo",
       intro:
-        "A ogni mano, dichiara quante prese farai. Perdi una vita per ogni presa di differenza. Vince l'ultimo giocatore che ha ancora vite.",
+        "A ogni mano, dichiara quante prese farai. Perdi una vita per ogni presa in più o in meno rispetto a quelle dichiarate. Vince l'ultimo giocatore che ha ancora vite.",
       demo: "Tre giocatori giocano una carta a testa. Il 5 di Denari è la più forte e prende.",
       outro: "Una presa è una carta per ogni giocatore. La carta più forte la vince.",
     },
     predict: {
       title: "Dichiara",
-      intro: "Guarda le tue carte, poi tocca quante prese pensi di fare.",
+      intro: "Guarda le tue carte, poi seleziona quante prese pensi di fare.",
       demo: "Con tre carte, gli altri hanno dichiarato 1 e 0. Puoi dichiarare 0, 1 o 3, ma non 2.",
       outro:
         "L'ultimo a dichiarare non può rendere il totale uguale alle carte in mano, così qualcuno sbaglia sempre. Qui gli altri hanno detto 1 e 0, quindi il 2 è bloccato.",
@@ -218,7 +217,8 @@ export const it: Messages = {
     },
     lives: {
       title: "Vite",
-      intro: "Dopo l'ultima presa, perdi una vita per ogni presa di differenza.",
+      intro:
+        "Dopo l'ultima presa, perdi una vita per ogni presa in più o in meno rispetto a quelle dichiarate.",
       demo: "Dichiari 2 e ne fai 4: perdi 2 vite.",
       predicted: "Dichiarate",
       won: "Fatte",
@@ -303,6 +303,5 @@ export const it: Messages = {
     invalidResponse: "Risposta del tavolo non valida. Riprova.",
     statsFailed: "Impossibile caricare le statistiche.",
     profileFailed: "Impossibile salvare il profilo.",
-    codeRequired: "Inserisci un codice.",
   },
 };

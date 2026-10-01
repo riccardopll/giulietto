@@ -79,7 +79,7 @@ export function Home({
               required
               onInvalid={(event) => {
                 event.preventDefault();
-                toast.show(t.errors.codeRequired, { id: "game-error" });
+                toast.show(t.errors.codeInvalid, { id: "game-error" });
               }}
               minLength={8}
               maxLength={8}
