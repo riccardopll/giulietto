@@ -1,8 +1,23 @@
+import { Languages } from "lucide-react";
+import { locale, setLocale, t } from "../../i18n";
+
+const linkClass =
+  "inline-flex items-center gap-2 underline underline-offset-4 hover:text-foreground";
+
 export function PageFooter() {
   return (
-    <footer className="mx-auto mt-auto flex w-full max-w-md justify-center border-t py-5 text-sm text-muted-foreground">
+    <footer className="mx-auto mt-auto flex w-full max-w-md justify-center gap-6 border-t py-5 text-sm text-muted-foreground">
+      <button
+        type="button"
+        className={linkClass}
+        lang={locale === "en" ? "it" : "en"}
+        onClick={() => setLocale(locale === "en" ? "it" : "en")}
+      >
+        <Languages className="size-4" aria-hidden="true" />
+        {t.home.switchLanguage}
+      </button>
       <a
-        className="inline-flex items-center gap-2 underline underline-offset-4 hover:text-foreground"
+        className={linkClass}
         href="https://github.com/riccardopll/giulietto"
         target="_blank"
         rel="noreferrer"

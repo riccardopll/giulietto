@@ -1,7 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
 import type { Env } from "./env";
 import { isTableCommand, type Command } from "../shared/commands";
-import { GameError } from "../shared/game-error";
+import { GameError, type ErrorCode } from "../shared/game-error";
 import { createBot } from "../shared/bot";
 import { checkRematch } from "../shared/rematch";
 import weights from "../../public/bot/weights.json";
@@ -206,11 +206,10 @@ export class GameTable extends DurableObject<Env> {
         });
   }
   private load() {
-    if (this.ctx.storage.kv.get("expired"))
-      throw new GameError("Table not found or expired. Check the invite code.");
+    if (this.ctx.storage.kv.get("expired")) throw new GameError("tableNotFound");
     const room = this.read();
     if (!room || Date.now() - room.updated >= TABLE_RETENTION_MS)
-      throw new GameError("Table not found or expired. Check the invite code.");
+      throw new GameError("tableNotFound");
     return room;
   }
   hostName() {
@@ -223,16 +222,17 @@ export class GameTable extends DurableObject<Env> {
       return null;
     return findPlayer(room.game, room.game.host)?.name ?? null;
   }
+  private close(ws: WebSocket, status: 4001 | 4002, code: ErrorCode) {
+    ws.close(status, code);
+  }
   private closeRemoved(id: string, input: Command) {
     const game = this.read()!.game;
     if (input.action === "leave" && findPlayer(game, id)?.forfeited)
-      for (const socket of this.ctx.getWebSockets(id))
-        socket.close(4001, "You left the table. You can rejoin as a spectator.");
+      for (const socket of this.ctx.getWebSockets(id)) this.close(socket, 4001, "leftTable");
     if (input.action === "kick" && !findPlayer(game, input.playerId))
       for (const socket of this.ctx.getWebSockets(input.playerId)) {
-        const message = "The host removed you from the table.";
-        this.send(socket, { type: "removed", message });
-        socket.close(4001, message);
+        this.send(socket, { type: "removed" });
+        this.close(socket, 4001, "removed");
       }
   }
   private async openRematch(game: Game, id: string, commandId: string) {
@@ -250,9 +250,9 @@ export class GameTable extends DurableObject<Env> {
       }),
     });
     if (response.ok) return code;
-    const body = (await response.json().catch(() => null)) as { error?: string } | null;
-    const message = body?.error ?? "Could not open the rematch lobby.";
-    throw response.status === 400 ? new GameError(message) : new Error(message);
+    const body = (await response.json().catch(() => null)) as { error?: ErrorCode } | null;
+    const error = body?.error ?? "rematchFailed";
+    throw response.status === 400 ? new GameError(error) : new Error(error);
   }
   private async execute(room: Room, id: string, input: Command) {
     const duplicate = this.ctx.storage.sql
@@ -295,9 +295,9 @@ export class GameTable extends DurableObject<Env> {
         if (url.pathname.endsWith("/create")) {
           const input = command(await req.json());
           if (input.action !== "create" && input.action !== "match")
-            throw new GameError("Invalid request.");
+            throw new GameError("invalidRequest");
           let room = this.read();
-          if (room && room.game.host !== id) throw new GameError("Table already exists.");
+          if (room && room.game.host !== id) throw new GameError("tableExists");
           if (!room) {
             const game = makeGame(
               code,
@@ -317,12 +317,12 @@ export class GameTable extends DurableObject<Env> {
           !findPlayer(room.game, id) &&
           !room.game.spectators?.some((spectator) => spectator.id === id)
         )
-          throw new GameError("Join this table first.");
+          throw new GameError("joinFirst");
         room = await this.advance(room);
         if (url.pathname.endsWith("/socket")) {
           this.view(room.game, id);
           const sockets = this.ctx.getWebSockets(id);
-          if (sockets.length >= 3) sockets[0].close(4002, "Connected in another tab.");
+          if (sockets.length >= 3) this.close(sockets[0], 4002, "otherTab");
           const { 0: client, 1: server } = new WebSocketPair();
           this.ctx.acceptWebSocket(server, [id]);
           attachment.connectionId = crypto.randomUUID();
@@ -390,14 +390,14 @@ export class GameTable extends DurableObject<Env> {
         try {
           value = JSON.parse(message);
         } catch {
-          throw new GameError("Invalid JSON.");
+          throw new GameError("invalidRequest");
         }
         if (typeof value?.commandId === "string") commandId = value.commandId;
         const input = command(value);
         action = input.action;
-        if (!isTableCommand(input)) throw new GameError("Invalid room command.");
+        if (!isTableCommand(input)) throw new GameError("invalidRequest");
         const room = this.read();
-        if (!room) throw new GameError("Table expired.");
+        if (!room) throw new GameError("tableExpired");
         const result = await this.execute(await this.advance(room), id, input);
         persist = result.persist;
         this.send(ws, { type: "ack", commandId, state: result.state });
@@ -471,7 +471,7 @@ export class GameTable extends DurableObject<Env> {
         !room.outbox &&
         ["lobby", "finished"].includes(room.game.phase)
       ) {
-        for (const ws of this.ctx.getWebSockets()) ws.close(4001, "Table expired.");
+        for (const ws of this.ctx.getWebSockets()) this.close(ws, 4001, "tableExpired");
         await this.ctx.storage.deleteAll();
         this.ctx.storage.kv.put("expired", true);
         return;

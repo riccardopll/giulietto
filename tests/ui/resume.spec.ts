@@ -102,12 +102,14 @@ test("reloading and reconnecting during play restore the player and hand and all
     "**/api/game",
     (route) => {
       leaveCommandId = route.request().postDataJSON().commandId;
-      return route.fulfill({ status: 503, json: { error: "Could not leave the table." } });
+      return route.fulfill({ status: 503, json: { error: "unavailable" } });
     },
     { times: 1 },
   );
   await confirmation.getByRole("button", { name: "Leave table", exact: true }).click();
-  await expect(returning.page.getByText("Could not leave the table.")).toBeVisible();
+  await expect(
+    returning.page.getByText("The table is temporarily unavailable. Please try again."),
+  ).toBeVisible();
   expect(await returning.page.evaluate(() => localStorage.getItem("giulietto-room"))).toBe(
     before.code,
   );

@@ -1,3 +1,4 @@
+import { t } from "../../i18n";
 import { Input } from "@ui/input";
 
 export function NameChangeInput({
@@ -11,8 +12,8 @@ export function NameChangeInput({
 }) {
   return (
     <Input
-      aria-label="New name"
-      placeholder="Enter new name"
+      aria-label={t.newName}
+      placeholder={t.newNamePlaceholder}
       autoComplete="off"
       maxLength={20}
       value={value}

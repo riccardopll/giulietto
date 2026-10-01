@@ -1,8 +1,10 @@
+import type { ErrorCode } from "../shared/game-error";
+
 const tokenKey = "giulietto-token";
 const nameKey = "giulietto-name";
 const maxAge = 60 * 60 * 24 * 365;
 
-export const cookieError = "Allow cookies to remember your name and keep your guest seat.";
+export const cookieError: ErrorCode = "cookies";
 
 function readCookie(key: string) {
   const value = document.cookie

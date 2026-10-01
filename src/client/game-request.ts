@@ -1,11 +1,14 @@
 import type { EntryCommand, TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
+import { GameError, type ErrorCode } from "../shared/game-error";
 
 export type HttpCommand = (EntryCommand | TableCommand) & {
   code?: string;
   name?: string;
   commandId?: string;
 };
+
+const unreachable: ErrorCode = "unreachable";
 
 export class GameRequestError extends Error {
   constructor(
@@ -24,10 +27,7 @@ export async function requestGame(
   command: HttpCommand,
   controller = new AbortController(),
 ): Promise<GameView> {
-  const timeout = setTimeout(
-    () => controller.abort(new Error("The request timed out. Please try again.")),
-    10000,
-  );
+  const timeout = setTimeout(() => controller.abort(new GameError("timeout")), 10000);
   try {
     const response = await fetch("/api/game", {
       method: "POST",
@@ -39,12 +39,8 @@ export async function requestGame(
       | (GameView & { error?: string })
       | null;
     controller.signal.throwIfAborted();
-    if (!response.ok)
-      throw new GameRequestError(
-        data?.error || "Could not reach the table. Please try again.",
-        response.status,
-      );
-    if (!data) throw new Error("Invalid table response. Please try again.");
+    if (!response.ok) throw new GameRequestError(data?.error || unreachable, response.status);
+    if (!data) throw new GameError("invalidResponse");
     return data;
   } finally {
     clearTimeout(timeout);

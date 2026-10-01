@@ -8,20 +8,20 @@ afterEach(() => {
 
 test.each([
   {
-    response: Response.json({ error: "Table expired." }, { status: 400 }),
-    error: { message: "Table expired.", status: 400, retryable: false },
+    response: Response.json({ error: "tableExpired" }, { status: 400 }),
+    error: { message: "tableExpired", status: 400, retryable: false },
   },
   {
     response: new Response("<html>Unavailable</html>", { status: 503 }),
     error: {
-      message: "Could not reach the table. Please try again.",
+      message: "unreachable",
       status: 503,
       retryable: true,
     },
   },
   {
     response: new Response("<html>Unexpected page</html>"),
-    error: { message: "Invalid table response. Please try again." },
+    error: { message: "invalidResponse" },
   },
 ])("reports HTTP and invalid response errors: $error.message", async ({ response, error }) => {
   vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response));
@@ -40,9 +40,7 @@ test("bounds response body reads as well as the initial request", async () => {
     );
     return response;
   });
-  const pending = expect(requestGame("guest-token", { action: "join" })).rejects.toThrow(
-    "The request timed out. Please try again.",
-  );
+  const pending = expect(requestGame("guest-token", { action: "join" })).rejects.toThrow("timeout");
   await vi.advanceTimersByTimeAsync(10000);
   await pending;
   expect(vi.getTimerCount()).toBe(0);

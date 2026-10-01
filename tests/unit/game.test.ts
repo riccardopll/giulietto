@@ -87,7 +87,7 @@ describe("turns and tricks", () => {
 
   test("accepts predictions in turn and excludes a final total equal to the trick count", () => {
     const game = gameFixture();
-    expect(() => bid(game, "p1", 0, 100)).toThrow("Wait for your bidding turn");
+    expect(() => bid(game, "p1", 0, 100)).toThrow("notYourBid");
     expect(() => bid(game, "p0", 0.5, 100)).toThrow();
     bid(game, "p0", 1, 100);
     bid(game, "p1", 0, 100);
@@ -105,8 +105,8 @@ describe("turns and tricks", () => {
       [10, 9],
     ]);
     for (const id of game.order) bid(game, id, 0, 100);
-    expect(() => play(game, "p1", 40, undefined, 100)).toThrow("Wait for your turn");
-    expect(() => play(game, "p0", 40, undefined, 100)).toThrow("not in your hand");
+    expect(() => play(game, "p1", 40, undefined, 100)).toThrow("notYourTurn");
+    expect(() => play(game, "p0", 40, undefined, 100)).toThrow("cardNotInHand");
     play(game, "p0", 2, undefined, 100);
     play(game, "p1", 40, undefined, 100);
     play(game, "p2", 10, undefined, 100);
@@ -127,7 +127,7 @@ describe("turns and tricks", () => {
     expect(view(game, "p0").players[0].hand).toEqual([null]);
     expect(view(game, "p0").canChooseAce).toBe(true);
     expect(view(game, "p1").canChooseAce).toBe(false);
-    expect(() => play(game, "p0", 31, undefined, 100)).toThrow("Choose high or low");
+    expect(() => play(game, "p0", 31, undefined, 100)).toThrow("aceModeRequired");
     play(game, "p0", 31, mode, 100);
     play(game, "p1", 40, undefined, 100);
 

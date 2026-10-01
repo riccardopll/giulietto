@@ -5,6 +5,7 @@ import { LifeCount } from "./lives";
 import { BidButton } from "./match-board";
 import { Score, TurnRing } from "./player-seat";
 import { PlayingCard } from "./playing-card";
+import { t } from "../i18n";
 import { cn } from "../utils";
 import { PageHeading } from "@ui/page-heading";
 
@@ -19,7 +20,7 @@ function Demo({ label, children }: { label: string; children: ReactNode }) {
 
 function TrickDemo() {
   return (
-    <Demo label="Three players each play a card. The 5 of Coins is strongest and takes the trick.">
+    <Demo label={t.howToPlay.goal.demo}>
       <div className="grid grid-cols-3 gap-3">
         {[
           { avatar: "king-clubs", card: 10 },
@@ -50,7 +51,7 @@ function TrickDemo() {
 
 function PredictDemo() {
   return (
-    <Demo label="With three cards, the others predicted 1 and 0. You can predict 0, 1 or 3, but not 2.">
+    <Demo label={t.howToPlay.predict.demo}>
       <div className="mb-4 flex justify-center">
         {[4, 30, 38].map((card, index) => (
           <div
@@ -81,23 +82,20 @@ function PredictDemo() {
 
 function StrengthDemo() {
   return (
-    <Demo label="From weakest to strongest suit: Clubs, Swords, Cups, Coins.">
+    <Demo label={t.howToPlay.play.demo}>
       <div className="grid grid-cols-4 gap-3">
-        {[
-          { card: 2, suit: "Clubs" },
-          { card: 12, suit: "Swords" },
-          { card: 22, suit: "Cups" },
-          { card: 32, suit: "Coins" },
-        ].map(({ card, suit }, index) => (
-          <div
-            key={card}
-            className="min-w-0 animate-[tutorial-rise_4s_ease-in-out_var(--delay)_infinite]"
-            style={{ "--delay": `${index * 250}ms` } as CSSProperties}
-          >
-            <PlayingCard card={card} />
-            <span className="mt-2 block text-center text-xs font-semibold">{suit}</span>
-          </div>
-        ))}
+        {t.cards.suits
+          .map((suit, index) => ({ card: index * 10 + 2, suit }))
+          .map(({ card, suit }, index) => (
+            <div
+              key={card}
+              className="min-w-0 animate-[tutorial-rise_4s_ease-in-out_var(--delay)_infinite]"
+              style={{ "--delay": `${index * 250}ms` } as CSSProperties}
+            >
+              <PlayingCard card={card} />
+              <span className="mt-2 block text-center text-xs font-semibold">{suit}</span>
+            </div>
+          ))}
       </div>
     </Demo>
   );
@@ -105,14 +103,14 @@ function StrengthDemo() {
 
 function LivesDemo() {
   return (
-    <Demo label="Predict 2 and win 4: you lose 2 lives.">
+    <Demo label={t.howToPlay.lives.demo}>
       <div className="grid grid-cols-3 items-center gap-2 text-center">
         <div>
-          <span className="block text-xs text-muted-foreground">Predicted</span>
+          <span className="block text-xs text-muted-foreground">{t.howToPlay.lives.predicted}</span>
           <strong className="text-2xl">2</strong>
         </div>
         <div>
-          <span className="block text-xs text-muted-foreground">Won</span>
+          <span className="block text-xs text-muted-foreground">{t.howToPlay.lives.won}</span>
           <strong className="text-2xl">4</strong>
         </div>
         <div className="flex justify-center gap-1 text-destructive">
@@ -135,7 +133,7 @@ function LivesDemo() {
 
 function RoundsDemo() {
   return (
-    <Demo label="Cards per player each round: 6, 5, 4, 3, 2, 1, then back to 6.">
+    <Demo label={t.howToPlay.rounds.demo}>
       <ol className="flex justify-between">
         {[6, 5, 4, 3, 2, 1].map((count, index) => (
           <li
@@ -153,14 +151,14 @@ function RoundsDemo() {
 
 function SeatDemo() {
   return (
-    <Demo label="Your seat on the table: the ring shows it is your turn.">
+    <Demo label={t.howToPlay.table.seat}>
       <div className="flex items-center justify-center gap-3">
         <div className="relative size-10 shrink-0">
           <TurnRing remaining={100} duration={4000} loop />
           <Avatar avatar="king-cups" className="size-full" />
         </div>
         <span className="flex flex-col gap-0.5">
-          <strong className="text-sm text-primary">You</strong>
+          <strong className="text-sm text-primary">{t.you}</strong>
           <span className="flex items-center gap-1 text-xs">
             <LifeCount n={3} />
             <Score taken={1} bid={2} />
@@ -182,164 +180,155 @@ function Legend({ icon, children }: { icon: ReactNode; children: ReactNode }) {
   );
 }
 
-const sections: { title: string; body: ReactNode }[] = [
-  {
-    title: "The goal",
-    body: (
-      <>
-        <p>
-          Each round, predict how many tricks you will win. You lose a life for every trick you are
-          off by. The last player with lives wins.
-        </p>
-        <TrickDemo />
-        <p>A trick is one card from each player. The strongest card takes it.</p>
-      </>
-    ),
-  },
-  {
-    title: "Predict",
-    body: (
-      <>
-        <p>Look at your hand, then tap how many tricks you expect to win.</p>
-        <PredictDemo />
-        <p>
-          The last player can’t make the predictions add up to the cards in hand, so someone always
-          misses. Here the others said 1 and 0, so 2 is blocked.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "Play",
-    body: (
-      <>
-        <p>Take turns playing any card you like. The strongest card wins the trick.</p>
-        <StrengthDemo />
-        <p>
-          Suits beat ranks: any Coins card beats any Cups card. Within a suit, the Ace is lowest and
-          the King highest.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "The Ace of Coins",
-    body: (
-      <>
-        <p>When you play the Ace of Coins, you choose what it is worth.</p>
-        <Demo label="The Ace of Coins can be played low or high.">
-          <div className="flex justify-center gap-6">
-            <div className="w-20">
-              <PlayingCard card={31} mode="low" />
+function sections(): { title: string; body: ReactNode }[] {
+  const { goal, predict, play, ace, lives, rounds, table } = t.howToPlay;
+  return [
+    {
+      title: goal.title,
+      body: (
+        <>
+          <p>{goal.intro}</p>
+          <TrickDemo />
+          <p>{goal.outro}</p>
+        </>
+      ),
+    },
+    {
+      title: predict.title,
+      body: (
+        <>
+          <p>{predict.intro}</p>
+          <PredictDemo />
+          <p>{predict.outro}</p>
+        </>
+      ),
+    },
+    {
+      title: play.title,
+      body: (
+        <>
+          <p>{play.intro}</p>
+          <StrengthDemo />
+          <p>{play.outro}</p>
+        </>
+      ),
+    },
+    {
+      title: ace.title,
+      body: (
+        <>
+          <p>{ace.intro}</p>
+          <Demo label={ace.demo}>
+            <div className="flex justify-center gap-6">
+              <div className="w-20">
+                <PlayingCard card={31} mode="low" />
+              </div>
+              <div className="w-20">
+                <PlayingCard card={31} mode="high" />
+              </div>
             </div>
-            <div className="w-20">
-              <PlayingCard card={31} mode="high" />
+          </Demo>
+          <p>{ace.outro}</p>
+        </>
+      ),
+    },
+    {
+      title: lives.title,
+      body: (
+        <>
+          <p>{lives.intro}</p>
+          <LivesDemo />
+          <p>{lives.outro}</p>
+        </>
+      ),
+    },
+    {
+      title: rounds.title,
+      body: (
+        <>
+          <p>{rounds.intro}</p>
+          <RoundsDemo />
+          <p>{rounds.blind}</p>
+          <Demo label={rounds.blindDemo}>
+            <div className="flex justify-center gap-6 text-xs">
+              <div className="w-16 text-center">
+                <PlayingCard card={22} />
+                <span className="mt-2 block">{rounds.theirs}</span>
+              </div>
+              <div className="w-16 text-center">
+                <PlayingCard card={null} />
+                <span className="mt-2 block">{rounds.yours}</span>
+              </div>
             </div>
-          </div>
-        </Demo>
-        <p>Low makes it the weakest card in the game. High makes it the strongest.</p>
-      </>
-    ),
-  },
-  {
-    title: "Lives",
-    body: (
-      <>
-        <p>After the last trick, you lose one life for each trick you are off by.</p>
-        <LivesDemo />
-        <p>
-          At zero lives, you watch the rest of the game. If everyone runs out at once, everyone
-          comes back with one life.
-        </p>
-      </>
-    ),
-  },
-  {
-    title: "Rounds",
-    body: (
-      <>
-        <p>Hands shrink by one card each round, then start again at six.</p>
-        <RoundsDemo />
-        <p>With one card each, you see everyone’s card except your own.</p>
-        <Demo label="In the one-card round, their card is visible and yours is hidden.">
-          <div className="flex justify-center gap-6 text-xs">
-            <div className="w-16 text-center">
-              <PlayingCard card={22} />
-              <span className="mt-2 block">Theirs</span>
-            </div>
-            <div className="w-16 text-center">
-              <PlayingCard card={null} />
-              <span className="mt-2 block">Yours</span>
-            </div>
-          </div>
-        </Demo>
-      </>
-    ),
-  },
-  {
-    title: "The table",
-    body: (
-      <>
-        <SeatDemo />
-        <ul className="space-y-3">
-          <Legend
-            icon={
-              <span className="flex items-center gap-1 text-xs">
-                <LifeCount n={3} />
-                <Score taken={1} bid={2} />
-              </span>
-            }
-          >
-            Lives left, then tricks won and predicted.
-          </Legend>
-          <Legend icon={<span className="size-5 rounded-full border-2 border-primary" />}>
-            Whose turn it is and the time left.
-          </Legend>
-          <Legend
-            icon={
-              <>
-                <Target className="size-5 text-foreground/60" strokeWidth={1.5} />
-                <span className="text-xs font-semibold">7</span>
-                <span className="rounded-full bg-destructive px-1.5 text-xs leading-5 font-semibold text-primary-foreground">
-                  +1
+          </Demo>
+        </>
+      ),
+    },
+    {
+      title: table.title,
+      body: (
+        <>
+          <SeatDemo />
+          <ul className="space-y-3">
+            <Legend
+              icon={
+                <span className="flex items-center gap-1 text-xs">
+                  <LifeCount n={3} />
+                  <Score taken={1} bid={2} />
                 </span>
-              </>
-            }
-          >
-            All predictions added up, and how far they are from the cards in hand.
-          </Legend>
-          <Legend
-            icon={
-              <>
-                <MessageCircleMore className="size-5 text-primary" />
-                <Smile className="size-5 text-primary" />
-              </>
-            }
-          >
-            Chat and reactions.
-          </Legend>
-          <Legend
-            icon={
-              <>
-                <Copy className="size-5 text-muted-foreground" />
-                <LogOut className="size-5 text-muted-foreground" />
-              </>
-            }
-          >
-            Copy the invite, or leave.
-          </Legend>
-        </ul>
-      </>
-    ),
-  },
-];
+              }
+            >
+              {table.score}
+            </Legend>
+            <Legend icon={<span className="size-5 rounded-full border-2 border-primary" />}>
+              {table.turn}
+            </Legend>
+            <Legend
+              icon={
+                <>
+                  <Target className="size-5 text-foreground/60" strokeWidth={1.5} />
+                  <span className="text-xs font-semibold">7</span>
+                  <span className="rounded-full bg-destructive px-1.5 text-xs leading-5 font-semibold text-primary-foreground">
+                    +1
+                  </span>
+                </>
+              }
+            >
+              {table.tally}
+            </Legend>
+            <Legend
+              icon={
+                <>
+                  <MessageCircleMore className="size-5 text-primary" />
+                  <Smile className="size-5 text-primary" />
+                </>
+              }
+            >
+              {table.chat}
+            </Legend>
+            <Legend
+              icon={
+                <>
+                  <Copy className="size-5 text-muted-foreground" />
+                  <LogOut className="size-5 text-muted-foreground" />
+                </>
+              }
+            >
+              {table.invite}
+            </Legend>
+          </ul>
+        </>
+      ),
+    },
+  ];
+}
 
 export function HowToPlay({ onBack }: { onBack: () => void }) {
   return (
     <main className="mx-auto w-full max-w-md animate-[page-in_.2s_ease-out] pb-8">
-      <PageHeading title="How to play" onBack={onBack} />
+      <PageHeading title={t.howToPlay.title} onBack={onBack} />
       <div className="space-y-8 px-1 text-sm leading-relaxed">
-        {sections.map(({ title, body }) => (
+        {sections().map(({ title, body }) => (
           <section key={title}>
             <h2 className="mb-2 text-lg font-semibold">{title}</h2>
             {body}

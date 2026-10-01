@@ -1,5 +1,6 @@
 import type { TableCommand } from "../shared/commands";
 import type { GameView } from "../shared/game";
+import { GameError, type ErrorCode } from "../shared/game-error";
 import { GameRequestError, requestGame } from "./game-request";
 type Pending = {
   message: string;
@@ -8,6 +9,10 @@ type Pending = {
   timeout: number;
 };
 
+const CLOSED: ErrorCode = "connectionClosed";
+const REMOVED: ErrorCode = "removed";
+const CONNECTING: ErrorCode = "connecting";
+const RECONNECTING: ErrorCode = "reconnecting";
 const PING_MS = 10000;
 const REPLY_MS = 5000;
 const CONNECT_MS = 10000;
@@ -21,7 +26,7 @@ export class GameConnection {
   private watchdog?: number;
   private joining?: AbortController;
   private synced = false;
-  private closedReason = "Connection closed.";
+  private closedReason: string = CLOSED;
   private pending = new Map<string, Pending>();
   private wake = () => {
     if (this.stopped || (typeof document !== "undefined" && document.visibilityState === "hidden"))
@@ -37,7 +42,7 @@ export class GameConnection {
     private token: string,
     private name: string,
     private accept: (state: GameView) => void,
-    private status: (message: string) => void,
+    private status: (code: string) => void,
     private closed: (message: string) => void,
   ) {
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", this.wake);
@@ -61,7 +66,7 @@ export class GameConnection {
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
     url.searchParams.set("code", this.code);
     const ws = (this.socket = new WebSocket(url, ["giulietto", this.token]));
-    this.status("Connecting…");
+    this.status(CONNECTING);
     this.expect(ws, CONNECT_MS);
     ws.onopen = () => {
       if (this.stopped || this.socket !== ws) return;
@@ -86,9 +91,9 @@ export class GameConnection {
           for (const p of this.pending.values()) this.send(ws, p.message);
         }
       } else if (message.type === "removed") {
-        this.closedReason = message.message;
+        this.closedReason = REMOVED;
         this.stop();
-        this.closed(message.message);
+        this.closed(REMOVED);
       } else if (message.type === "ack" || message.type === "error") {
         const p = this.pending.get(message.commandId);
         if (!p) return;
@@ -104,7 +109,7 @@ export class GameConnection {
       this.watchdog = undefined;
       if (this.stopped) return;
       if (event.code === 4001 || event.code === 4002) {
-        this.closedReason = event.reason || "Connection closed.";
+        this.closedReason = event.reason || CLOSED;
         this.status(this.closedReason);
         this.stop();
         return;
@@ -115,7 +120,7 @@ export class GameConnection {
   }
   private reconnect() {
     if (this.stopped) return;
-    this.status("Connection lost. Reconnecting…");
+    this.status(RECONNECTING);
     const delay = Math.min(10000, 500 * 2 ** this.attempt++) + Math.random() * 250;
     this.retry = setTimeout(() => {
       this.retry = undefined;
@@ -155,7 +160,7 @@ export class GameConnection {
     return new Promise<GameView>((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pending.delete(commandId);
-        reject(new Error("Connection interrupted. Check the table state before trying again."));
+        reject(new GameError("interrupted"));
       }, 30000);
       this.pending.set(commandId, { message, resolve, reject, timeout });
       if (this.synced && this.socket?.readyState === WebSocket.OPEN)

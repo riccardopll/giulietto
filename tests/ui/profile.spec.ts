@@ -29,7 +29,7 @@ test("profile edits recover from failed saves and stats loads without shifting l
       route.fulfill({
         status: 503,
         contentType: "application/json",
-        body: JSON.stringify({ error: "Could not save your profile." }),
+        body: JSON.stringify({ error: "profileFailed" }),
       }),
     { times: 1 },
   );

@@ -2,6 +2,7 @@ import { Avatar } from "./avatar";
 import type { CSSProperties } from "react";
 import { EmoteBubble } from "./emotes";
 import { type GameView } from "../../shared/game";
+import { t } from "../i18n";
 import { cn, toRoman } from "../utils";
 import { LifeCount } from "./lives";
 import { PlayingCard } from "./playing-card";
@@ -46,7 +47,7 @@ export function PlayerSeat({
       data-seat={player.id}
       data-side={side}
       data-you={you || undefined}
-      aria-label={`Seat ${toRoman(number)}: ${player.name}${you ? " (you)" : ""}. ${status}`}
+      aria-label={`${t.match.seat(toRoman(number))}: ${player.name}${you ? t.youSuffix : ""}. ${status}`}
       aria-current={current ? "true" : undefined}
       className="row-span-2 grid min-w-0 grid-rows-subgrid text-2xs leading-3"
     >
@@ -115,7 +116,7 @@ export function PlayerSeat({
                 "absolute -top-1 -right-1 z-20 grid h-4 min-w-4 place-items-center rounded-full border bg-background px-0.5 text-[9px] font-semibold",
                 current ? "border-primary text-primary" : "border-input text-secondary-foreground",
               )}
-              aria-label={`Seat ${toRoman(number)}`}
+              aria-label={t.match.seat(toRoman(number))}
             >
               {toRoman(number)}
             </span>
@@ -129,9 +130,9 @@ export function PlayerSeat({
                   : "text-2xs leading-[11px] @min-xs/board:text-xs @min-xs/board:leading-[14px]",
               )}
               title={player.name}
-              aria-label={you ? "You" : player.name}
+              aria-label={you ? t.you : player.name}
             >
-              {you ? "You" : player.name}
+              {you ? t.you : player.name}
             </strong>
             <div
               className={cn(
@@ -156,7 +157,7 @@ export function PlayerSeat({
           data-seat-hand
           data-revealed={revealed || undefined}
           role="group"
-          aria-label={`${player.name}: ${player.hand.length} ${player.hand.length === 1 ? "card" : "cards"}`}
+          aria-label={`${player.name}: ${t.cardCount(player.hand.length)}`}
         >
           <div
             className={cn("absolute top-1/2 left-1/2", !revealed && "rotate-(--seat-fan-rotation)")}
@@ -200,7 +201,7 @@ export function Score({ taken, bid }: { taken: number; bid: number | null }) {
   return (
     <span
       className="inline-flex shrink-0 items-center gap-0.5 border-l border-foreground/10 pl-1 font-semibold whitespace-nowrap text-foreground tabular-nums"
-      aria-label={`${taken} tricks won, ${bid ?? "no"} predicted`}
+      aria-label={t.match.score(taken, bid)}
     >
       <span
         className={cn(

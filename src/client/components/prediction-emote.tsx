@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { EMOTE_DURATION_MS } from "../../shared/emotes";
+import { t } from "../i18n";
 import { Bubble } from "./bubble";
 
 const digits = [
@@ -31,7 +32,7 @@ export function PredictionEmote({ bid, name }: { bid: number | null; name: strin
   const digit = digits[bid];
   const offset = (step: number) => `translate(${depth.x * step} ${depth.y * step})`;
   return (
-    <Bubble label={`${name} predicts ${bid} ${bid === 1 ? "trick" : "tricks"}`}>
+    <Bubble label={t.match.predicts(name, bid)}>
       <svg
         className="absolute bottom-1 left-1/2 h-[50px] w-12 origin-bottom -translate-x-1/2 overflow-visible animate-[digit-pop_.55s_cubic-bezier(.2,.8,.2,1)_both]"
         viewBox="0 0 48 56"

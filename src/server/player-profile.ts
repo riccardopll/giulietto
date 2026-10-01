@@ -26,11 +26,11 @@ export async function ensureProfile(db: D1Database, id: string, name: unknown): 
 }
 export async function saveProfile(db: D1Database, id: string, value: unknown): Promise<Profile> {
   if (!value || typeof value !== "object" || Array.isArray(value))
-    throw new GameError("Invalid profile.");
+    throw new GameError("invalidRequest");
   const { name, avatar } = value as Record<string, unknown>;
   if (typeof name !== "string" || !name.trim() || name.trim().length > 20)
-    throw new GameError("Enter a name between 1 and 20 characters.");
-  if (!isAvatar(avatar)) throw new GameError("Choose a player avatar.");
+    throw new GameError("nameLength");
+  if (!isAvatar(avatar)) throw new GameError("avatarRequired");
   const profile = { name: displayName(name), avatar };
   const now = Date.now();
   await db

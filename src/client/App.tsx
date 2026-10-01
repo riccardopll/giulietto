@@ -14,6 +14,7 @@ import { ActionDialog } from "@ui/action-dialog";
 import { Button } from "@ui/button";
 import { PageFooter } from "@ui/page-footer";
 import { Wordmark } from "./components/wordmark";
+import { t, useLocale } from "./i18n";
 import { Toaster } from "./toast";
 import { useGameSession, type PreviewSession } from "./use-game-session";
 import { usePlayerStats } from "./use-player-stats";
@@ -27,6 +28,7 @@ function readPage(): Page {
 
 export default function App({ preview }: { preview?: PreviewSession }) {
   const isPreview = !!preview;
+  const locale = useLocale();
   const [page, setPage] = useState(readPage);
   const table = useGameSession(preview, () => setPage("home"));
   const { game, busy } = table;
@@ -47,6 +49,10 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     setPage(next);
     window.scrollTo(0, 0);
   }
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    document.title = t.title;
+  }, [locale]);
   const syncPage = useEffectEvent(() => {
     if (!game) setPage(readPage());
   });
@@ -87,13 +93,13 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 variant="ghost"
                 size="pill"
                 className="col-start-3 row-start-1"
-                aria-label="Open your profile"
+                aria-label={t.home.profile}
                 title={profile.name}
                 onClick={() => navigate("profile")}
               >
                 <Avatar avatar={profile.avatar} />
                 <span className="pr-1 text-sm font-medium tabular-nums text-muted-foreground">
-                  Lv. {account.data?.player.level ?? 1}
+                  {t.levelShort(account.data?.player.level ?? 1)}
                 </span>
               </Button>
             </header>
@@ -103,16 +109,16 @@ export default function App({ preview }: { preview?: PreviewSession }) {
           confirmation
           open={table.leaveOpen}
           onOpenChange={table.setLeaveOpen}
-          title="Leave this table?"
+          title={t.table.leaveTitle}
           description={
             !waiting &&
             game?.players.some((player) => player.id === game.you && !player.forfeited) &&
             phase !== "finished"
-              ? "You will forfeit this game and lose all your lives. You can rejoin as a spectator."
+              ? t.table.leaveForfeit
               : undefined
           }
-          cancelLabel="Stay"
-          actionLabel={busy ? "Leaving…" : "Leave table"}
+          cancelLabel={t.table.stay}
+          actionLabel={busy ? t.table.leaving : t.table.leave}
           busy={busy}
           onSubmit={() => void table.act({ action: "leave" })}
         />

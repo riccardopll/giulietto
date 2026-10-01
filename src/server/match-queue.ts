@@ -9,7 +9,7 @@ export class MatchQueue extends DurableObject<Env> {
       try {
         const input = command(await req.json());
         if (input.action !== "create" && input.action !== "match")
-          throw new GameError("Invalid request.");
+          throw new GameError("invalidRequest");
         displayName(input.name);
         const id = req.headers.get("x-player-id")!;
         const key = `request:${id}:${input.commandId}`;

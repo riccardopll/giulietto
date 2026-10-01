@@ -12,7 +12,7 @@ test.each(["chicken", "perso", "goblin", "princess"] as const)(
     const withoutEmote = structuredClone(game);
     delete withoutEmote.players[0].emote;
     expect(withoutEmote).toEqual(before);
-    expect(() => sendEmote(game, "p0", "chicken", 2499)).toThrow("Wait");
+    expect(() => sendEmote(game, "p0", "chicken", 2499)).toThrow("emoteCooldown");
     sendEmote(game, "p1", "chicken", 1001);
     sendEmote(game, "p0", "chicken", 2500);
     expect(game.players[0].emote?.sentAt).toBe(2500);
@@ -22,16 +22,16 @@ test.each(["chicken", "perso", "goblin", "princess"] as const)(
 test("anyone at the table reacts during play; an id that never joined cannot", () => {
   const game = gameFixture();
   game.spectators = [{ id: "watcher", name: "Observer", seen: 0 }];
-  expect(() => sendEmote(game, "never-joined", "chicken", 1000)).toThrow("Join this table");
+  expect(() => sendEmote(game, "never-joined", "chicken", 1000)).toThrow("joinFirst");
   game.players[0].lives = 0;
   sendEmote(game, "p0", "chicken", 1000);
   sendEmote(game, "watcher", "perso", 1000);
   expect(game.players[0].emote).toEqual({ id: "chicken", sentAt: 1000 });
   expect(game.spectators[0].emote).toEqual({ id: "perso", sentAt: 1000 });
-  expect(() => sendEmote(game, "watcher", "chicken", 2499)).toThrow("Wait");
+  expect(() => sendEmote(game, "watcher", "chicken", 2499)).toThrow("emoteCooldown");
   for (const phase of ["lobby", "results", "finished"] as const) {
     game.phase = phase;
-    expect(() => sendEmote(game, "p1", "chicken", 1000)).toThrow("during play");
-    expect(() => sendEmote(game, "watcher", "chicken", 5000)).toThrow("during play");
+    expect(() => sendEmote(game, "p1", "chicken", 1000)).toThrow("emotesPlayOnly");
+    expect(() => sendEmote(game, "watcher", "chicken", 5000)).toThrow("emotesPlayOnly");
   }
 });

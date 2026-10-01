@@ -1,5 +1,6 @@
 import { useEffect, useEffectEvent, useRef, useState, type ReactNode } from "react";
 import { Check, RotateCw } from "lucide-react";
+import { errorMessage, t } from "./i18n";
 import { toast } from "./toast";
 import { isTableCommand, type EntryCommand, type TableCommand } from "../shared/commands";
 import { findPlayer, type GameView } from "../shared/game";
@@ -20,8 +21,8 @@ export type PreviewSession = {
   reset: () => void;
 };
 
-function showError(message: string) {
-  if (message) toast.show(message, { id: "game-error" });
+function showError(error: unknown) {
+  if (error) toast.show(errorMessage(error), { id: "game-error" });
   else toast.dismiss("game-error");
 }
 
@@ -92,7 +93,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
           if (disposed) return;
           const rejected = error instanceof GameRequestError && !error.retryable;
           if (rejected && readStored("giulietto-room") === session.joinCode) storeRoom(null);
-          if (session.code || !rejected) showError(error.message);
+          if (session.code || !rejected) showError(error);
         })
         .finally(() => {
           if (!disposed) setBusy(false);
@@ -125,7 +126,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     };
   }, [game?.code, isPreview, session.token]);
   useEffect(() => {
-    if (connection) toast.show(connection, { id: "connection-error" });
+    if (connection) toast.show(errorMessage(connection), { id: "connection-error" });
     else toast.dismiss("connection-error");
   }, [connection]);
   useEffect(() => {
@@ -157,11 +158,11 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const inviteCode = invite && invite.by !== game!.you ? invite.code : undefined;
   const announceInvite = useEffectEvent((code: string) => {
     const current = game!;
-    toast.show(`Rematch with ${findPlayer(current, current.rematch!.by)?.name ?? "them"}?`, {
+    toast.show(t.table.rematchWith(findPlayer(current, current.rematch!.by)?.name ?? "?"), {
       id: "rematch-invite",
       duration: current.rematch!.expiresAt - current.serverTime,
-      countdown: "Expires in",
-      action: { label: "Join", icon: Check, onClick: () => void moveTo(code) },
+      countdown: t.table.expiresIn,
+      action: { label: t.join, icon: Check, onClick: () => void moveTo(code) },
     });
   });
   useEffect(() => {
@@ -187,7 +188,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
         setAce(null);
         return true;
       } catch (error) {
-        showError((error as Error).message);
+        showError(error);
         return false;
       }
     }
@@ -224,11 +225,11 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       if (input.action === "leave" && gameRef.current?.phase === "lobby") reset();
       else if (input.action === "leave") {
         setLeaveOpen(false);
-        toast.show((e as Error).message, {
+        toast.show(errorMessage(e), {
           id: "game-error",
-          action: { label: "Retry", icon: RotateCw, onClick: () => void act(input) },
+          action: { label: t.retry, icon: RotateCw, onClick: () => void act(input) },
         });
-      } else showError((e as Error).message);
+      } else showError(e);
       return false;
     } finally {
       setBusy(false);
@@ -249,9 +250,9 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       history.replaceState({ ...history.state, giuliettoTable: s.code }, "", `?table=${s.code}`);
       accept(s);
     } catch (e) {
-      toast.show((e as Error).message, {
+      toast.show(errorMessage(e), {
         id: "game-error",
-        action: { label: "Retry", icon: RotateCw, onClick: () => void moveTo(code) },
+        action: { label: t.retry, icon: RotateCw, onClick: () => void moveTo(code) },
       });
     } finally {
       setBusy(false);
@@ -302,7 +303,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch {
-      showError(`Copy this invite link: ${link}`);
+      toast.show(t.table.copyLink(link), { id: "game-error" });
     }
   }
 

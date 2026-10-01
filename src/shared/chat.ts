@@ -17,16 +17,15 @@ export function chatOpen(game: { phase: Game["phase"] }) {
 
 export function chatText(value: unknown) {
   const text = typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
-  if (!text) throw new GameError("Type a message.");
-  if (text.length > CHAT_MAX_LENGTH)
-    throw new GameError(`Keep messages within ${CHAT_MAX_LENGTH} characters.`);
+  if (!text) throw new GameError("chatEmpty");
+  if (text.length > CHAT_MAX_LENGTH) throw new GameError("chatTooLong");
   return text;
 }
 
 export function sendChat(game: Game, id: string, text: string, now: number) {
   const sender = findPlayer(game, id) ?? game.spectators?.find((spectator) => spectator.id === id);
-  if (!sender) throw new GameError("Join this table first.");
-  if (!chatOpen(game)) throw new GameError("Chat is open until the table closes.");
+  if (!sender) throw new GameError("joinFirst");
+  if (!chatOpen(game)) throw new GameError("chatClosed");
   const chat = (game.chat ??= []);
   chat.push({ id: (chat.at(-1)?.id ?? 0) + 1, sender: id, name: sender.name, text, sentAt: now });
   if (chat.length > CHAT_HISTORY) chat.splice(0, chat.length - CHAT_HISTORY);

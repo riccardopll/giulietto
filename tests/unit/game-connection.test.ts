@@ -116,15 +116,13 @@ test("stops without rejoining when the host removes the player", async () => {
   const first = Socket.sockets[0];
   first.open();
   first.receive({ type: "state", state: state() });
-  first.receive({ type: "removed", message: "The host removed you from the table." });
-  expect(closed).toHaveBeenCalledWith("The host removed you from the table.");
+  first.receive({ type: "removed" });
+  expect(closed).toHaveBeenCalledWith("removed");
   first.disconnect(1006);
   await vi.advanceTimersByTimeAsync(30000);
   expect(Socket.sockets).toHaveLength(1);
   expect(request).not.toHaveBeenCalled();
-  await expect(connection.command({ action: "bid", bid: 0 })).rejects.toThrow(
-    "The host removed you from the table.",
-  );
+  await expect(connection.command({ action: "bid", bid: 0 })).rejects.toThrow("removed");
 });
 
 test("pings every ten seconds and drops a socket that stops replying", async () => {
@@ -140,7 +138,7 @@ test("pings every ten seconds and drops a socket that stops replying", async () 
   expect(first.readyState).toBe(Socket.OPEN);
   await vi.advanceTimersByTimeAsync(1);
   expect(first.close).toHaveBeenCalledWith(4000, "No reply");
-  expect(status).toHaveBeenLastCalledWith("Connection lost. Reconnecting…");
+  expect(status).toHaveBeenLastCalledWith("reconnecting");
   await vi.advanceTimersByTimeAsync(500);
   expect(Socket.sockets).toHaveLength(2);
 });
@@ -212,8 +210,8 @@ test("returning to the foreground reconnects at once and probes an open socket",
 test("retries network failures, throttling, and unavailable servers before opening a socket", async () => {
   request
     .mockRejectedValueOnce(new TypeError("Offline"))
-    .mockResolvedValueOnce(Response.json({ error: "Wait" }, { status: 429 }))
-    .mockResolvedValueOnce(Response.json({ error: "Unavailable" }, { status: 503 }));
+    .mockResolvedValueOnce(Response.json({ error: "rateLimited" }, { status: 429 }))
+    .mockResolvedValueOnce(Response.json({ error: "unavailable" }, { status: 503 }));
   Socket.sockets[0].disconnect();
   for (const delay of [500, 1000, 2000]) {
     await vi.advanceTimersByTimeAsync(delay);
@@ -226,12 +224,12 @@ test("retries network failures, throttling, and unavailable servers before openi
 
 test.each([
   {
-    response: Response.json({ error: "Table not found or expired." }, { status: 400 }),
-    error: "Table not found or expired.",
+    response: Response.json({ error: "tableNotFound" }, { status: 400 }),
+    error: "tableNotFound",
   },
   {
     response: new Response("Forbidden", { status: 403 }),
-    error: "Could not reach the table. Please try again.",
+    error: "unreachable",
   },
 ])("leaves the table on a permanent rejoin rejection: $error", async ({ response, error }) => {
   request.mockResolvedValue(response);

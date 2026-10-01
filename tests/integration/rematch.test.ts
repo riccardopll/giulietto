@@ -45,7 +45,7 @@ test("a rematch opens one private lobby that invited players can join until it e
   const refused = await other.command({ action: "rematch" });
   expect(refused).toMatchObject({
     type: "error",
-    error: "bot_1 already invited everyone to a rematch.",
+    error: "rematchInvited",
   });
   expect((await host.command({ action: "rematch", commandId })).type).toBe("ack");
 

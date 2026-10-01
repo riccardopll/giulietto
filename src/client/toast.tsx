@@ -2,6 +2,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { X, type LucideIcon } from "lucide-react";
 import { Button } from "@ui/button";
 import { Countdown, CountdownBar } from "@ui/countdown";
+import { t } from "./i18n";
 
 type Action = { label: string; icon: LucideIcon; onClick: () => void };
 type Options = { id?: string; action?: Action; duration?: number; countdown?: string };
@@ -75,7 +76,7 @@ function ToastCard({ entry }: { entry: Toast }) {
         <Button
           variant="muted"
           size="icon"
-          aria-label="Dismiss"
+          aria-label={t.dismiss}
           onClick={() => toast.dismiss(entry.id)}
         >
           <X className="size-4" />

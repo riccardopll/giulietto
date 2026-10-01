@@ -9,6 +9,7 @@ import {
 import { Target } from "lucide-react";
 import { EMOTE_DURATION_MS, type Emote } from "../../shared/emotes";
 import { findPlayer, type GameView } from "../../shared/game";
+import { t } from "../i18n";
 import { tableOrder } from "../table-order";
 import { cn } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
@@ -29,7 +30,7 @@ export function BidButton({
       variant="outline"
       size="icon"
       className={cn("size-14", className)}
-      aria-label={`Predict ${n} ${n === 1 ? "trick" : "tricks"}`}
+      aria-label={t.match.predict(n)}
       {...props}
     >
       <span className="text-xl font-semibold">{n}</span>
@@ -43,7 +44,6 @@ function PredictionTally({ game, emote }: { game: GameView; emote?: Emote }) {
   const delta = predicted - game.count;
   const [pill, setPill] = useState(delta);
   if (delta !== 0 && delta !== pill) setPill(delta);
-  const balance = delta > 0 ? `${delta} over` : delta < 0 ? `${-delta} under` : "even with";
   return (
     <div
       className={cn(
@@ -51,7 +51,7 @@ function PredictionTally({ game, emote }: { game: GameView; emote?: Emote }) {
         emoting && "opacity-0",
       )}
       role="status"
-      aria-label={`${predicted} ${predicted === 1 ? "trick" : "tricks"} predicted, ${balance} the ${game.count} ${game.count === 1 ? "card" : "cards"}`}
+      aria-label={t.match.tally(predicted, delta, game.count)}
     >
       <span
         className="table-edge absolute inset-x-0 top-0 -bottom-4 -z-1 rounded-t-xl bg-background [mask-position:left_50%_bottom_calc(16px_-_5cqh)]"
@@ -167,21 +167,23 @@ export function MatchBoard({
     const number = game.players.findIndex((p) => p.id === id) + 1;
     const player = game.players[number - 1];
     const status =
-      player.lives <= 0
-        ? "Out"
-        : seating.current === id
-          ? game.phase === "bidding"
-            ? "Predicting now"
-            : "Playing now"
-          : game.phase === "trick" && game.lastWinner === id
-            ? "Trick winner"
-            : seating.next === id
-              ? "Up next"
-              : game.trick.some((play) => play.player === id)
-                ? "Played"
-                : game.phase === "bidding" && player.bid !== null
-                  ? "Predicted"
-                  : "Waiting";
+      t.match.status[
+        player.lives <= 0
+          ? "out"
+          : seating.current === id
+            ? game.phase === "bidding"
+              ? "predicting"
+              : "playing"
+            : game.phase === "trick" && game.lastWinner === id
+              ? "trickWinner"
+              : seating.next === id
+                ? "next"
+                : game.trick.some((play) => play.player === id)
+                  ? "played"
+                  : game.phase === "bidding" && player.bid !== null
+                    ? "predicted"
+                    : "waiting"
+      ];
     return (
       <div
         key={id}
@@ -228,7 +230,7 @@ export function MatchBoard({
         className="relative isolate grid min-h-0 w-full grid-cols-6 gap-x-2 [--seat-row:4.5rem]
           grid-rows-[var(--seat-row)_var(--opponent-hand-height)_minmax(0,1fr)_var(--opponent-hand-height)_var(--seat-row)]"
         style={{ "--table-outline": tableOutline } as CSSProperties}
-        aria-label="Game table"
+        aria-label={t.match.table}
       >
         <TableSurface />
         <div className="pointer-events-none relative z-10 col-span-full row-start-2 row-end-5 min-h-0 [container-type:size]">
@@ -254,7 +256,7 @@ export function MatchBoard({
         <div className="contents">{seating.seats.map(seat)}</div>
         <section
           className="@container/play col-span-full row-start-3 grid min-h-0 min-w-0 place-items-center [container-type:size]"
-          aria-label={game.phase === "bidding" ? "Predictions" : "Current trick"}
+          aria-label={game.phase === "bidding" ? t.match.predictions : t.match.trick}
         >
           {game.phase === "bidding" ? (
             <div className="flex max-w-[90%] flex-col items-center justify-center gap-3 short-trick:gap-1.5">
@@ -310,7 +312,7 @@ export function MatchBoard({
         <section
           className="col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
           style={{ "--hand-count": handPlayer?.hand.length ?? 0 } as CSSProperties}
-          aria-label={game.spectating ? "Spectator mode" : "Your hand"}
+          aria-label={game.spectating ? t.match.spectating : t.match.hand}
         >
           <div
             className="flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-data-hand-card:scale-[1.08] transition-[filter] duration-300 ease-out data-[waiting]:brightness-[.8]"
