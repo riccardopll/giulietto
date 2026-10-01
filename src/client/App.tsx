@@ -37,7 +37,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
     table.rename(profile.name),
   );
   const profile = {
-    name: table.name || t.guest,
+    name: table.name || "Guest",
     avatar: account.data?.profile.avatar ?? defaultAvatar(table.token),
   };
   function navigate(next: Page) {

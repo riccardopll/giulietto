@@ -63,7 +63,13 @@ export function ResultsPanel({
         <h1 className="min-w-0 text-left text-2xl font-semibold wrap-anywhere">
           {finished ? t.results.closed : game.tie ? t.results.tie : t.results.round}
         </h1>
-        {!finished && <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />}
+        {!finished && (
+          <ChatButton
+            className="-my-1.5 ml-auto"
+            unread={chat.unread}
+            onClick={() => chat.setOpen(true)}
+          />
+        )}
       </div>
       {game.tie && <p className="mb-5 text-sm text-muted-foreground">{t.results.tieNote}</p>}
       <div className="-mx-3">

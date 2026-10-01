@@ -1,5 +1,4 @@
 import type { ErrorCode } from "../shared/game-error";
-import { t } from "./i18n";
 
 const tokenKey = "giulietto-token";
 const nameKey = "giulietto-name";
@@ -66,7 +65,7 @@ export function restoreSession() {
     const joinCode = code || readStored("giulietto-room");
     return {
       ...player,
-      name: player.name || (joinCode ? t.guest : ""),
+      name: player.name || (joinCode ? "Guest" : ""),
       code,
       joinCode,
       error: "",

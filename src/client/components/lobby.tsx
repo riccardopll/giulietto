@@ -1,7 +1,7 @@
 import type { LobbyOption } from "../../shared/commands";
 import { Avatar } from "./avatar";
 import { useState } from "react";
-import { ArrowRight, Check, Link, Minus, Pencil, Plus, User } from "lucide-react";
+import { ArrowRight, Check, Globe, Link, Lock, Minus, Pencil, Plus, User } from "lucide-react";
 import {
   MAX_STARTING_LIVES,
   MIN_STARTING_LIVES,
@@ -154,10 +154,20 @@ export function Lobby({
         }}
       />
       <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">
-          {game.public ? t.lobby.matchmaking : t.lobby.players}
-        </h1>
-        <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />
+        <h1 className="text-2xl font-semibold">{t.lobby.players}</h1>
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-foreground">
+          {game.public ? (
+            <Globe className="size-4" aria-hidden="true" />
+          ) : (
+            <Lock className="size-4" aria-hidden="true" />
+          )}
+          {game.public ? t.lobby.public : t.lobby.private}
+        </span>
+        <ChatButton
+          className="-my-1.5 ml-auto"
+          unread={chat.unread}
+          onClick={() => chat.setOpen(true)}
+        />
       </div>
       <ul className="grid gap-2" aria-label={t.lobby.players}>
         {Array.from({ length: 6 }, (_, i) => {

@@ -11,7 +11,6 @@ const count = (n: number, one: string, other: string) => `${n} ${n === 1 ? one :
 
 export const it: Messages = {
   title: "Giulietto | Gioco di carte online",
-  guest: "Ospite",
   you: "Tu",
   youSuffix: " (tu)",
   level: (n) => `Livello ${n}`,
@@ -96,12 +95,13 @@ export const it: Messages = {
     leave: "Lascia il tavolo",
     copyInvite: "Copia l'invito alla lobby",
     copyLink: (link) => `Copia questo link d'invito: ${link}`,
-    round: "Mano",
+    round: "Round",
     rematchWith: (name) => `Rivincita con ${name}?`,
     expiresIn: "Scade tra",
   },
   lobby: {
-    matchmaking: "Ricerca partita",
+    public: "Pubblica",
+    private: "Privata",
     players: "Giocatori",
     options: "Opzioni della lobby",
     startingLives: "Vite iniziali",
@@ -174,11 +174,11 @@ export const it: Messages = {
   results: {
     closed: "Tavolo chiuso",
     tie: "Tutti di nuovo in gioco",
-    round: "Risultati della mano",
+    round: "Risultati del round",
     tieNote: "Tutti i giocatori tornano con una vita.",
     columns: ["Giocatore", "Dich.", "Prese", "Vite"],
     lost: (n) => count(n, "vita persa", "vite perse"),
-    next: "Prossima mano tra",
+    next: "Prossimo round tra",
     youWin: "Hai vinto",
     wins: (name) => `Vince ${name}`,
     podium: "Podio",
@@ -191,7 +191,7 @@ export const it: Messages = {
     goal: {
       title: "L'obiettivo",
       intro:
-        "A ogni mano, dichiara quante prese farai. Perdi una vita per ogni presa in più o in meno rispetto a quelle dichiarate. Vince l'ultimo giocatore che ha ancora vite.",
+        "A ogni round, dichiara quante prese farai. Perdi una vita per ogni presa in più o in meno rispetto a quelle dichiarate. Vince l'ultimo giocatore che ha ancora vite.",
       demo: "Tre giocatori giocano una carta a testa. Il 5 di Denari è la più forte e prende.",
       outro: "Una presa è una carta per ogni giocatore. La carta più forte la vince.",
     },
@@ -226,11 +226,11 @@ export const it: Messages = {
         "Senza vite, guardi il resto della partita. Se tutti restano senza vite nello stesso momento, tutti tornano in gioco con una vita.",
     },
     rounds: {
-      title: "Mani",
-      intro: "A ogni mano si riceve una carta in meno, poi si riparte da sei.",
-      demo: "Carte per giocatore a ogni mano: 6, 5, 4, 3, 2, 1, poi di nuovo 6.",
+      title: "Round",
+      intro: "A ogni round si riceve una carta in meno, poi si riparte da sei.",
+      demo: "Carte per giocatore a ogni round: 6, 5, 4, 3, 2, 1, poi di nuovo 6.",
       blind: "Con una carta a testa, vedi le carte di tutti tranne la tua.",
-      blindDemo: "Nella mano da una carta, la carta degli altri è visibile e la tua è coperta.",
+      blindDemo: "Nel round da una carta, la carta degli altri è visibile e la tua è coperta.",
       theirs: "Degli altri",
       yours: "Tua",
     },

@@ -13,7 +13,6 @@ const count = (n: number, one: string, other: string) => `${n} ${n === 1 ? one :
 
 export const en = {
   title: "Giulietto | Online Card Game",
-  guest: "Guest",
   you: "You",
   youSuffix: " (you)",
   level: (n: number) => `Level ${n}`,
@@ -103,7 +102,8 @@ export const en = {
     expiresIn: "Expires in",
   },
   lobby: {
-    matchmaking: "Matchmaking",
+    public: "Public",
+    private: "Private",
     players: "Players",
     options: "Lobby options",
     startingLives: "Starting lives",

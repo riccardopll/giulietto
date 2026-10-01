@@ -109,7 +109,7 @@ export function PlayerPages({
               onClick={() => setEditing("name")}
             >
               <span className="text-2xl font-semibold whitespace-normal">
-                {profile.name || t.guest}
+                {profile.name || "Guest"}
               </span>
               <Pencil className="size-4 shrink-0 text-muted-foreground" />
             </Button>

@@ -206,7 +206,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
       ) {
         s = await transport.current.command(input);
       } else {
-        const command = { name: name || t.guest, code: gameRef.current?.code || code, ...input };
+        const command = { name: name || "Guest", code: gameRef.current?.code || code, ...input };
         const payload = JSON.stringify(command);
         if (input.action === "join" || httpAttempt.current?.payload !== payload)
           httpAttempt.current = { payload, commandId: crypto.randomUUID() };
@@ -241,7 +241,7 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
     setBusy(true);
     showError("");
     try {
-      const s = await requestGame(session.token, { action: "join", code, name: name || t.guest });
+      const s = await requestGame(session.token, { action: "join", code, name: name || "Guest" });
       transport.current?.stop();
       transport.current = null;
       gameRef.current = null;
