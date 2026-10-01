@@ -222,14 +222,17 @@ export class GameTable extends DurableObject<Env> {
       return null;
     return findPlayer(room.game, room.game.host)?.name ?? null;
   }
+  private close(ws: WebSocket, status: 4001 | 4002, code: ErrorCode) {
+    ws.close(status, code);
+  }
   private closeRemoved(id: string, input: Command) {
     const game = this.read()!.game;
     if (input.action === "leave" && findPlayer(game, id)?.forfeited)
-      for (const socket of this.ctx.getWebSockets(id)) socket.close(4001, "leftTable");
+      for (const socket of this.ctx.getWebSockets(id)) this.close(socket, 4001, "leftTable");
     if (input.action === "kick" && !findPlayer(game, input.playerId))
       for (const socket of this.ctx.getWebSockets(input.playerId)) {
         this.send(socket, { type: "removed" });
-        socket.close(4001, "removed");
+        this.close(socket, 4001, "removed");
       }
   }
   private async openRematch(game: Game, id: string, commandId: string) {
@@ -319,7 +322,7 @@ export class GameTable extends DurableObject<Env> {
         if (url.pathname.endsWith("/socket")) {
           this.view(room.game, id);
           const sockets = this.ctx.getWebSockets(id);
-          if (sockets.length >= 3) sockets[0].close(4002, "otherTab");
+          if (sockets.length >= 3) this.close(sockets[0], 4002, "otherTab");
           const { 0: client, 1: server } = new WebSocketPair();
           this.ctx.acceptWebSocket(server, [id]);
           attachment.connectionId = crypto.randomUUID();
@@ -468,7 +471,7 @@ export class GameTable extends DurableObject<Env> {
         !room.outbox &&
         ["lobby", "finished"].includes(room.game.phase)
       ) {
-        for (const ws of this.ctx.getWebSockets()) ws.close(4001, "tableExpired");
+        for (const ws of this.ctx.getWebSockets()) this.close(ws, 4001, "tableExpired");
         await this.ctx.storage.deleteAll();
         this.ctx.storage.kv.put("expired", true);
         return;

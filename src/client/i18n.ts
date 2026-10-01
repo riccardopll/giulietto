@@ -55,8 +55,6 @@ export function formatDecimal(value: number) {
 
 export function cardLabel(card: number) {
   const rank = ((card - 1) % 10) + 1;
-  return t.cards.name(
-    t.cards.ranks[rank] ?? String(rank),
-    t.cards.suits[Math.floor((card - 1) / 10)],
-  );
+  const ranks: Record<number, string | undefined> = t.cards.ranks;
+  return t.cards.name(ranks[rank] ?? String(rank), t.cards.suits[Math.floor((card - 1) / 10)]);
 }

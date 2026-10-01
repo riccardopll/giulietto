@@ -211,8 +211,11 @@ export async function lobbyCode(key: string) {
     (byte) => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[byte % 32],
   ).join("");
 }
+export function rejection(code: ErrorCode, status: number) {
+  return Response.json({ error: code }, { status });
+}
 export function failure(error: unknown) {
-  if (error instanceof GameError) return Response.json({ error: error.code }, { status: 400 });
+  if (error instanceof GameError) return rejection(error.code, 400);
   console.error("Game operation failed", error);
-  return Response.json({ error: "unavailable" }, { status: 503 });
+  return rejection("unavailable", 503);
 }

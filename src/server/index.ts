@@ -2,7 +2,7 @@ import { isEntryCommand } from "../shared/commands";
 import { ensureProfile, saveProfile } from "./player-profile";
 import { playerStats } from "./player-stats";
 import type { Env } from "./env";
-import { command, failure, roomCode } from "./protocol";
+import { command, failure, rejection, roomCode } from "./protocol";
 import { GameError } from "../shared/game-error";
 import { serveSite } from "./site";
 export { GameTable } from "./game-table";
@@ -17,7 +17,7 @@ export default {
       const stats = url.pathname === "/api/stats";
       const socket = url.pathname === "/api/game/socket";
       if (url.pathname !== "/api/game" && !socket && !stats && !profile)
-        return Response.json({ error: "invalidRequest" }, { status: 404 });
+        return rejection("invalidRequest", 404);
       if (
         !["GET", "POST"].includes(req.method) ||
         ((socket || stats) && req.method !== "GET") ||
@@ -28,7 +28,7 @@ export default {
           headers: { Allow: profile ? "POST" : socket || stats ? "GET" : "GET, POST" },
         });
       if (req.headers.has("origin") && req.headers.get("origin") !== url.origin)
-        return Response.json({ error: "invalidRequest" }, { status: 403 });
+        return rejection("invalidRequest", 403);
       if (socket && req.headers.get("upgrade")?.toLowerCase() !== "websocket")
         return new Response(null, { status: 426 });
       const protocols = req.headers
@@ -45,7 +45,7 @@ export default {
         !(await env.REQUEST_LIMIT.limit({ key: req.headers.get("cf-connecting-ip") || token }))
           .success
       )
-        return Response.json({ error: "rateLimited" }, { status: 429 });
+        return rejection("rateLimited", 429);
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
       const id = Array.from(new Uint8Array(digest), (byte) =>
         byte.toString(16).padStart(2, "0"),

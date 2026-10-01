@@ -72,7 +72,7 @@ export function PlayerPages({
   page: "profile" | "leaderboard";
   data: StatsResponse | null;
   profile: Profile;
-  error: string;
+  error: boolean;
   saving: boolean;
   onSave: (profile: Profile) => Promise<void>;
   onBack: () => void;

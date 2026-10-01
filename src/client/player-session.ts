@@ -1,10 +1,11 @@
+import type { ErrorCode } from "../shared/game-error";
 import { t } from "./i18n";
 
 const tokenKey = "giulietto-token";
 const nameKey = "giulietto-name";
 const maxAge = 60 * 60 * 24 * 365;
 
-export const cookieError = "cookies";
+export const cookieError: ErrorCode = "cookies";
 
 function readCookie(key: string) {
   const value = document.cookie

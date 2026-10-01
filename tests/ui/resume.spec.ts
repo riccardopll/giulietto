@@ -107,7 +107,9 @@ test("reloading and reconnecting during play restore the player and hand and all
     { times: 1 },
   );
   await confirmation.getByRole("button", { name: "Leave table", exact: true }).click();
-  await expect(returning.page.getByText("The table is temporarily unavailable. Please try again.")).toBeVisible();
+  await expect(
+    returning.page.getByText("The table is temporarily unavailable. Please try again."),
+  ).toBeVisible();
   expect(await returning.page.evaluate(() => localStorage.getItem("giulietto-room"))).toBe(
     before.code,
   );
