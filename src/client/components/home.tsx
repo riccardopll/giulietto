@@ -1,4 +1,5 @@
 import { ChevronRight, CircleHelp, Loader2, Play, Trophy, Users } from "lucide-react";
+import { t } from "../i18n";
 import { toast } from "../toast";
 import { Button } from "@ui/button";
 import { Input } from "@ui/input";
@@ -23,7 +24,7 @@ export function Home({
 }) {
   return (
     <main className="mx-auto flex w-full max-w-sm flex-col pb-8 pt-7">
-      <div className="relative mx-auto mb-9 h-52 w-64" aria-label="Neapolitan cards">
+      <div className="relative mx-auto mb-9 h-52 w-64" aria-label={t.home.cards}>
         <div className="absolute left-3 top-4 w-[37%] -rotate-15">
           <PlayingCard card={1} />
         </div>
@@ -37,7 +38,7 @@ export function Home({
       <div className="grid gap-3">
         <Button size="lg" disabled={!ready || busy} onClick={() => void onAction("match")}>
           {busy ? <Loader2 className="animate-spin" /> : <Play className="size-5 fill-current" />}
-          Find a game
+          {t.home.findGame}
         </Button>
         <Button
           size="lg"
@@ -45,7 +46,7 @@ export function Home({
           disabled={!ready || busy}
           onClick={() => void onAction("create")}
         >
-          <Users className="size-5" /> Create private lobby
+          <Users className="size-5" /> {t.home.createLobby}
         </Button>
       </div>
       <form
@@ -58,11 +59,11 @@ export function Home({
       >
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="h-px flex-1 bg-border" aria-hidden="true" />
-          Have a code?
+          {t.home.haveCode}
           <span className="h-px flex-1 bg-border" aria-hidden="true" />
         </div>
         <label htmlFor="lobby-code" className="sr-only">
-          Lobby code
+          {t.home.code}
         </label>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
           <div className="min-w-0">
@@ -74,11 +75,11 @@ export function Home({
               data-1p-ignore="true"
               data-lpignore="true"
               data-form-type="other"
-              placeholder="Enter lobby code"
+              placeholder={t.home.codePlaceholder}
               required
               onInvalid={(event) => {
                 event.preventDefault();
-                toast.show("Enter a lobby code.", { id: "game-error" });
+                toast.show(t.errors.codeRequired, { id: "game-error" });
               }}
               minLength={8}
               maxLength={8}
@@ -92,17 +93,17 @@ export function Home({
             />
           </div>
           <Button size="lg" type="submit" disabled={!ready || busy}>
-            Join
+            {t.join}
           </Button>
         </div>
       </form>
       <div className="mt-6 flex flex-wrap items-center justify-center gap-x-4">
         <Button variant="link" onClick={onHowToPlay}>
-          <CircleHelp className="size-5" /> How to play
+          <CircleHelp className="size-5" /> {t.home.howToPlay}
         </Button>
         <Button variant="link" onClick={onLeaderboard}>
           <Trophy className="mr-1 size-5" />
-          Leaderboard
+          {t.home.leaderboard}
           <ChevronRight className="-ml-1" />
         </Button>
       </div>

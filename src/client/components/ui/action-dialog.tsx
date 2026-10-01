@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from "react";
 import { AlertDialog as AlertPrimitive, Dialog as DialogPrimitive } from "radix-ui";
+import { t } from "../../i18n";
 import { Button } from "@ui/button";
 
 export const overlayClass =
@@ -15,7 +16,7 @@ export function ActionDialog({
   description,
   children,
   actionLabel,
-  cancelLabel = "Cancel",
+  cancelLabel = t.cancel,
   busy = false,
   actionDisabled = false,
   confirmation = false,

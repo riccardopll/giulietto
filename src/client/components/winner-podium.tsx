@@ -2,6 +2,7 @@ import { Avatar } from "./avatar";
 import { Crown, RotateCcw } from "lucide-react";
 import { findPlayer, type GameView, type Rematch } from "../../shared/game";
 import { standings } from "../standings";
+import { t } from "../i18n";
 import { cn } from "../utils";
 import { Button } from "@ui/button";
 import { PlacementMedal } from "@ui/placement-medal";
@@ -30,18 +31,14 @@ export function WinnerPodium({
   return (
     <section className="mx-auto my-4 w-full max-w-lg px-2 py-3 text-center">
       <h1 className="text-3xl font-bold wrap-anywhere">
-        {winner.id === game.you ? "You win" : `${winner.name} wins`}
+        {winner.id === game.you ? t.results.youWin : t.results.wins(winner.name)}
       </h1>
-      <div className="mt-6 grid grid-cols-3 items-end gap-2" aria-label="Podium">
+      <div className="mt-6 grid grid-cols-3 items-end gap-2" aria-label={t.results.podium}>
         {[2, 1, 3].map((place) => {
           const group = groups.find((entry) => entry.place === place);
           if (!group) return <div key={place} />;
           return (
-            <section
-              key={place}
-              aria-label={`${["", "First", "Second", "Third"][place]} place`}
-              className="min-w-0"
-            >
+            <section key={place} aria-label={t.results.places[place - 1]} className="min-w-0">
               <div className="mb-3 space-y-2">
                 {place === 1 && (
                   <Crown className="mx-auto size-8 fill-gold text-gold" aria-hidden="true" />
@@ -58,7 +55,9 @@ export function WinnerPodium({
                   <p key={player.id} className="text-sm font-bold wrap-anywhere">
                     {player.name}
                     {player.id === game.you && (
-                      <span className="block text-2xs font-normal text-muted-foreground">You</span>
+                      <span className="block text-2xs font-normal text-muted-foreground">
+                        {t.you}
+                      </span>
                     )}
                   </p>
                 ))}
@@ -77,12 +76,12 @@ export function WinnerPodium({
       </div>
       {others.length > 0 && (
         <div className="mt-5">
-          <h2 className="text-sm font-semibold">Other players</h2>
+          <h2 className="text-sm font-semibold">{t.results.others}</h2>
           <ul className="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-3">
             {others.map((group) => (
               <li
                 key={group.place}
-                aria-label={`Place ${group.place}`}
+                aria-label={t.leaderboard.place(group.place)}
                 className="min-w-0 max-w-24 space-y-1"
               >
                 {group.players.length === 1 && (
@@ -96,7 +95,7 @@ export function WinnerPodium({
                 {group.players.map((player) => (
                   <p key={player.id} className="text-xs font-semibold wrap-anywhere">
                     {player.name}
-                    {player.id === game.you ? " (you)" : ""}
+                    {player.id === game.you ? t.youSuffix : ""}
                   </p>
                 ))}
               </li>
@@ -108,7 +107,7 @@ export function WinnerPodium({
         {canRematch && (
           <Button size="lg" className="w-full" disabled={busy || !!invite} onClick={onRematch}>
             <RotateCcw className="size-5" />
-            Rematch
+            {t.results.rematch}
           </Button>
         )}
         <Button
@@ -117,7 +116,7 @@ export function WinnerPodium({
           className="w-full"
           onClick={onReset}
         >
-          Back to tables
+          {t.backToTables}
         </Button>
       </div>
     </section>

@@ -9,6 +9,7 @@ import {
   MAX_TURN_SECONDS,
   type GameView,
 } from "../../shared/game";
+import { t } from "../i18n";
 import { cn } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { Lives } from "./lives";
@@ -19,14 +20,12 @@ import { ActionDialog } from "@ui/action-dialog";
 const options = [
   {
     name: "startingLives",
-    label: "Starting lives",
     min: MIN_STARTING_LIVES,
     max: MAX_STARTING_LIVES,
     step: 1,
   },
   {
     name: "turnSeconds",
-    label: "Move time",
     min: MIN_TURN_SECONDS,
     max: MAX_TURN_SECONDS,
     step: 5,
@@ -51,17 +50,19 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
       aria-labelledby="lobby-options-heading"
     >
       <h2 id="lobby-options-heading" className="mb-3 text-xs font-semibold text-muted-foreground">
-        Lobby options
+        {t.lobby.options}
       </h2>
       <div className="grid gap-4">
-        {options.map(({ name, label, min, max, step }) => {
+        {options.map(({ name, min, max, step }) => {
           const selected = draft?.name === name ? draft.value : game[name];
           return (
             <div key={name}>
               <div className="mb-1 flex min-h-8 items-center justify-between gap-3">
-                <label htmlFor={name}>{label}</label>
+                <label htmlFor={name}>
+                  {name === "startingLives" ? t.lobby.startingLives : t.lobby.moveTime}
+                </label>
                 <output htmlFor={name} aria-live="polite" className="inline-flex items-center">
-                  {name === "startingLives" ? <Lives n={selected} /> : `${selected} sec`}
+                  {name === "startingLives" ? <Lives n={selected} /> : t.secondsShort(selected)}
                 </output>
               </div>
               <input
@@ -72,11 +73,7 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
                 step={step}
                 value={selected}
                 className="range-slider m-0 h-12 w-full rounded focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-                aria-valuetext={
-                  name === "startingLives"
-                    ? `${selected} ${selected === 1 ? "life" : "lives"}`
-                    : `${selected} seconds`
-                }
+                aria-valuetext={name === "startingLives" ? t.lives(selected) : t.seconds(selected)}
                 disabled={!host || busy}
                 onChange={(event) => setDraft({ name, value: Number(event.target.value) })}
                 onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
@@ -132,9 +129,9 @@ export function Lobby({
       <ActionDialog
         open={editing}
         onOpenChange={setEditing}
-        title="Edit your name"
+        title={t.editName}
         hideTitle
-        actionLabel={busy ? "Saving…" : "Save"}
+        actionLabel={busy ? t.saving : t.save}
         busy={busy}
         actionDisabled={!draftName.trim()}
         onSubmit={async () => {
@@ -147,9 +144,9 @@ export function Lobby({
         confirmation
         open={kicking.open}
         onOpenChange={(open) => setKicking({ ...kicking, open })}
-        title={`Remove ${kicking.name}?`}
-        cancelLabel="Keep"
-        actionLabel={busy ? "Removing…" : "Remove"}
+        title={t.lobby.removeTitle(kicking.name)}
+        cancelLabel={t.lobby.keep}
+        actionLabel={busy ? t.lobby.removing : t.lobby.removeAction}
         busy={busy}
         onSubmit={async () => {
           await onKick(kicking.id);
@@ -157,10 +154,12 @@ export function Lobby({
         }}
       />
       <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-2xl font-semibold">{game.public ? "Matchmaking" : "Players"}</h1>
+        <h1 className="text-2xl font-semibold">
+          {game.public ? t.lobby.matchmaking : t.lobby.players}
+        </h1>
         <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />
       </div>
-      <ul className="grid gap-2" aria-label="Players">
+      <ul className="grid gap-2" aria-label={t.lobby.players}>
         {Array.from({ length: 6 }, (_, i) => {
           const player = game.players[i];
           return (
@@ -178,8 +177,8 @@ export function Lobby({
                       variant="ghost"
                       size="icon"
                       className="group relative -m-1"
-                      aria-label={`Remove ${player.name}`}
-                      title={`Remove ${player.name}`}
+                      aria-label={t.lobby.remove(player.name)}
+                      title={t.lobby.remove(player.name)}
                       disabled={busy}
                       onClick={() =>
                         player.bot
@@ -209,14 +208,14 @@ export function Lobby({
                     <div className="flex min-w-0 items-center gap-1">
                       <strong className="min-w-0 text-sm wrap-anywhere text-foreground">
                         {player.name}
-                        {player.id === game.you ? " (you)" : ""}
+                        {player.id === game.you ? t.youSuffix : ""}
                       </strong>
                       {player.id === game.you && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="-my-3"
-                          aria-label="Edit your name"
+                          aria-label={t.editName}
                           disabled={busy}
                           onClick={() => {
                             setDraftName("");
@@ -227,7 +226,7 @@ export function Lobby({
                         </Button>
                       )}
                     </div>
-                    {player.id === game.host && <span className="text-xs">Host</span>}
+                    {player.id === game.host && <span className="text-xs">{t.lobby.host}</span>}
                   </div>
                   <Lives n={game.startingLives} />
                 </>
@@ -239,7 +238,7 @@ export function Lobby({
                   >
                     <User className="size-5" />
                   </div>
-                  <span className="flex-1 text-sm">Open seat</span>
+                  <span className="flex-1 text-sm">{t.lobby.openSeat}</span>
                   {game.host === game.you && (
                     <Button
                       variant="accent"
@@ -248,7 +247,7 @@ export function Lobby({
                       onClick={onAddBot}
                     >
                       <Plus className="size-5" />
-                      Add bot
+                      {t.lobby.addBot}
                     </Button>
                   )}
                 </>
@@ -261,11 +260,11 @@ export function Lobby({
       <div className="mt-5 grid gap-2.5">
         <Button variant="outline" size="lg" onClick={onCopy}>
           {copied ? <Check /> : <Link />}
-          {copied ? "Copied" : "Copy invite link"}
+          {copied ? t.lobby.copied : t.lobby.copyLink}
         </Button>
         {game.host === game.you && (
           <Button size="lg" onClick={onStart} disabled={busy || game.players.length < 2}>
-            Start game
+            {t.lobby.start}
             <ArrowRight />
           </Button>
         )}

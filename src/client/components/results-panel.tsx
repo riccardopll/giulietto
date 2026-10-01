@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { findPlayer, ROUND_PAUSE_MS, type GameView, type Rematch } from "../../shared/game";
+import { t } from "../i18n";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
 import { LifeCount } from "./lives";
@@ -60,13 +61,11 @@ export function ResultsPanel({
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center">
       <div className="mb-4 flex items-center gap-3 px-1 pt-2">
         <h1 className="min-w-0 text-left text-2xl font-semibold wrap-anywhere">
-          {finished ? "Table closed" : game.tie ? "Everyone returns" : "Round results"}
+          {finished ? t.results.closed : game.tie ? t.results.tie : t.results.round}
         </h1>
         {!finished && <ChatButton unread={chat.unread} onClick={() => chat.setOpen(true)} />}
       </div>
-      {game.tie && (
-        <p className="mb-5 text-sm text-muted-foreground">All players return with one life.</p>
-      )}
+      {game.tie && <p className="mb-5 text-sm text-muted-foreground">{t.results.tieNote}</p>}
       <div className="-mx-3">
         <table className="w-full table-fixed text-sm">
           <colgroup>
@@ -77,7 +76,7 @@ export function ResultsPanel({
           </colgroup>
           <thead>
             <tr className="border-b border-border">
-              {["Player", "Bid", "Won", "Lives"].map((label, i) => (
+              {t.results.columns.map((label, i) => (
                 <th
                   key={label}
                   className={cn(
@@ -118,7 +117,7 @@ export function ResultsPanel({
                       {!!result?.lost && (
                         <span
                           className="col-start-3 justify-self-start rounded-md bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-destructive tabular-nums"
-                          aria-label={`${result.lost} lives lost`}
+                          aria-label={t.results.lost(result.lost)}
                         >
                           −{result.lost}
                         </span>
@@ -133,11 +132,11 @@ export function ResultsPanel({
       </div>
       {finished ? (
         <Button size="lg" className="mt-6 w-full max-w-68" onClick={onReset}>
-          Back to tables
+          {t.backToTables}
         </Button>
       ) : (
         <div className="mt-3 border-t pt-4">
-          <Countdown className="justify-center" label="Next round in" remaining={remaining} />
+          <Countdown className="justify-center" label={t.results.next} remaining={remaining} />
           <CountdownBar className="mt-4" remaining={remaining} total={ROUND_PAUSE_MS} />
         </div>
       )}

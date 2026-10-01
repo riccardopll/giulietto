@@ -167,10 +167,9 @@ export function legalBids(game: Game) {
   );
 }
 export function bid(game: Game, id: string, prediction: number, now: number) {
-  if (game.phase !== "bidding" || game.order[game.turn] !== id)
-    throw new GameError("Wait for your bidding turn.");
+  if (game.phase !== "bidding" || game.order[game.turn] !== id) throw new GameError("notYourBid");
   if (!Number.isInteger(prediction) || !legalBids(game).includes(prediction))
-    throw new GameError("That prediction would make the total equal the available tricks.");
+    throw new GameError("bidBlocked");
   findPlayer(game, id)!.bid = prediction;
   game.turn++;
   if (game.turn === game.order.length) {
@@ -186,12 +185,10 @@ export function play(
   mode: "high" | "low" | undefined,
   now: number,
 ) {
-  if (game.phase !== "playing" || game.order[game.turn] !== id)
-    throw new GameError("Wait for your turn.");
+  if (game.phase !== "playing" || game.order[game.turn] !== id) throw new GameError("notYourTurn");
   const player = findPlayer(game, id)!;
-  if (!player.hand.includes(card)) throw new GameError("That card is not in your hand.");
-  if (card === 31 && mode !== "high" && mode !== "low")
-    throw new GameError("Choose high or low for the Ace of Coins.");
+  if (!player.hand.includes(card)) throw new GameError("cardNotInHand");
+  if (card === 31 && mode !== "high" && mode !== "low") throw new GameError("aceModeRequired");
   player.hand.splice(player.hand.indexOf(card), 1);
   const entry = { player: id, card, ...(card === 31 ? { mode } : {}) };
   (game.played ??= []).push(entry);
@@ -328,7 +325,7 @@ export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
 export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
   const me = findPlayer(game, id);
   const spectator = game.spectators?.find((spectator) => spectator.id === id);
-  if (!me && !spectator) throw new GameError("You are no longer at this table. Join again.");
+  if (!me && !spectator) throw new GameError("notAtTable");
   const active = !!me && game.order.includes(id);
   const blind = game.count === 1 && ["bidding", "playing", "trick"].includes(game.phase);
   return {

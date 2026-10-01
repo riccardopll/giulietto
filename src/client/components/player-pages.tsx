@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { errorMessage, formatDecimal, t } from "../i18n";
 import { toast } from "../toast";
 import { Pencil, PlayingCard, Target, Timer } from "lucide-react";
 import type { Profile, StatsResponse } from "../../shared/player-stats";
@@ -33,9 +34,9 @@ function ProfileEditor({
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
-      title={mode === "name" ? "Edit your name" : "Choose your avatar"}
+      title={mode === "name" ? t.editName : t.profile.chooseAvatar}
       hideTitle={mode === "name"}
-      actionLabel={saving ? "Saving…" : "Save"}
+      actionLabel={saving ? t.saving : t.save}
       busy={saving}
       actionDisabled={mode === "name" && !name.trim()}
       onSubmit={async () => {
@@ -46,7 +47,7 @@ function ProfileEditor({
           );
           onClose();
         } catch (e) {
-          toast.show((e as Error).message, { id: "profile-error" });
+          toast.show(errorMessage(e), { id: "profile-error" });
         }
       }}
     >
@@ -80,7 +81,10 @@ export function PlayerPages({
   const stats = data?.player;
   return (
     <main key={page} className="mx-auto w-full max-w-md animate-[page-in_.2s_ease-out] pb-8">
-      <PageHeading title={page === "profile" ? "Your profile" : "Leaderboard"} onBack={onBack} />
+      <PageHeading
+        title={page === "profile" ? t.profile.title : t.leaderboard.title}
+        onBack={onBack}
+      />
       {page === "profile" ? (
         <>
           <div className="flex flex-col items-center">
@@ -88,7 +92,7 @@ export function PlayerPages({
               variant="ghost"
               size="pill"
               className="relative"
-              aria-label="Edit your avatar"
+              aria-label={t.profile.editAvatar}
               disabled={!data || saving}
               onClick={() => setEditing("avatar")}
             >
@@ -100,22 +104,22 @@ export function PlayerPages({
             <Button
               variant="ghost"
               className="mt-2 h-auto max-w-full"
-              aria-label="Edit your name"
+              aria-label={t.editName}
               disabled={!data || saving}
               onClick={() => setEditing("name")}
             >
               <span className="text-2xl font-semibold whitespace-normal">
-                {profile.name || "Guest"}
+                {profile.name || t.guest}
               </span>
               <Pencil className="size-4 shrink-0 text-muted-foreground" />
             </Button>
             {stats && (
               <>
-                <p className="mt-3 text-4xl font-semibold text-primary">Level {stats.level}</p>
+                <p className="mt-3 text-4xl font-semibold text-primary">{t.level(stats.level)}</p>
                 <div className="mt-5 w-full max-w-xs">
                   <div
                     role="progressbar"
-                    aria-label="Level progress"
+                    aria-label={t.profile.progress}
                     aria-valuemin={0}
                     aria-valuemax={100}
                     aria-valuenow={stats.xp % 100}
@@ -137,10 +141,10 @@ export function PlayerPages({
             <>
               <dl className="my-7 grid grid-cols-3 divide-x border-y py-5 text-center">
                 {[
-                  ["Matches", stats.matches],
-                  ["Wins", stats.wins],
+                  [t.profile.matches, stats.matches],
+                  [t.profile.wins, stats.wins],
                   [
-                    "Win rate",
+                    t.profile.winRate,
                     `${stats.matches ? Math.round((100 * stats.wins) / stats.matches) : 0}%`,
                   ],
                 ].map(([label, value]) => (
@@ -153,21 +157,24 @@ export function PlayerPages({
               <dl className="divide-y">
                 {[
                   {
-                    label: "Aces of Coins played",
+                    label: t.profile.acesPlayed,
                     value: stats.acesOfCoinsPlayed ?? "—",
                     icon: PlayingCard,
                   },
                   {
-                    label: "Average prediction",
-                    value: stats.averagePrediction?.toFixed(1) ?? "—",
+                    label: t.profile.averagePrediction,
+                    value:
+                      stats.averagePrediction == null
+                        ? "—"
+                        : formatDecimal(stats.averagePrediction),
                     icon: Target,
                   },
                   {
-                    label: "Average turn time",
+                    label: t.profile.averageTurn,
                     value:
                       stats.averageDecisionMs == null
                         ? "—"
-                        : `${(stats.averageDecisionMs / 1000).toFixed(1)} s`,
+                        : `${formatDecimal(stats.averageDecisionMs / 1000)} s`,
                     icon: Timer,
                   },
                 ].map(({ label, value, icon: Icon }) => (
@@ -186,7 +193,7 @@ export function PlayerPages({
               role="status"
               className={cn("mt-6 text-center text-sm text-muted-foreground", error && "invisible")}
             >
-              Loading stats…
+              {t.profile.loading}
             </p>
           )}
           {editing && (
@@ -203,7 +210,7 @@ export function PlayerPages({
         <>
           {!data ? (
             <p role="status" className={error ? "invisible" : undefined}>
-              Loading leaderboard…
+              {t.leaderboard.loading}
             </p>
           ) : (
             <Leaderboard players={data.leaders} />

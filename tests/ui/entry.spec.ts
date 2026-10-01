@@ -66,7 +66,7 @@ test("entry retries reuse the create command, refresh the join command, and leav
       else expect(retriedId).not.toBe(commandId);
       if (action === "create" && expires) {
         expect(retryResponse.status()).toBe(400);
-        expect(await retryResponse.json()).toEqual({ error: "Table already exists." });
+        expect(await retryResponse.json()).toEqual({ error: "tableExists" });
         await expect(button).toBeEnabled();
         const replacement = page.waitForResponse(
           (response) =>

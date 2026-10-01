@@ -2,18 +2,26 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Trophy } from "lucide-react";
 import type { GameView } from "../../shared/game";
 import { matchEvents, type MatchEvent } from "../match-events";
-import { PlayingCard, cardLabel } from "./playing-card";
+import { cardLabel, t } from "../i18n";
+import { PlayingCard } from "./playing-card";
 
 type VisibleEvent = MatchEvent & { expiresAt: number };
 const EVENT_DURATION = 5000;
 
+function action(event: MatchEvent, self: boolean) {
+  if (event.type === "left") return t.events.left(self);
+  if (event.type === "rejoined") return t.events.rejoined(self);
+  if (event.type === "prediction") return t.events.predicted(self);
+  if (event.type === "play") return t.events.played(self);
+  return t.events.wonTrick(self);
+}
+
 function description(event: MatchEvent, you: string) {
-  const name = event.player === you ? "You" : event.name;
-  if (event.type === "left") return `${name} left the table`;
-  if (event.type === "rejoined") return `${name} rejoined the table`;
-  if (event.type === "prediction") return `${name} predicted ${event.bid}`;
-  const action = event.type === "play" ? "played" : "won the trick with";
-  return `${name} ${action} ${cardLabel(event.card)}${event.mode ? `, ${event.mode}` : ""}`;
+  const self = event.player === you;
+  const text = `${self ? t.events.you : event.name} ${action(event, self)}`;
+  if (event.type === "prediction") return `${text} ${event.bid}`;
+  if (event.type === "left" || event.type === "rejoined") return text;
+  return `${text} ${cardLabel(event.card)}${event.mode ? `, ${t.cards[event.mode]}` : ""}`;
 }
 
 export function MatchEventFeed({ game }: { game: GameView }) {
@@ -51,7 +59,7 @@ export function MatchEventFeed({ game }: { game: GameView }) {
     <div
       className="pointer-events-none relative min-h-0 min-w-0 overflow-hidden"
       role="log"
-      aria-label="Game events"
+      aria-label={t.events.log}
       aria-relevant="additions"
     >
       {events.map((event, index) => (
@@ -73,17 +81,9 @@ export function MatchEventFeed({ game }: { game: GameView }) {
                   className="inline-block max-w-32 truncate align-bottom text-foreground"
                   title={event.name}
                 >
-                  {event.player === game.you ? "You" : event.name}
+                  {event.player === game.you ? t.events.you : event.name}
                 </strong>{" "}
-                {event.type === "prediction"
-                  ? "predicted"
-                  : event.type === "play"
-                    ? "played"
-                    : event.type === "left"
-                      ? "left the table"
-                      : event.type === "rejoined"
-                        ? "rejoined the table"
-                        : "won the trick with"}
+                {action(event, event.player === game.you)}
               </span>
               {event.type === "prediction" ? (
                 <strong>{event.bid}</strong>
@@ -92,7 +92,7 @@ export function MatchEventFeed({ game }: { game: GameView }) {
                   <span className="w-6 shrink-0">
                     <PlayingCard card={event.card} className="rounded-[.2rem]" />
                   </span>
-                  {event.mode && <span className="text-2xs capitalize">{event.mode}</span>}
+                  {event.mode && <span className="text-2xs capitalize">{t.cards[event.mode]}</span>}
                 </>
               ) : null}
             </div>

@@ -67,12 +67,12 @@ test("idle tables expire after a day and close their connections", async () => {
   const { code } = await api.state(host, { action: "create" });
   const socket = await api.connect(host, code);
   expect(await alarmAt(code, Date.now() + DAY + 1)).toBe(true);
-  expect(await socket.closed).toEqual({ code: 4001, reason: "Table expired." });
+  expect(await socket.closed).toEqual({ code: 4001, reason: "tableExpired" });
   vi.useRealTimers();
   const response = await api.get(host, code);
   expect(response.status).toBe(400);
   expect(await response.json()).toEqual({
-    error: "Table not found or expired. Check the invite code.",
+    error: "tableNotFound",
   });
   expect((await api.post(host, { action: "join", code })).status).toBe(400);
 });

@@ -337,7 +337,7 @@ test("reconnected players resume and late spectators receive live updates", asyn
           log.event === "request_failed" &&
           log.playerId === watching.you &&
           log.roomCode === code &&
-          log.reason === "Join this table first.",
+          log.reason === "joinFirst",
       ),
     )
     .toBe(true);
@@ -456,13 +456,13 @@ test("the lobby host removes other players and closes their sockets", async () =
   expect((await hosting.command({ action: "kick", playerId: joined.you })).type).toBe("ack");
   expect(await removed.closed).toMatchObject({
     code: 4001,
-    reason: "The host removed you from the table.",
+    reason: "removed",
   });
   await expect.poll(() => findPlayer(hosting.latest()!, joined.you)).toBeUndefined();
   expect((await api.get(other, code)).status).toBe(400);
   const resumed = await api.post(other, { action: "join", resume: true, code });
   expect(resumed.status).toBe(400);
-  expect(await resumed.json()).toEqual({ error: "The host removed you from the table." });
+  expect(await resumed.json()).toEqual({ error: "removed" });
   expect(findPlayer(await api.state(other, { action: "join", code }), joined.you)).toBeDefined();
   expect((await api.post(other, { action: "join", resume: true, code })).status).toBe(200);
 });

@@ -1,3 +1,4 @@
+import { t } from "../i18n";
 import { cn } from "../utils";
 
 export function Wordmark({ className, onClick }: { className?: string; onClick?: () => void }) {
@@ -9,7 +10,7 @@ export function Wordmark({ className, onClick }: { className?: string; onClick?:
         event.preventDefault();
         onClick?.();
       }}
-      aria-label="Giulietto home"
+      aria-label={t.home.open}
     >
       Giulietto
     </a>

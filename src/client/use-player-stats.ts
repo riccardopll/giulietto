@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { RotateCw } from "lucide-react";
+import { errorMessage, t } from "./i18n";
 import { toast } from "./toast";
 import type { Profile, StatsResponse } from "../shared/player-stats";
 export function usePlayerStats(
@@ -24,7 +25,7 @@ export function usePlayerStats(
     const current = ++version.current;
     fetch("/api/stats", { headers: { "x-player-token": token }, signal: controller.signal })
       .then(async (response) => {
-        if (!response.ok) throw Error("Could not load player stats.");
+        if (!response.ok) throw Error("statsFailed");
         return (await response.json()) as StatsResponse;
       })
       .then((next) => {
@@ -36,11 +37,10 @@ export function usePlayerStats(
       })
       .catch(() => {
         if (controller.signal.aborted || current !== version.current) return;
-        const message = "Could not load player stats.";
-        setError(message);
-        toast.show(message, {
+        setError("statsFailed");
+        toast.show(errorMessage("statsFailed"), {
           id: "stats-error",
-          action: { label: "Retry", icon: RotateCw, onClick: refresh },
+          action: { label: t.retry, icon: RotateCw, onClick: refresh },
         });
       });
     return () => controller.abort();
@@ -54,7 +54,7 @@ export function usePlayerStats(
         body: JSON.stringify(profile),
       });
       const next = (await response.json()) as Profile & { error?: string };
-      if (!response.ok) throw Error(next.error || "Could not save your profile.");
+      if (!response.ok) throw Error(next.error || "profileFailed");
       ++version.current;
       setData((current) =>
         current

@@ -3,6 +3,7 @@ import { Dialog } from "radix-ui";
 import { MessageCircleDashed, MessageCircleMore, SendHorizontal, X } from "lucide-react";
 import { CHAT_MAX_LENGTH, chatOpen } from "../../shared/chat";
 import type { GameView } from "../../shared/game";
+import { locale, t } from "../i18n";
 import { cn } from "../utils";
 import { overlayClass } from "@ui/action-dialog";
 import { Button } from "@ui/button";
@@ -39,7 +40,7 @@ export function ChatButton({
       variant="tab"
       size="icon"
       className={className}
-      aria-label={unread ? `Chat, ${unread} unread` : "Chat"}
+      aria-label={unread ? t.chat.unread(unread) : t.chat.title}
       onClick={onClick}
     >
       <span
@@ -133,9 +134,9 @@ function Sheet({
       className="fixed inset-x-0 top-[var(--viewport-top,0px)] z-50 flex h-[var(--viewport-height,100dvh)] flex-col bg-card outline-none transition-[height] duration-300 ease-out after:pointer-events-none after:absolute after:inset-x-0 after:-inset-y-[100dvh] after:-z-10 after:bg-card data-[state=open]:animate-dialog-in data-[state=closed]:animate-dialog-out"
     >
       <header className="flex items-center px-4 pt-[env(safe-area-inset-top)]">
-        <Dialog.Title className="sr-only">Chat</Dialog.Title>
+        <Dialog.Title className="sr-only">{t.chat.title}</Dialog.Title>
         <Dialog.Close asChild>
-          <Button variant="muted" size="icon" className="ml-auto" aria-label="Close chat">
+          <Button variant="muted" size="icon" className="ml-auto" aria-label={t.chat.close}>
             <X className="size-5" />
           </Button>
         </Dialog.Close>
@@ -143,7 +144,7 @@ function Sheet({
       <ol
         ref={list}
         role="log"
-        aria-label="Messages"
+        aria-label={t.chat.messages}
         className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto overscroll-contain px-3 pb-3"
         onScroll={(event) => {
           const { scrollHeight, scrollTop, clientHeight } = event.currentTarget;
@@ -157,7 +158,7 @@ function Sheet({
               strokeWidth={1.25}
               aria-hidden="true"
             />
-            No messages yet.
+            {t.chat.empty}
           </li>
         )}
         {messages.map((message) => {
@@ -182,7 +183,7 @@ function Sheet({
                 dateTime={new Date(message.sentAt).toISOString()}
                 className="float-right mt-2 ml-2 text-2xs leading-none whitespace-nowrap text-muted-foreground"
               >
-                {new Date(message.sentAt).toLocaleTimeString([], {
+                {new Date(message.sentAt).toLocaleTimeString(locale, {
                   hour: "2-digit",
                   minute: "2-digit",
                   hourCycle: "h23",
@@ -200,13 +201,13 @@ function Sheet({
           ref={input}
           value={text}
           maxLength={CHAT_MAX_LENGTH}
-          aria-label="Message"
+          aria-label={t.chat.message}
           autoComplete="off"
           enterKeyHint="send"
           className="h-11 flex-1"
           onChange={(event) => setText(event.target.value)}
         />
-        <Button type="submit" size="icon" aria-label="Send message" disabled={busy || !text.trim()}>
+        <Button type="submit" size="icon" aria-label={t.chat.send} disabled={busy || !text.trim()}>
           <SendHorizontal className="size-5" />
         </Button>
       </form>

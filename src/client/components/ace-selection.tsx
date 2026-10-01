@@ -1,4 +1,5 @@
 import { Dialog } from "radix-ui";
+import { t } from "../i18n";
 import { cn } from "../utils";
 import { PlayingCard } from "./playing-card";
 import { contentClass, overlayClass } from "@ui/action-dialog";
@@ -24,10 +25,8 @@ export function AceSelection({
             "max-w-[min(20rem,calc(100%-2rem))] gap-0 border-0 bg-transparent p-2 shadow-none",
           )}
         >
-          <Dialog.Title className="sr-only">Ace of Coins</Dialog.Title>
-          <Dialog.Description className="sr-only">
-            Choose its value before playing.
-          </Dialog.Description>
+          <Dialog.Title className="sr-only">{t.cards.aceOfCoins}</Dialog.Title>
+          <Dialog.Description className="sr-only">{t.cards.chooseValue}</Dialog.Description>
           <div className="grid grid-cols-2 gap-4">
             {(["low", "high"] as const).map((mode) => (
               <button
@@ -40,7 +39,9 @@ export function AceSelection({
                 <span className="relative block" aria-hidden="true">
                   <PlayingCard card={31} mode={mode} />
                 </span>
-                <span className="sr-only">{mode === "low" ? "Low · 0" : "High · 41"}</span>
+                <span className="sr-only">
+                  {mode === "low" ? t.cards.lowOption : t.cards.highOption}
+                </span>
               </button>
             ))}
           </div>

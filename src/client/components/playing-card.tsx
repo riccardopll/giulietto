@@ -1,21 +1,6 @@
 import { useState } from "react";
+import { cardLabel, t } from "../i18n";
 import { cn } from "../utils";
-
-export function cardLabel(card: number) {
-  const suits = ["Clubs", "Swords", "Cups", "Coins"];
-  const rank = ((card - 1) % 10) + 1;
-  const name =
-    rank === 1
-      ? "Ace"
-      : rank === 8
-        ? "Jack"
-        : rank === 9
-          ? "Knight"
-          : rank === 10
-            ? "King"
-            : String(rank);
-  return `${name} of ${suits[Math.floor((card - 1) / 10)]}`;
-}
 
 function CardFace({ card }: { card: number | null }) {
   const [loaded, setLoaded] = useState(false);
@@ -71,8 +56,8 @@ export function PlayingCard({
 }) {
   const aceMode = card === 31 && (mode === "low" || mode === "high") ? mode : undefined;
   const label = card
-    ? `${cardLabel(card)}, ${card === 31 ? (aceMode ? `${aceMode}, value ${aceMode === "low" ? 0 : 41}` : "lowest or highest") : `value ${card}`}`
-    : "Hidden card";
+    ? `${cardLabel(card)}, ${card === 31 ? (aceMode ? `${t.cards[aceMode]}, ${t.cards.value(aceMode === "low" ? 0 : 41)}` : t.cards.lowOrHigh) : t.cards.value(card)}`
+    : t.cards.hidden;
   const content = (
     <>
       <CardFace key={card ?? "back"} card={card} />
@@ -113,7 +98,7 @@ export function PlayingCard({
       type="button"
       className={cardClassName}
       data-playing-card
-      aria-label={`Play ${label}`}
+      aria-label={t.cards.play(label)}
       title={label}
       onClick={onClick}
       disabled={disabled}

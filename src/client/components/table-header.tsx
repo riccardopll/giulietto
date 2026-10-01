@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Check, Copy, LogOut } from "lucide-react";
 import type { GameView } from "../../shared/game";
+import { t } from "../i18n";
 import { toRoman } from "../utils";
 import { Button } from "@ui/button";
 import { Wordmark } from "./wordmark";
@@ -10,8 +11,8 @@ function SpectatorCount({ count }: { count: number }) {
     <span
       className="col-start-1 row-start-1 ml-1 min-[360px]:ml-2 inline-flex min-w-0 overflow-hidden items-center gap-1 text-xs font-black min-[360px]:text-sm tabular-nums drop-shadow-[0_1px_1px] drop-shadow-foreground/25"
       role="status"
-      title={`${count} spectators`}
-      aria-label={`${count} ${count === 1 ? "spectator" : "spectators"}`}
+      title={t.spectators(count)}
+      aria-label={t.spectators(count)}
     >
       <span
         className="min-w-0 truncate text-primary [-webkit-text-stroke:.4px_currentColor]"
@@ -60,7 +61,7 @@ export function TableHeader({
       {!waiting && (
         <div className="col-start-2 row-start-1 min-w-0">
           <h2 className="shrink-0 whitespace-nowrap text-center text-sm leading-tight font-semibold min-[360px]:text-base">
-            Round {toRoman(game.round)}
+            {t.table.round} {toRoman(game.round)}
           </h2>
         </div>
       )}
@@ -70,7 +71,7 @@ export function TableHeader({
           variant="muted"
           className="col-start-2 row-start-1"
           onClick={onCopy}
-          aria-label="Copy lobby invite"
+          aria-label={t.table.copyInvite}
         >
           <span
             className={`font-mono text-2xs leading-none min-[360px]:text-xs ${!waiting ? "hidden min-[440px]:inline" : ""}`}
@@ -81,7 +82,7 @@ export function TableHeader({
         </Button>
         <div className="col-start-3 row-start-1">
           {exitControl ?? (
-            <Button variant="muted" size="icon" aria-label="Leave table" onClick={onLeave}>
+            <Button variant="muted" size="icon" aria-label={t.table.leave} onClick={onLeave}>
               <LogOut className="size-5" />
             </Button>
           )}

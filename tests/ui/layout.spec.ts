@@ -109,7 +109,7 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
 
   await emoteTrigger.click();
   await page.getByRole("button", { name: "Send Perso emote" }).click();
-  const perso = page.getByRole("status", { name: /sent the perso emote/ });
+  const perso = page.getByRole("status", { name: /sent the Perso emote/ });
   await expect(perso).toBeVisible();
   await expect(perso.locator("[data-emote-motion]")).toBeVisible();
   await page.clock.runFor(300);

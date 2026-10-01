@@ -6,6 +6,7 @@ import type { GameView } from "../../shared/game";
 import { Button } from "@ui/button";
 import { Bubble, MenuBubble, SideBubble, type Side } from "./bubble";
 import { AnimatedWebp, preloadWebp } from "./animated-webp";
+import { t } from "../i18n";
 import { cn } from "../utils";
 
 export function useRecent(sentAt: number | undefined, serverTime: number, duration: number) {
@@ -19,11 +20,11 @@ export function useRecent(sentAt: number | undefined, serverTime: number, durati
   return sentAt !== undefined && expired !== sentAt && remaining > 0;
 }
 
-const EMOTES: Record<Emote["id"], { label: string; size: string; bust?: boolean }> = {
-  chicken: { label: "Send chicken emote", size: "h-[78.5px] w-[51.5px]", bust: true },
-  perso: { label: "Send Perso emote", size: "h-[86px] w-[108px]" },
-  goblin: { label: "Send goblin emote", size: "h-[53.7px] w-[76px]", bust: true },
-  princess: { label: "Send princess emote", size: "h-[58.4px] w-[45.9px]", bust: true },
+const EMOTES: Record<Emote["id"], { size: string; bust?: boolean }> = {
+  chicken: { size: "h-[78.5px] w-[51.5px]", bust: true },
+  perso: { size: "h-[86px] w-[108px]" },
+  goblin: { size: "h-[53.7px] w-[76px]", bust: true },
+  princess: { size: "h-[58.4px] w-[45.9px]", bust: true },
 };
 
 function EmoteArt({ id, animated = false }: { id: Emote["id"]; animated?: boolean }) {
@@ -60,7 +61,7 @@ export function EmoteBubble({
   const visible = useRecent(emote?.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!emote || !visible) return null;
   return (
-    <Bubble key={emote.sentAt} label={`${name} sent the ${emote.id} emote`}>
+    <Bubble key={emote.sentAt} label={t.emotes.sent(name, t.emotes.names[emote.id])}>
       <EmoteArt id={emote.id} animated />
     </Bubble>
   );
@@ -78,7 +79,7 @@ function SideReaction({
   const visible = useRecent(emote.sentAt, serverTime, EMOTE_DURATION_MS);
   if (!visible) return null;
   return (
-    <SideBubble label={`${name} sent the ${emote.id} emote`} {...placement(emote)}>
+    <SideBubble label={t.emotes.sent(name, t.emotes.names[emote.id])} {...placement(emote)}>
       <EmoteArt id={emote.id} animated />
     </SideBubble>
   );
@@ -143,7 +144,7 @@ export function EmotePicker({
           size="icon"
           className="pointer-events-auto absolute right-[2%] top-1/2 -translate-y-1/2"
           disabled={disabled || coolingDown}
-          aria-label="Emotes"
+          aria-label={t.emotes.menu}
         >
           <span className="absolute inset-y-0 right-0 grid w-8 place-items-center drop-shadow-sm">
             <span className="table-edge absolute inset-y-0 left-0 -right-2 -z-1 rounded-l-2xl bg-background [mask-position:calc(32px_-_98cqw)_50%]" />
@@ -158,7 +159,7 @@ export function EmotePicker({
           align="center"
           sideOffset={16}
           collisionPadding={12}
-          aria-label="Emotes"
+          aria-label={t.emotes.menu}
           onOpenAutoFocus={(event) => event.preventDefault()}
           className="z-50 grid w-auto grid-cols-4 gap-3 bg-transparent p-2"
         >
@@ -167,7 +168,7 @@ export function EmotePicker({
               key={id}
               type="button"
               className="block"
-              aria-label={EMOTES[id].label}
+              aria-label={t.emotes.send(t.emotes.names[id])}
               onClick={() => {
                 if (disabled || coolingDown) return;
                 onSend(id);

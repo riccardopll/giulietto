@@ -4,15 +4,11 @@ import { GameError } from "./game-error";
 export const REMATCH_INVITE_MS = 60000;
 
 export function checkRematch(game: Game, id: string, now: number) {
-  if (game.phase !== "finished") throw new GameError("A rematch can start once the game is over.");
+  if (game.phase !== "finished") throw new GameError("rematchNotOver");
   const player = findPlayer(game, id);
-  if (!player || player.bot || player.forfeited)
-    throw new GameError("Only players at this table can start a rematch.");
+  if (!player || player.bot || player.forfeited) throw new GameError("rematchPlayersOnly");
   const invite = game.rematch;
-  if (invite && now < invite.expiresAt)
-    throw new GameError(
-      `${findPlayer(game, invite.by)?.name ?? "Another player"} already invited everyone to a rematch.`,
-    );
+  if (invite && now < invite.expiresAt) throw new GameError("rematchInvited");
 }
 
 export function inviteRematch(game: Game, id: string, code: string, now: number) {

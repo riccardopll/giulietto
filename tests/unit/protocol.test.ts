@@ -32,7 +32,7 @@ test("forfeited players can rejoin to watch but cannot play", () => {
   expect(game.players[0]).toMatchObject({ lives: 0, forfeited: true });
   expect(() =>
     apply(game, "p0", { action: "bid", bid: 0, commandId: crypto.randomUUID() }, 300),
-  ).toThrow("Spectators cannot play");
+  ).toThrow("spectating");
 });
 
 test("does not revive a player eliminated while away", () => {
@@ -76,7 +76,7 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
     ] as const) {
       expect(() =>
         apply(game, "watcher", { ...input, commandId: crypto.randomUUID() }, 400),
-      ).toThrow("Spectators cannot");
+      ).toThrow("spectating");
     }
     const emote = { action: "emote", emote: "chicken", commandId: crypto.randomUUID() } as const;
     const chat = { action: "chat", text: "hi", commandId: crypto.randomUUID() } as const;
@@ -84,10 +84,10 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
       apply(game, "watcher", emote, 400);
       expect(game.spectators?.[0].emote).toEqual({ id: "chicken", sentAt: 400 });
     } else {
-      expect(() => apply(game, "watcher", emote, 400)).toThrow("during play");
+      expect(() => apply(game, "watcher", emote, 400)).toThrow("emotesPlayOnly");
     }
     if (phase === "finished") {
-      expect(() => apply(game, "watcher", chat, 401)).toThrow("until the table closes");
+      expect(() => apply(game, "watcher", chat, 401)).toThrow("chatClosed");
     } else {
       apply(game, "watcher", chat, 401);
       expect(game.chat).toEqual([
@@ -130,7 +130,7 @@ test("resumes an owned seat on a matchmaking retry but rejects new spectators", 
   join(game, "p0", "bot_1", 200, { matchmaking: true });
   expect(game.players[0].seen).toBe(200);
   expect(() => join(game, "watcher", "Observer", 200, { matchmaking: true })).toThrow(
-    "no longer available",
+    "tableClosed",
   );
   expect(game.spectators).toBeUndefined();
 });
@@ -152,17 +152,18 @@ test.each(["playing", "finished"] as const)(
 );
 
 test.each([
-  [{ action: "bid", bid: 1.5 }, "Enter a valid prediction."],
-  [{ action: "play", card: "31" }, "Choose a valid card."],
-  [{ action: "settings", option: "startingLives", value: 9 }, "Choose a whole number"],
-  [{ action: "rename" }, "Enter a display name."],
-  [{ action: "emote", emote: "unknown" }, "Unknown emote."],
-  [{ action: "chat", text: "   " }, "Type a message."],
-  [{ action: "chat", text: "x".repeat(201) }, "within 200 characters"],
-  [{ action: "cheat" }, "Unknown action."],
-  [{ action: "start", commandId: "nope" }, "Invalid command ID."],
-])("rejects %o with a readable error", (input, message) => {
-  expect(() => command({ commandId: crypto.randomUUID(), ...input })).toThrow(message);
+  [{ action: "bid", bid: 1.5 }, "invalidBid"],
+  [{ action: "play", card: "31" }, "invalidCard"],
+  [{ action: "settings", option: "startingLives", value: 9 }, "livesRange"],
+  [{ action: "settings", option: "turnSeconds", value: 1 }, "moveTimeRange"],
+  [{ action: "rename" }, "nameRequired"],
+  [{ action: "emote", emote: "unknown" }, "invalidRequest"],
+  [{ action: "chat", text: "   " }, "chatEmpty"],
+  [{ action: "chat", text: "x".repeat(201) }, "chatTooLong"],
+  [{ action: "cheat" }, "invalidRequest"],
+  [{ action: "start", commandId: "nope" }, "invalidRequest"],
+])("rejects %o with an error code", (input, code) => {
+  expect(() => command({ commandId: crypto.randomUUID(), ...input })).toThrow(code);
 });
 
 test("normalizes accepted commands and drops unknown fields", () => {

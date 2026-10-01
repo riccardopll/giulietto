@@ -1,6 +1,7 @@
 import type { Leader } from "../../shared/player-stats";
 import { Avatar } from "./avatar";
 import { PlacementMedal } from "@ui/placement-medal";
+import { t } from "../i18n";
 import { cn } from "../utils";
 
 function PlayerIdentity({ player, featured = false }: { player: Leader; featured?: boolean }) {
@@ -14,9 +15,9 @@ function PlayerIdentity({ player, featured = false }: { player: Leader; featured
         title={player.name}
       >
         {player.name}
-        {player.you ? " (you)" : ""}
+        {player.you ? t.youSuffix : ""}
       </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">Level {player.level}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{t.level(player.level)}</p>
     </div>
   );
 }
@@ -24,20 +25,20 @@ function PlayerIdentity({ player, featured = false }: { player: Leader; featured
 function Wins({ player }: { player: Leader }) {
   return (
     <span className="shrink-0 text-sm font-semibold tabular-nums">
-      {player.wins} {player.wins === 1 ? "win" : "wins"}
+      {t.leaderboard.wins(player.wins)}
     </span>
   );
 }
 
 export function Leaderboard({ players }: { players: Leader[] }) {
   return (
-    <ol aria-label="Leaderboard" className="grid grid-cols-3">
+    <ol aria-label={t.leaderboard.title} className="grid grid-cols-3">
       {players.map((player, index) =>
         index < 3 ? (
           <li
             key={index}
             value={index + 1}
-            aria-label={`Place ${index + 1}: ${player.name}${player.you ? " (you)" : ""}`}
+            aria-label={`${t.leaderboard.place(index + 1)}: ${player.name}${player.you ? t.youSuffix : ""}`}
             className={cn(
               "row-start-1 flex min-w-0 flex-col items-center px-1 pb-8 text-center",
               index === 0

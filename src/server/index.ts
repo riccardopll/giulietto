@@ -17,7 +17,7 @@ export default {
       const stats = url.pathname === "/api/stats";
       const socket = url.pathname === "/api/game/socket";
       if (url.pathname !== "/api/game" && !socket && !stats && !profile)
-        return Response.json({ error: "Not found." }, { status: 404 });
+        return Response.json({ error: "invalidRequest" }, { status: 404 });
       if (
         !["GET", "POST"].includes(req.method) ||
         ((socket || stats) && req.method !== "GET") ||
@@ -28,7 +28,7 @@ export default {
           headers: { Allow: profile ? "POST" : socket || stats ? "GET" : "GET, POST" },
         });
       if (req.headers.has("origin") && req.headers.get("origin") !== url.origin)
-        return Response.json({ error: "Invalid origin." }, { status: 403 });
+        return Response.json({ error: "invalidRequest" }, { status: 403 });
       if (socket && req.headers.get("upgrade")?.toLowerCase() !== "websocket")
         return new Response(null, { status: 426 });
       const protocols = req.headers
@@ -40,16 +40,12 @@ export default {
           ? protocols[1]
           : ""
         : req.headers.get("x-player-token");
-      if (!token || !/^[0-9a-f-]{36,80}$/i.test(token))
-        throw new GameError("Refresh the page to create your guest session.");
+      if (!token || !/^[0-9a-f-]{36,80}$/i.test(token)) throw new GameError("noSession");
       if (
         !(await env.REQUEST_LIMIT.limit({ key: req.headers.get("cf-connecting-ip") || token }))
           .success
       )
-        return Response.json(
-          { error: "Too many requests. Please wait a minute." },
-          { status: 429 },
-        );
+        return Response.json({ error: "rateLimited" }, { status: 429 });
       const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
       const id = Array.from(new Uint8Array(digest), (byte) =>
         byte.toString(16).padStart(2, "0"),
@@ -61,12 +57,12 @@ export default {
       let body;
       if (req.method === "POST") {
         const raw = await req.text();
-        if (raw.length > 2048) throw new GameError("Request too large.");
+        if (raw.length > 2048) throw new GameError("invalidRequest");
         let value;
         try {
           value = JSON.parse(raw);
         } catch {
-          throw new GameError("Invalid JSON.");
+          throw new GameError("invalidRequest");
         }
         if (profile)
           return Response.json(await saveProfile(env.DB, id, value), {

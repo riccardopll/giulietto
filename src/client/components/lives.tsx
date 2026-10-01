@@ -1,11 +1,12 @@
 import { Heart } from "lucide-react";
+import { t } from "../i18n";
 import { cn } from "../utils";
 
 export function Lives({ n }: { n: number }) {
   return (
     <span
       className="inline-flex min-h-[27px] w-[42px] shrink-0 flex-col items-center justify-center gap-[3px] align-middle text-destructive"
-      aria-label={`${n} ${n === 1 ? "life" : "lives"}`}
+      aria-label={t.lives(n)}
     >
       {Array.from({ length: Math.ceil(n / 3) }, (_, row) => (
         <span className="flex justify-center gap-[inherit]" key={row} aria-hidden="true">
@@ -25,7 +26,7 @@ export function LifeCount({ n, className }: { n: number; className?: string }) {
         "inline-flex shrink-0 items-center gap-1 font-semibold tabular-nums",
         className,
       )}
-      aria-label={`${n} ${n === 1 ? "life" : "lives"}`}
+      aria-label={t.lives(n)}
     >
       <Heart
         className="size-[1em] shrink-0 text-destructive"

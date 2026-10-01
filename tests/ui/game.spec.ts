@@ -120,7 +120,7 @@ test("three players complete a game, including round results and elimination", a
       await players[2].page.getByRole("button", { name: "Send Perso emote" }).click();
       for (const { page } of players) {
         await expect(
-          page.getByRole("status", { name: "bot_3 sent the perso emote" }),
+          page.getByRole("status", { name: "bot_3 sent the Perso emote" }),
         ).toBeVisible();
       }
       await players[2].page.getByRole("button", { name: "Chat, 2 unread", exact: true }).click();
