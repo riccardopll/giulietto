@@ -18,7 +18,7 @@ export type TableCommand =
   | { action: "addBot" }
   | { action: "kick"; playerId: string }
   | { action: "bid"; bid: number }
-  | { action: "play"; card?: number; mode?: "high" | "low" }
+  | { action: "play"; card: number; mode?: "high" | "low" }
   | { action: "emote"; emote: Emote["id"] }
   | { action: "chat"; text: string }
   | { action: "rematch" }

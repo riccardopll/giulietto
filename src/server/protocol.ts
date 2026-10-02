@@ -68,7 +68,7 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
     case "play":
       return {
         action: "play",
-        card: input.card === undefined ? undefined : integer(input.card, "invalidCard"),
+        card: integer(input.card, "invalidCard"),
         mode: input.mode === "high" || input.mode === "low" ? input.mode : undefined,
       };
     case "emote": {
@@ -181,10 +181,9 @@ export function apply(game: Game, id: string, input: Command, now: number) {
     if (game.phase !== "lobby" || game.players.length < 2) throw new GameError("needTwoPlayers");
     deal(game, now);
   } else if (input.action === "bid") bid(game, id, input.bid, now);
-  else if (input.action === "play") {
-    if (game.count !== 1 && input.card === undefined) throw new GameError("invalidCard");
-    play(game, id, game.count === 1 ? player.hand[0] : input.card!, input.mode, now);
-  } else if (input.action === "rematch") {
+  else if (input.action === "play")
+    play(game, id, game.count === 1 ? player.hand[0] : input.card, input.mode, now);
+  else if (input.action === "rematch") {
     if (!input.code) throw new GameError("invalidRequest");
     inviteRematch(game, id, input.code, now);
   } else if (input.action === "leave" && game.phase === "lobby") {

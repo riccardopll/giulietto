@@ -1,7 +1,16 @@
 import { describe, expect, test } from "vitest";
 import { createBot } from "../../src/shared/bot";
 import shippedWeights from "../../public/bot/weights.json";
-import { bid, deal, findPlayer, legalBids, play, tick, view } from "../../src/shared/game";
+import {
+  autoPlays,
+  bid,
+  deal,
+  findPlayer,
+  legalBids,
+  play,
+  tick,
+  view,
+} from "../../src/shared/game";
 import { gameFixture, lobbyFixture, seedRandom } from "./helpers";
 
 const bot = createBot(shippedWeights);
@@ -13,10 +22,10 @@ test("waits outside the bot's turn", () => {
   expect(bot(view(game, "p0"))).toBeNull();
 });
 
-test("plays a hidden card and chooses a mode for the blind ace", () => {
+test("leaves a hidden card to the table and chooses a mode for the blind ace", () => {
   const game = gameFixture([[7], [31], [12]]);
   game.phase = "playing";
-  expect(bot(view(game, "p0"))).toEqual({ action: "play" });
+  expect(bot(view(game, "p0"))).toBeNull();
   game.turn = 1;
   expect([
     { action: "play", card: 31, mode: "high" },
@@ -35,10 +44,11 @@ describe("shipped weights", () => {
       const botId = game.players[i % 4].id;
       while (game.phase !== "finished") {
         const id = game.order[game.turn];
-        if (id === botId) {
+        if (autoPlays(game)) tick(game, game.deadline);
+        else if (id === botId) {
           const move = bot(view(game, id))!;
           if (move.action === "bid") bid(game, id, move.bid, 100);
-          else play(game, id, move.card ?? findPlayer(game, id)!.hand[0], move.mode, 100);
+          else play(game, id, move.card, move.mode, 100);
         } else if (game.phase === "bidding") {
           const choices = legalBids(game);
           const share = Math.round(game.count / game.order.length);

@@ -120,7 +120,7 @@ export async function playCard(players: Player[], keyboard = false) {
     await button.focus();
     await button.press("Enter");
   } else await button.click();
-  if (state!.canChooseAce && (card === 31 || card === null)) {
+  if (state!.canChooseAce && card === 31) {
     const dialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
     await expect(dialog.locator('img[src="/cards/neapolitan/31.webp"]')).toHaveCount(2);
     const low = dialog.getByRole("button", { name: "Low · 0", exact: true });

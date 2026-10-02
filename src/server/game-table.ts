@@ -6,6 +6,7 @@ import { createBot } from "../shared/bot";
 import { checkRematch } from "../shared/rematch";
 import weights from "../../public/bot/weights.json";
 import {
+  autoPlays,
   makeGame,
   DEFAULT_TURN_SECONDS,
   makePlayer,
@@ -34,6 +35,7 @@ const bot = createBot(weights);
 
 function botTurnAt(game: Game) {
   return (game.phase === "bidding" || game.phase === "playing") &&
+    !autoPlays(game) &&
     findPlayer(game, game.order[game.turn])?.bot
     ? game.deadline - game.turnSeconds * 1000 + 800
     : Infinity;
@@ -202,7 +204,10 @@ export class GameTable extends DurableObject<Env> {
     return JSON.stringify(game) === JSON.stringify(room.game)
       ? room
       : this.save(room, game, undefined, {
-          source: ["bidding", "playing"].includes(room.game.phase) ? "timeout" : "system",
+          source:
+            ["bidding", "playing"].includes(room.game.phase) && !autoPlays(room.game)
+              ? "timeout"
+              : "system",
         });
   }
   private load() {

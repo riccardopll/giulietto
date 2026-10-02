@@ -19,7 +19,7 @@ export function PlayerSeat({
   current,
   activeTurn,
   deadline,
-  turnSeconds,
+  turnMs,
   serverTime,
   round,
   status,
@@ -33,14 +33,13 @@ export function PlayerSeat({
   current: boolean;
   activeTurn: boolean;
   deadline: number;
-  turnSeconds: number;
+  turnMs: number;
   serverTime: number;
   round: number;
   status: string;
   side: "top" | "bottom";
 }) {
   const revealed = player.hand.some((card) => card !== null);
-  const turnMs = turnSeconds * 1000;
   const remaining = Math.max(0, Math.min(turnMs, deadline - serverTime));
   return (
     <section

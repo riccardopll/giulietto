@@ -1,4 +1,5 @@
 import {
+  autoPlays,
   bid,
   deal,
   makeGame,
@@ -8,7 +9,6 @@ import {
   makePlayer,
   tick,
   type Game,
-  findPlayer,
   view,
 } from "../../shared/game";
 import type { Bot } from "../../shared/bot";
@@ -69,10 +69,10 @@ export function advancePreview(source: Game, bot: Bot): Game {
   const game = structuredClone(source);
   const now = Date.now();
   const id = game.order[game.turn];
-  if (game.phase === "bidding" || game.phase === "playing") {
+  if ((game.phase === "bidding" || game.phase === "playing") && !autoPlays(game)) {
     const move = bot(view(game, id))!;
     if (move.action === "bid") bid(game, id, move.bid, now);
-    else play(game, id, move.card ?? findPlayer(game, id)!.hand[0], move.mode, now);
+    else play(game, id, move.card, move.mode, now);
   } else if (game.phase !== "finished") {
     tick(game, game.deadline);
   }
