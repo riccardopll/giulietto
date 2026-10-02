@@ -1,5 +1,6 @@
-import { env, runDurableObjectAlarm } from "cloudflare:test";
+import { env, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { afterEach, expect, test, vi } from "vitest";
+import { BLIND_PLAY_MS, type Game } from "../../src/shared/game";
 import { api, guest } from "./helpers";
 
 const DAY = 86_400_000;
@@ -41,6 +42,51 @@ test("expired turns are played automatically and recorded as timeouts", async ()
   expect(events.results).toEqual(
     started.order.map((player_id) => ({ player_id, source: "timeout" })),
   );
+});
+
+test("blind cards are played by the table and recorded as system plays", async () => {
+  const host = guest(1);
+  const other = guest(2);
+  const { code } = await api.state(host, { action: "create" });
+  const joined = await api.state(other, { action: "join", code });
+  const started = await api.state(host, { action: "start", code });
+  const guests = new Map([
+    [started.you, host],
+    [joined.you, other],
+  ]);
+  const stub = env.ROOMS.getByName(code);
+  await runInDurableObject(stub, (_instance, ctx) => {
+    const room = ctx.storage.kv.get("room") as { game: Game };
+    room.game.count = 1;
+    room.game.players.forEach((player, seat) => {
+      player.hand = [seat + 1];
+    });
+    ctx.storage.kv.put("room", room);
+  });
+  let state = started;
+  for (const id of started.order)
+    state = await api.state(guests.get(id)!, { action: "bid", bid: 0, code });
+  expect(state).toMatchObject({ phase: "playing", turnMs: BLIND_PLAY_MS });
+  await expect
+    .poll(() =>
+      env.DB.prepare("SELECT COUNT(*) AS n FROM match_events WHERE match_id=? AND type='bid'")
+        .bind(started.matchId!)
+        .first(),
+    )
+    .toEqual({ n: 2 });
+
+  expect(await alarmAt(code, state.deadline)).toBe(true);
+  state = await api.state(host, { action: "join", code });
+  expect(state.trick).toHaveLength(1);
+  expect(state.deadline).toBe(Date.now() + BLIND_PLAY_MS);
+  expect(await alarmAt(code, state.deadline)).toBe(true);
+  expect((await api.state(host, { action: "join", code })).phase).toBe("trick");
+  const plays = await runInDurableObject(stub, (_instance, ctx) =>
+    ctx.storage.sql
+      .exec("SELECT player_id, source FROM game_events WHERE type='play' ORDER BY sequence")
+      .toArray(),
+  );
+  expect(plays).toEqual(started.order.map((player_id) => ({ player_id, source: "system" })));
 });
 
 test("lobby seats expire while disconnected and the host role moves on", async () => {

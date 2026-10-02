@@ -68,6 +68,7 @@ export const MIN_TURN_SECONDS = 15;
 export const MAX_TURN_SECONDS = 40;
 export const ROUND_PAUSE_MS = 8000;
 export const TRICK_PAUSE_MS = 1600;
+export const BLIND_PLAY_MS = 1000;
 export const TABLE_RETENTION_MS = 86400000;
 export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
@@ -118,6 +119,16 @@ export function inPlay(game: { phase: Game["phase"] }) {
 }
 export function strength(play: Play) {
   return play.card === 31 ? (play.mode === "low" ? 0 : 41) : play.card;
+}
+export function autoPlays(game: Game) {
+  return (
+    game.phase === "playing" &&
+    game.count === 1 &&
+    !findPlayer(game, game.order[game.turn])!.hand.includes(31)
+  );
+}
+export function turnMs(game: Game) {
+  return autoPlays(game) ? BLIND_PLAY_MS : game.turnSeconds * 1000;
 }
 function shuffle<T>(items: T[]) {
   for (let i = items.length - 1; i > 0; i--) {
@@ -176,7 +187,7 @@ export function bid(game: Game, id: string, prediction: number, now: number) {
     game.phase = "playing";
     game.turn = 0;
   }
-  game.deadline = now + game.turnSeconds * 1000;
+  game.deadline = now + turnMs(game);
 }
 export function play(
   game: Game,
@@ -204,7 +215,7 @@ export function play(
     game.deadline = now + TRICK_PAUSE_MS;
   } else {
     game.turn = (game.turn + 1) % game.order.length;
-    game.deadline = now + game.turnSeconds * 1000;
+    game.deadline = now + turnMs(game);
   }
 }
 export function forfeit(game: Game, id: string, now: number) {
@@ -251,7 +262,7 @@ export function forfeit(game: Game, id: string, now: number) {
   } else {
     game.turn = current === id ? index % game.order.length : game.order.indexOf(current);
   }
-  if (current === id || phase !== game.phase) game.deadline = now + game.turnSeconds * 1000;
+  if (current === id || phase !== game.phase) game.deadline = now + turnMs(game);
 }
 export function score(game: Game, now: number) {
   game.results = game.order.map((id) => {
@@ -331,6 +342,7 @@ export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
   return {
     ...game,
     you: id,
+    turnMs: turnMs(game),
     viewerName: (me ?? spectator)!.name,
     spectatorCount: [
       ...(game.spectators ?? []),

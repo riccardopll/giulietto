@@ -1,4 +1,4 @@
-import { legalBids, type Game, findPlayer } from "../shared/game";
+import { legalBids, turnMs, type Game, findPlayer } from "../shared/game";
 
 export type EventSource = { source: "player" | "timeout" | "system"; commandId?: string };
 export type GameEvent = {
@@ -17,8 +17,8 @@ export type GameEvent = {
 export function gameEvents(before: Game, after: Game, origin: EventSource, now: number) {
   const events: Omit<GameEvent, "sequence">[] = [];
   if (!after.matchId || before.phase === "finished") return events;
-  const turnMs = before.turnSeconds * 1000;
-  const elapsedMs = Math.max(0, Math.min(turnMs, turnMs - (before.deadline - now)));
+  const limit = turnMs(before);
+  const elapsedMs = Math.max(0, Math.min(limit, limit - (before.deadline - now)));
   const add = (type: string, playerId: string | null, payload: object) => {
     events.push({
       match_id: after.matchId!,

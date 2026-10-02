@@ -144,10 +144,7 @@ export type Bot = (view: GameView) => BotMove | null;
 export function createBot(weights: Weights): Bot {
   return (view) => {
     const legal = legalActions(view);
-    if (!legal.length)
-      return view.phase === "playing" && isBlind(view) && actorOf(view) === view.you
-        ? { action: "play" }
-        : null;
+    if (!legal.length) return null;
     let hidden = encode(view);
     for (const layer of weights.layers) hidden = dense(hidden, layer, true);
     const logits = dense(hidden, weights.policy, false);

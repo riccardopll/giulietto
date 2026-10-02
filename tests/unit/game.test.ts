@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   bid,
+  BLIND_PLAY_MS,
   deal,
   legalBids,
   MAX_STARTING_LIVES,
@@ -134,6 +135,23 @@ describe("turns and tricks", () => {
     expect(strength({ player: "p0", card: 31, mode })).toBe(mode === "low" ? 0 : 41);
     expect(game.lastWinner).toBe(mode === "low" ? "p1" : "p0");
     expect(view(game, "p0").canChooseAce).toBe(false);
+  });
+
+  test("plays blind cards automatically and gives the Ace holder a full turn", () => {
+    const game = gameFixture([[7], [31], [12]]);
+    for (const id of game.order) bid(game, id, 0, 100);
+    expect(view(game, "p0").turnMs).toBe(BLIND_PLAY_MS);
+    expect(game.deadline).toBe(100 + BLIND_PLAY_MS);
+    tick(game, game.deadline - 1);
+    expect(game.trick).toEqual([]);
+    tick(game, game.deadline);
+    expect(game.trick).toEqual([{ player: "p0", card: 7 }]);
+    expect(view(game, "p1").turnMs).toBe(game.turnSeconds * 1000);
+    expect(game.deadline).toBe(100 + BLIND_PLAY_MS + game.turnSeconds * 1000);
+    play(game, "p1", 31, "low", 5000);
+    expect(game.deadline).toBe(5000 + BLIND_PLAY_MS);
+    tick(game, game.deadline);
+    expect(game).toMatchObject({ phase: "trick", lastWinner: "p2" });
   });
 
   test("uses a legal prediction and card when a turn expires", () => {

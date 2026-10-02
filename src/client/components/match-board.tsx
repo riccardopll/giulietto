@@ -109,7 +109,8 @@ export function MatchBoard({
   const myEmote =
     me?.emote ?? game.spectators?.find((spectator) => spectator.id === game.you)?.emote;
   const myTurn = seating.current === game.you && active;
-  const canPlay = myTurn && game.phase === "playing" && !busy;
+  const canPlay =
+    myTurn && game.phase === "playing" && !busy && (game.count !== 1 || game.canChooseAce);
   const opponents = seating.seats.slice(1);
   const hasBottomNeighbors = opponents.length > 3;
   const topSeats = hasBottomNeighbors ? opponents.slice(1, -1) : opponents;
@@ -207,7 +208,7 @@ export function MatchBoard({
           current={seating.current === id}
           activeTurn={game.phase === "playing" && seating.current === id && player.lives > 0}
           deadline={game.deadline}
-          turnSeconds={game.turnSeconds}
+          turnMs={game.turnMs}
           serverTime={game.serverTime}
           round={game.round}
           status={status}

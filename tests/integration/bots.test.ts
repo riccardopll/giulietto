@@ -7,7 +7,7 @@ import {
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createBot } from "../../src/shared/bot";
 import weights from "../../public/bot/weights.json";
-import { findPlayer, view, type Game } from "../../src/shared/game";
+import { autoPlays, findPlayer, view, type Game } from "../../src/shared/game";
 import { historyStatements } from "../../src/server/match-history";
 import { playerStats } from "../../src/server/player-stats";
 import { api, guest } from "./helpers";
@@ -84,7 +84,7 @@ test("server bots finish a match across eviction and persist bot identity withou
   let game = await read(code);
   let botMoves = 0;
   for (let step = 0; game.phase !== "finished" && step < 1000; step++) {
-    if (game.phase === "bidding" || game.phase === "playing") {
+    if (game.phase === "bidding" || (game.phase === "playing" && !autoPlays(game))) {
       const id = game.order[game.turn];
       if (findPlayer(game, id)!.bot) {
         const move = policy(view(game, id))!;
@@ -99,7 +99,7 @@ test("server bots finish a match across eviction and persist bot identity withou
         else
           expect(next.trick.at(-1)).toMatchObject({
             player: id,
-            card: move.card ?? findPlayer(game, id)!.hand[0],
+            card: move.card,
             ...(move.mode ? { mode: move.mode } : {}),
           });
         botMoves++;
@@ -182,10 +182,10 @@ test.each([7, 31])("bots play the blind card %i without exposing it to inference
   const game = await read(code);
   const state = view(game, id);
   expect(findPlayer(state, id)!.hand).toEqual([null]);
-  const move = policy(state)!;
+  const move = policy(state);
   vi.setSystemTime(game.deadline + 1);
   expect(await runDurableObjectAlarm(stub)).toBe(true);
   expect((await read(code)).trick).toEqual([
-    { player: id, card, ...(move.action === "play" && move.mode ? { mode: move.mode } : {}) },
+    { player: id, card, ...(move?.action === "play" && move.mode ? { mode: move.mode } : {}) },
   ]);
 });

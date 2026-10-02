@@ -9,6 +9,7 @@ import { sendEmote, type Emote } from "../../shared/emotes";
 import { inviteRematch, REMATCH_INVITE_MS } from "../../shared/rematch";
 import { Button } from "@ui/button";
 import {
+  autoPlays,
   bid,
   deal,
   play,
@@ -193,7 +194,7 @@ export function Preview({ bot }: { bot: Bot }) {
     if (game.phase === "lobby" || game.phase === "finished") return;
     const acting = game.phase === "bidding" || game.phase === "playing";
     const viewerId = viewer === -1 ? null : game.players[viewer]?.id;
-    if (acting && game.order[game.turn] === viewerId) return;
+    if (acting && game.order[game.turn] === viewerId && !autoPlays(game)) return;
     const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? 3000 : 900;
     const timer = setTimeout(() => {
       setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], bot) }));
@@ -248,7 +249,7 @@ export function Preview({ bot }: { bot: Bot }) {
       ? ROUND_PAUSE_MS
       : snapshot.phase === "trick"
         ? TRICK_PAUSE_MS
-        : snapshot.turnSeconds * 1000);
+        : snapshot.turnMs);
 
   function commit(game: Game) {
     game.revision++;
@@ -281,10 +282,15 @@ export function Preview({ bot }: { bot: Bot }) {
       else if (input.action === "emote") sendEmote(game, id, input.emote, now);
       else if (input.action === "chat") sendChat(game, id, input.text, now);
       else if (input.action === "bid") bid(game, id, input.bid, now);
-      else if (input.action === "play") {
-        const card = input.card ?? -1;
-        play(game, id, card === -1 ? game.players[viewer].hand[0] : card, input.mode, now);
-      } else if (input.action === "rematch") inviteRematch(game, id, "PREVIEW0", now);
+      else if (input.action === "play")
+        play(
+          game,
+          id,
+          input.card === -1 ? game.players[viewer].hand[0] : input.card,
+          input.mode,
+          now,
+        );
+      else if (input.action === "rematch") inviteRematch(game, id, "PREVIEW0", now);
       else return;
     }
     commit(game);
