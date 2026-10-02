@@ -229,8 +229,7 @@ export const it: Messages = {
       title: "Round",
       intro: "A ogni round si riceve una carta in meno, poi si riparte da sei.",
       demo: "Carte per giocatore a ogni round: 6, 5, 4, 3, 2, 1, poi di nuovo 6.",
-      blind:
-        "Con una carta a testa, vedi le carte di tutti tranne la tua. Dichiari soltanto: le carte si giocano da sole.",
+      blind: "Con una carta a testa, vedi le carte di tutti tranne la tua.",
       blindDemo: "Nel round da una carta, la carta degli altri è visibile e la tua è coperta.",
       theirs: "Degli altri",
       yours: "Tua",

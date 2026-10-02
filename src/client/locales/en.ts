@@ -230,8 +230,7 @@ export const en = {
       title: "Rounds",
       intro: "Hands shrink by one card each round, then start again at six.",
       demo: "Cards per player each round: 6, 5, 4, 3, 2, 1, then back to 6.",
-      blind:
-        "With one card each, you see everyone’s card except your own. You only predict: the cards play themselves.",
+      blind: "With one card each, you see everyone’s card except your own.",
       blindDemo: "In the one-card round, their card is visible and yours is hidden.",
       theirs: "Theirs",
       yours: "Yours",
