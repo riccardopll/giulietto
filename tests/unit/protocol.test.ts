@@ -151,6 +151,19 @@ test.each(["playing", "finished"] as const)(
   },
 );
 
+test("refuses plays while the table plays a blind card", () => {
+  const game = gameFixture([[7], [31]]);
+  game.phase = "playing";
+  const input = { action: "play", card: -1, mode: "high", commandId: crypto.randomUUID() } as const;
+  expect(() => apply(game, "p0", input, 200)).toThrow("notYourTurn");
+  tick(game, game.deadline);
+  apply(game, "p1", input, 300);
+  expect(game.trick).toEqual([
+    { player: "p0", card: 7 },
+    { player: "p1", card: 31, mode: "high" },
+  ]);
+});
+
 test.each([
   [{ action: "bid", bid: 1.5 }, "invalidBid"],
   [{ action: "play", card: "31" }, "invalidCard"],
