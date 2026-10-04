@@ -26,6 +26,7 @@ export type Player = {
 export type Spectator = { id: string; name: string; seen: number; emote?: Emote };
 export type Play = { player: string; card: number; mode?: "high" | "low" };
 export type Rematch = { code: string; by: string; expiresAt: number };
+export type Donation = { from: string; to: string };
 export type Result = {
   id: string;
   name: string;
@@ -44,6 +45,7 @@ export type Game = {
   host: string;
   startingLives: number;
   turnSeconds: number;
+  lifeDonation: boolean;
   phase: "lobby" | "bidding" | "playing" | "trick" | "results" | "finished";
   players: Player[];
   spectators?: Spectator[];
@@ -61,6 +63,7 @@ export type Game = {
   deadline: number;
   winner: string | null;
   tie: boolean;
+  donations?: Donation[];
   rematch?: Rematch;
 };
 export const DEFAULT_TURN_SECONDS = 30;
@@ -74,6 +77,7 @@ export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
 export const MIN_STARTING_LIVES = 1;
 export const MAX_STARTING_LIVES = 5;
+export const MIN_DONOR_LIVES = 4;
 export function makeGame(code: string, host: Player, isPublic: boolean): Game {
   return {
     code,
@@ -82,6 +86,7 @@ export function makeGame(code: string, host: Player, isPublic: boolean): Game {
     host: host.id,
     startingLives: DEFAULT_STARTING_LIVES,
     turnSeconds: DEFAULT_TURN_SECONDS,
+    lifeDonation: false,
     phase: "lobby",
     players: [host],
     order: [],
@@ -169,6 +174,7 @@ export function deal(game: Game, now: number) {
   game.played = [];
   game.results = [];
   game.tie = false;
+  delete game.donations;
   game.deadline = now + game.turnSeconds * 1000;
 }
 export function legalBids(game: Game) {
@@ -304,6 +310,36 @@ export function score(game: Game, now: number) {
     game.phase = "results";
     game.deadline = now + ROUND_PAUSE_MS;
   }
+}
+type DonationGame = Pick<Game, "lifeDonation" | "phase" | "round">;
+type DonationPlayer = Pick<Player, "forfeited" | "lives" | "eliminatedRound">;
+export function canReceiveLife(game: DonationGame, player: DonationPlayer) {
+  return (
+    game.lifeDonation &&
+    game.phase === "results" &&
+    !player.forfeited &&
+    player.lives === 0 &&
+    player.eliminatedRound === game.round
+  );
+}
+export function canDonate(game: DonationGame, player: DonationPlayer) {
+  return (
+    game.lifeDonation &&
+    game.phase === "results" &&
+    !player.forfeited &&
+    player.lives >= MIN_DONOR_LIVES
+  );
+}
+export function donate(game: Game, from: string, to: string) {
+  const donor = findPlayer(game, from)!;
+  const recipient = findPlayer(game, to);
+  if (!canDonate(game, donor)) throw new GameError("donationUnavailable");
+  if (!recipient || !canReceiveLife(game, recipient)) throw new GameError("donationTarget");
+  donor.lives--;
+  recipient.lives = 1;
+  delete recipient.eliminatedRound;
+  for (const result of game.results) result.lives = findPlayer(game, result.id)!.lives;
+  (game.donations ??= []).push({ from, to });
 }
 export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
   if (game.spectators)

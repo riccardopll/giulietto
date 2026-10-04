@@ -164,7 +164,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 copied={table.copied}
                 onCopy={table.copyInvite}
                 onStart={() => void table.act({ action: "start" })}
-                onSettings={(option, value) => table.act({ action: "settings", option, value })}
+                onSettings={(settings) => table.act({ action: "settings", ...settings })}
                 onRename={table.renameSeat}
                 onAddBot={isPreview ? undefined : () => void table.act({ action: "addBot" })}
                 onKick={(playerId) => table.act({ action: "kick", playerId })}
@@ -178,6 +178,7 @@ export default function App({ preview }: { preview?: PreviewSession }) {
                 invite={table.invite}
                 onRematch={() => void table.rematch()}
                 onReset={table.reset}
+                onDonate={(playerId) => void table.act({ action: "donate", playerId })}
               />
             ) : (
               <MatchBoard

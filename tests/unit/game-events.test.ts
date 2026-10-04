@@ -1,6 +1,6 @@
 import { expect, test } from "vitest";
 import { gameEvents, type EventSource } from "../../src/server/game-events";
-import { bid, play, score, tick, type Game } from "../../src/shared/game";
+import { bid, donate, play, score, tick, type Game } from "../../src/shared/game";
 import { gameFixture } from "./helpers";
 
 function record(game: Game, action: () => void, origin: EventSource, now = 200) {
@@ -100,4 +100,20 @@ test("records the final round before closing the match", () => {
   expect(JSON.parse(events[0].payload)).toMatchObject({ results: game.results, tie: false });
   expect(events[1]).toMatchObject({ player_id: "p1", source: "system" });
   expect(JSON.parse(events[1].payload)).toEqual({ winner: "p1", finishedAt: 200 });
+});
+
+test("records a donated life", () => {
+  const game = gameFixture([[1], [11], [21]]);
+  game.lifeDonation = true;
+  game.phase = "trick";
+  game.players.forEach((player, i) => Object.assign(player, { lives: [4, 3, 1][i], bid: 0 }));
+  game.players[2].taken = 1;
+  score(game, 200);
+  const [event] = record(game, () => donate(game, "p0", "p2"), {
+    source: "player",
+    commandId: "donate-1",
+  });
+
+  expect(event).toMatchObject({ type: "life_donated", player_id: "p0", command_id: "donate-1" });
+  expect(JSON.parse(event.payload)).toEqual({ to: "p2", lives: 3 });
 });

@@ -3,6 +3,7 @@ import {
   bid,
   BLIND_PLAY_MS,
   deal,
+  donate,
   legalBids,
   MAX_STARTING_LIVES,
   play,
@@ -11,6 +12,7 @@ import {
   tick,
   view,
   findPlayer,
+  type Game,
 } from "../../src/shared/game";
 import { gameFixture, lobbyFixture } from "./helpers";
 
@@ -216,6 +218,54 @@ describe("scoring", () => {
     expect(game).toMatchObject({ phase: "results", tie: true });
     tick(game, game.deadline);
     expect(game.order).toHaveLength(4);
+  });
+});
+
+describe("life donation", () => {
+  function eliminated(lives = [4, 3, 1]) {
+    const game = gameFixture([[1], [11], [21]]);
+    game.lifeDonation = true;
+    game.players.forEach((player, i) => Object.assign(player, { lives: lives[i], bid: 0 }));
+    game.players[2].taken = 1;
+    score(game, 200);
+    return game;
+  }
+
+  test("moves one life from a donor with four lives to a player eliminated this round", () => {
+    const game = eliminated();
+    donate(game, "p0", "p2");
+
+    expect(game.players.map((p) => p.lives)).toEqual([3, 3, 1]);
+    expect(game.players[2].eliminatedRound).toBeUndefined();
+    expect(game.results.map((result) => result.lives)).toEqual([3, 3, 1]);
+    expect(game.donations).toEqual([{ from: "p0", to: "p2" }]);
+    expect(() => donate(game, "p0", "p2")).toThrow("donationUnavailable");
+    tick(game, game.deadline);
+    expect(game.order).toHaveLength(3);
+    expect(game.donations).toBeUndefined();
+  });
+
+  test.each([
+    { name: "the rule is off", setup: (game: Game) => (game.lifeDonation = false) },
+    { name: "the next round started", setup: (game: Game) => tick(game, game.deadline) },
+    {
+      name: "the donor has fewer than four lives",
+      setup: (game: Game) => (game.players[0].lives = 3),
+    },
+  ])("refuses donations when $name", ({ setup }) => {
+    const game = eliminated();
+    setup(game);
+    expect(() => donate(game, "p0", "p2")).toThrow("donationUnavailable");
+  });
+
+  test("refuses recipients who are alive, forfeited, or eliminated earlier", () => {
+    const game = eliminated();
+    expect(() => donate(game, "p0", "p1")).toThrow("donationTarget");
+    game.players[2].eliminatedRound = game.round - 1;
+    expect(() => donate(game, "p0", "p2")).toThrow("donationTarget");
+    game.players[2].eliminatedRound = game.round;
+    game.players[2].forfeited = true;
+    expect(() => donate(game, "p0", "p2")).toThrow("donationTarget");
   });
 });
 
