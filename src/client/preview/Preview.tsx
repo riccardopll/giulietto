@@ -196,7 +196,7 @@ export function Preview({ bot }: { bot: Bot }) {
     const acting = game.phase === "bidding" || game.phase === "playing";
     const viewerId = viewer === -1 ? null : game.players[viewer]?.id;
     if (acting && game.order[game.turn] === viewerId && !autoPlays(game)) return;
-    const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? 3000 : 900;
+    const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? ROUND_PAUSE_MS : 900;
     const timer = setTimeout(() => {
       setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], bot) }));
     }, delay);
