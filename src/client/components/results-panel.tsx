@@ -3,6 +3,7 @@ import { findPlayer, ROUND_PAUSE_MS, type GameView, type Rematch } from "../../s
 import { t } from "../i18n";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
+import { Confetti } from "./confetti";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "@ui/button";
@@ -59,19 +60,22 @@ export function ResultsPanel({
     );
   return (
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center">
-      <div className="mb-4 flex items-center gap-3 px-1 pt-2">
-        <h1 className="min-w-0 text-left text-2xl font-semibold wrap-anywhere">
-          {finished ? t.results.closed : game.tie ? t.results.tie : t.results.round}
-        </h1>
-        {!finished && (
-          <ChatButton
-            className="-my-1.5 ml-auto"
-            unread={chat.unread}
-            onClick={() => chat.setOpen(true)}
-          />
-        )}
+      {game.tie && <Confetti />}
+      <div className="mb-4 px-1 pt-2 text-left">
+        <div className="flex items-center gap-3">
+          <h1 className="min-w-0 text-2xl font-semibold wrap-anywhere">
+            {finished ? t.results.closed : game.tie ? t.results.tie : t.results.round}
+          </h1>
+          {!finished && (
+            <ChatButton
+              className="-my-1.5 ml-auto"
+              unread={chat.unread}
+              onClick={() => chat.setOpen(true)}
+            />
+          )}
+        </div>
+        {game.tie && <p className="mt-1 text-sm text-muted-foreground">{t.results.tieNote}</p>}
       </div>
-      {game.tie && <p className="mb-5 text-sm text-muted-foreground">{t.results.tieNote}</p>}
       <div className="-mx-3">
         <table className="w-full table-fixed text-sm">
           <colgroup>
@@ -119,7 +123,7 @@ export function ResultsPanel({
                   <td className={cellClass}>{result?.taken ?? "–"}</td>
                   <td className={cn(cellClass, "pr-4")}>
                     <div className="grid min-h-10 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1">
-                      <LifeCount n={player.lives} className="col-start-2 gap-1.5" />
+                      <LifeCount n={game.tie ? 0 : player.lives} className="col-start-2 gap-1.5" />
                       {!!result?.lost && (
                         <span
                           className="col-start-3 justify-self-start rounded-md bg-destructive/10 px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap text-destructive tabular-nums"
