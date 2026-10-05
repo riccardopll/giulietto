@@ -3,6 +3,7 @@ import { findPlayer, ROUND_PAUSE_MS, type GameView, type Rematch } from "../../s
 import { t } from "../i18n";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
+import { Confetti } from "./confetti";
 import { LifeCount } from "./lives";
 import { WinnerPodium } from "./winner-podium";
 import { Button } from "@ui/button";
@@ -59,6 +60,7 @@ export function ResultsPanel({
     );
   return (
     <section className="mx-auto my-4 w-full max-w-2xl rounded-2xl border border-border bg-card p-3 text-center">
+      {game.tie && <Confetti />}
       <div className="mb-4 px-1 pt-2 text-left">
         <div className="flex items-center gap-3">
           <h1 className="min-w-0 text-2xl font-semibold wrap-anywhere">

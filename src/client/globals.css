@@ -289,3 +289,16 @@
     color: var(--color-foreground);
   }
 }
+@keyframes confetti-fall {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0);
+  }
+  85% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--drift), 105vh) rotate(var(--spin));
+  }
+}
