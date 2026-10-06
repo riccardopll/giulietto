@@ -162,7 +162,7 @@ export function EmotePicker({
           collisionPadding={12}
           aria-label={t.emotes.menu}
           onOpenAutoFocus={(event) => event.preventDefault()}
-          className="z-50 grid w-auto grid-cols-5 gap-2 bg-transparent p-2"
+          className="z-50 grid w-auto grid-cols-5 gap-3 bg-transparent py-2"
         >
           {EMOTE_IDS.map((id) => (
             <button
