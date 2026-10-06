@@ -53,6 +53,7 @@ export const it: Messages = {
     matches: "Partite",
     wins: "Vittorie",
     winRate: "% vittorie",
+    secondPlaces: "Secondi posti",
     acesPlayed: "Assi di Denari giocati",
     averagePrediction: "Dichiarazione media",
     averageTurn: "Tempo medio per turno",

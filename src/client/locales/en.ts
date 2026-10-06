@@ -55,6 +55,7 @@ export const en = {
     matches: "Matches",
     wins: "Wins",
     winRate: "Win rate",
+    secondPlaces: "Second places",
     acesPlayed: "Aces of Coins played",
     averagePrediction: "Average prediction",
     averageTurn: "Average turn time",

@@ -2,7 +2,7 @@ import { useState, type CSSProperties } from "react";
 import { errorMessage, formatDecimal, t } from "../i18n";
 import { toast } from "../toast";
 import { Pencil, PlayingCard, Target, Timer } from "lucide-react";
-import type { Profile, StatsResponse } from "../../shared/player-stats";
+import { winRate, type Profile, type StatsResponse } from "../../shared/player-stats";
 import { type AvatarId } from "../../shared/avatars";
 import { Avatar } from "./avatar";
 import { AvatarPicker } from "./avatar-picker";
@@ -10,7 +10,7 @@ import { Button } from "@ui/button";
 import { PageHeading } from "@ui/page-heading";
 import { NameChangeInput } from "@ui/name-change-input";
 import { ActionDialog } from "@ui/action-dialog";
-import { Leaderboard } from "./leaderboard";
+import { Leaderboard, statIcons } from "./leaderboard";
 import { cn } from "../utils";
 
 function ProfileEditor({
@@ -141,21 +141,30 @@ export function PlayerPages({
             <>
               <dl className="my-7 grid grid-cols-3 divide-x border-y py-5 text-center">
                 {[
-                  [t.profile.matches, stats.matches],
-                  [t.profile.wins, stats.wins],
-                  [
-                    t.profile.winRate,
-                    `${stats.matches ? Math.round((100 * stats.wins) / stats.matches) : 0}%`,
-                  ],
-                ].map(([label, value]) => (
+                  { label: t.profile.matches, value: stats.matches, icon: statIcons.matches },
+                  { label: t.profile.wins, value: stats.wins },
+                  {
+                    label: t.profile.winRate,
+                    value: `${winRate(stats)}%`,
+                    icon: statIcons.winRate,
+                  },
+                ].map(({ label, value, icon: Icon }) => (
                   <div key={label}>
                     <dd className="text-2xl font-semibold tabular-nums">{value}</dd>
-                    <dt className="mt-1 text-sm text-muted-foreground">{label}</dt>
+                    <dt className="mt-1 flex items-center justify-center gap-1 text-sm text-muted-foreground">
+                      {Icon && <Icon className="size-4 shrink-0" aria-hidden="true" />}
+                      {label}
+                    </dt>
                   </div>
                 ))}
               </dl>
               <dl className="divide-y">
                 {[
+                  {
+                    label: t.profile.secondPlaces,
+                    value: stats.secondPlaces,
+                    icon: statIcons.secondPlaces,
+                  },
                   {
                     label: t.profile.acesPlayed,
                     value: stats.acesOfCoinsPlayed ?? "—",
