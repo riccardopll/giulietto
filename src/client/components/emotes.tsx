@@ -25,6 +25,7 @@ const EMOTES: Record<Emote["id"], { size: string; bust?: boolean }> = {
   perso: { size: "h-[86px] w-[108px]" },
   goblin: { size: "h-[53.7px] w-[76px]", bust: true },
   princess: { size: "h-[58.4px] w-[45.9px]", bust: true },
+  laughingGoblin: { size: "h-[54.2px] w-[48.5px]", bust: true },
 };
 
 function EmoteArt({ id, animated = false }: { id: Emote["id"]; animated?: boolean }) {
@@ -161,7 +162,7 @@ export function EmotePicker({
           collisionPadding={12}
           aria-label={t.emotes.menu}
           onOpenAutoFocus={(event) => event.preventDefault()}
-          className="z-50 grid w-auto grid-cols-4 gap-3 bg-transparent p-2"
+          className="z-50 grid w-auto grid-cols-5 gap-3 bg-transparent py-2"
         >
           {EMOTE_IDS.map((id) => (
             <button

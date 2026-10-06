@@ -159,6 +159,7 @@ export const it: Messages = {
       perso: "Perso",
       goblin: "goblin",
       princess: "principessa",
+      laughingGoblin: "goblin che ride",
     },
     send: (emote) => `Invia l'emote ${emote}`,
     sent: (name, emote) => `${name} ha inviato l'emote ${emote}`,

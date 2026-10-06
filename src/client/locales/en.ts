@@ -161,6 +161,7 @@ export const en = {
       perso: "Perso",
       goblin: "goblin",
       princess: "princess",
+      laughingGoblin: "laughing goblin",
     } satisfies Record<Emote["id"], string>,
     send: (emote: string) => `Send ${emote} emote`,
     sent: (name: string, emote: string) => `${name} sent the ${emote} emote`,
