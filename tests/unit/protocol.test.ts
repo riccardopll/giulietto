@@ -169,6 +169,8 @@ test.each([
   [{ action: "play", card: "31" }, "invalidCard"],
   [{ action: "settings", option: "startingLives", value: 9 }, "livesRange"],
   [{ action: "settings", option: "turnSeconds", value: 1 }, "moveTimeRange"],
+  [{ action: "settings", option: "lifeDonation", value: 1 }, "optionRequired"],
+  [{ action: "donate" }, "playerRequired"],
   [{ action: "rename" }, "nameRequired"],
   [{ action: "emote", emote: "unknown" }, "invalidRequest"],
   [{ action: "chat", text: "   " }, "chatEmpty"],
@@ -201,6 +203,12 @@ test("normalizes accepted commands and drops unknown fields", () => {
   expect(command({ action: "rematch", code: "ABCDEFGH", commandId, name: "x" })).toEqual({
     action: "rematch",
     code: "ABCDEFGH",
+    commandId,
+  });
+  expect(command({ action: "settings", option: "lifeDonation", value: true, commandId })).toEqual({
+    action: "settings",
+    option: "lifeDonation",
+    value: true,
     commandId,
   });
   expect(command({ action: "join", name: "bot_2", avatar: "king-cups", commandId })).toEqual({

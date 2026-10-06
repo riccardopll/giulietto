@@ -1,6 +1,7 @@
-import type { LobbyOption } from "../../shared/commands";
+import type { LobbyOption, LobbySettings } from "../../shared/commands";
 import { Avatar } from "./avatar";
 import { useState } from "react";
+import { Switch } from "radix-ui";
 import { ArrowRight, Check, Globe, Link, Lock, Minus, Pencil, Plus, User } from "lucide-react";
 import {
   MAX_STARTING_LIVES,
@@ -31,7 +32,7 @@ const options = [
     step: 5,
   },
 ] as const;
-type SaveSettings = (option: LobbyOption, value: number) => Promise<unknown>;
+type SaveSettings = (settings: LobbySettings) => Promise<unknown>;
 
 function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; save: SaveSettings }) {
   const [draft, setDraft] = useState<{ name: LobbyOption; value: number } | null>(null);
@@ -39,7 +40,7 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
   async function commit() {
     if (!host || busy || !draft) return;
     try {
-      if (draft.value !== game[draft.name]) await save(draft.name, draft.value);
+      if (draft.value !== game[draft.name]) await save({ option: draft.name, value: draft.value });
     } finally {
       setDraft(null);
     }
@@ -93,6 +94,24 @@ function LobbyOptions({ game, busy, save }: { game: GameView; busy: boolean; sav
             </div>
           );
         })}
+        <div className="flex items-center justify-between gap-4">
+          <div className="grid gap-1">
+            <label htmlFor="lifeDonation">{t.lobby.lifeDonation}</label>
+            <p id="lifeDonation-hint" className="text-xs text-muted-foreground">
+              {t.lobby.lifeDonationHint}
+            </p>
+          </div>
+          <Switch.Root
+            id="lifeDonation"
+            checked={game.lifeDonation}
+            aria-describedby="lifeDonation-hint"
+            disabled={!host || busy}
+            onCheckedChange={(value) => void save({ option: "lifeDonation", value })}
+            className="relative h-8 w-14 shrink-0 cursor-pointer rounded-full bg-border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-default disabled:opacity-60 data-[state=checked]:bg-primary"
+          >
+            <Switch.Thumb className="block size-6 translate-x-1 rounded-full bg-card shadow-xs transition-transform data-[state=checked]:translate-x-7" />
+          </Switch.Root>
+        </div>
       </div>
     </section>
   );

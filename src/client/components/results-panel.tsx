@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { findPlayer, ROUND_PAUSE_MS, type GameView, type Rematch } from "../../shared/game";
+import { Heart } from "lucide-react";
+import {
+  canDonate,
+  canReceiveLife,
+  findPlayer,
+  ROUND_PAUSE_MS,
+  type GameView,
+  type Rematch,
+} from "../../shared/game";
 import { t } from "../i18n";
 import { cn, toRoman } from "../utils";
 import { ChatButton, type ChatState } from "./chat";
@@ -35,6 +43,7 @@ export function ResultsPanel({
   invite,
   onRematch,
   onReset,
+  onDonate,
 }: {
   game: GameView;
   preview: boolean;
@@ -43,10 +52,15 @@ export function ResultsPanel({
   invite?: Rematch;
   onRematch: () => void;
   onReset: () => void;
+  onDonate: (playerId: string) => void;
 }) {
   const remaining = useCountdown(game, preview);
   const finished = game.phase === "finished";
   const winner = finished && game.winner ? findPlayer(game, game.winner) : undefined;
+  const me = findPlayer(game, game.you);
+  const recipients =
+    me && canDonate(game, me) ? game.players.filter((player) => canReceiveLife(game, player)) : [];
+  const name = (id: string) => findPlayer(game, id)?.name ?? "?";
   if (winner)
     return (
       <WinnerPodium
@@ -140,6 +154,30 @@ export function ResultsPanel({
           </tbody>
         </table>
       </div>
+      {!!game.donations?.length && (
+        <ul className="mt-3 grid gap-1 text-sm text-muted-foreground">
+          {game.donations.map((donation, i) => (
+            <li key={i}>{t.results.donated(name(donation.from), name(donation.to))}</li>
+          ))}
+        </ul>
+      )}
+      {!!recipients.length && (
+        <div className="mt-3 grid gap-2 border-t pt-4">
+          <p className="text-sm text-muted-foreground">{t.results.donate}</p>
+          {recipients.map((player) => (
+            <Button
+              key={player.id}
+              variant="outline"
+              size="lg"
+              disabled={busy}
+              onClick={() => onDonate(player.id)}
+            >
+              <Heart className="text-destructive" fill="currentColor" />
+              {t.results.donateTo(player.name)}
+            </Button>
+          ))}
+        </div>
+      )}
       {finished ? (
         <Button size="lg" className="mt-6 w-full max-w-68" onClick={onReset}>
           {t.backToTables}

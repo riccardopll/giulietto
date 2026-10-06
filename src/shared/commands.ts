@@ -11,14 +11,18 @@ export type EntryCommand =
       resume?: boolean;
     };
 export type LobbyOption = "startingLives" | "turnSeconds";
+export type LobbySettings =
+  | { option: LobbyOption; value: number }
+  | { option: "lifeDonation"; value: boolean };
 export type TableCommand =
   | { action: "rename"; name: string }
-  | { action: "settings"; option: LobbyOption; value: number }
+  | ({ action: "settings" } & LobbySettings)
   | { action: "start" }
   | { action: "addBot" }
   | { action: "kick"; playerId: string }
   | { action: "bid"; bid: number }
   | { action: "play"; card: number; mode?: "high" | "low" }
+  | { action: "donate"; playerId: string }
   | { action: "emote"; emote: Emote["id"] }
   | { action: "chat"; text: string }
   | { action: "rematch" }
