@@ -71,6 +71,7 @@ test("stats use finalized history once, preserve identity, and rank players by w
   expect((await read()).player).toEqual({
     matches: 1,
     wins: 1,
+    secondPlaces: 0,
     xp: 30,
     level: 1,
     acesOfCoinsPlayed: null,
@@ -279,6 +280,7 @@ test("aggregate migration preserves historical samples and retries count each co
   const expected = {
     matches: 2,
     wins: 1,
+    secondPlaces: 0,
     xp: 40,
     level: 1,
     acesOfCoinsPlayed: 2,
@@ -342,6 +344,7 @@ test("bot exclusion migration rebuilds every total from human-only matches", asy
   expect((await playerStats(db, "p0")).player).toEqual({
     matches: 1,
     wins: 1,
+    secondPlaces: 0,
     xp: 30,
     level: 1,
     acesOfCoinsPlayed: 1,
@@ -413,6 +416,9 @@ test("finalization counts every runner-up once and the migration rebuilds them f
   ]);
   await db.batch(migration("0011_player_second_places.sql").map((sql) => db.prepare(sql)));
   expect(await seconds()).toEqual([0, 1, 1, 1]);
+  expect((await playerStats(db, "p0")).leaders).toContainEqual(
+    expect.objectContaining({ name: "bot_2", secondPlaces: 1 }),
+  );
 });
 
 test("forfeiture persists during play and counts once as a loss when the match finishes", async () => {

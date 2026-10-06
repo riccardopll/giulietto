@@ -3,6 +3,7 @@ export type Profile = { name: string; avatar: AvatarId };
 export type PlayerStats = {
   matches: number;
   wins: number;
+  secondPlaces: number;
   acesOfCoinsPlayed: number | null;
   averagePrediction: number | null;
   averageDecisionMs: number | null;
@@ -13,6 +14,10 @@ export type PlayerStats = {
 export function progression(matches: number, wins: number) {
   const xp = matches * 10 + wins * 20;
   return { xp, level: 1 + Math.floor(xp / 100) };
+}
+
+export function winRate({ matches, wins }: Pick<PlayerStats, "matches" | "wins">) {
+  return matches ? Math.round((100 * wins) / matches) : 0;
 }
 
 export type Leader = PlayerStats & Profile & { you: boolean };

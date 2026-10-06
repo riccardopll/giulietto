@@ -5,6 +5,7 @@ type Row = Omit<PlayerStats, "xp" | "level"> & { id: string; name: string; avata
 
 const columns = `p.id, p.display_name AS name, p.avatar,
   COALESCE(s.matches,0) AS matches, COALESCE(s.wins,0) AS wins,
+  COALESCE(s.second_places,0) AS secondPlaces,
   CASE WHEN s.player_id IS NULL THEN 0 ELSE s.aces_of_coins_played END AS acesOfCoinsPlayed,
   1.0*s.prediction_total/NULLIF(s.prediction_count,0) AS averagePrediction,
   1.0*(s.play_time_ms+s.prediction_time_ms)
@@ -14,6 +15,7 @@ function stats(row?: Row): PlayerStats {
   const {
     matches = 0,
     wins = 0,
+    secondPlaces = 0,
     acesOfCoinsPlayed = 0,
     averagePrediction = null,
     averageDecisionMs = null,
@@ -21,6 +23,7 @@ function stats(row?: Row): PlayerStats {
   return {
     matches,
     wins,
+    secondPlaces,
     acesOfCoinsPlayed,
     averagePrediction,
     averageDecisionMs,

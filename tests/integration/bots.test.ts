@@ -156,6 +156,7 @@ test("server bots finish a match across eviction and persist bot identity withou
   expect(stats.player).toEqual({
     matches: 0,
     wins: 0,
+    secondPlaces: 0,
     xp: 0,
     level: 1,
     acesOfCoinsPlayed: 0,
