@@ -2,6 +2,7 @@ import { SELF, env } from "cloudflare:test";
 import { expect, test } from "vitest";
 import { api, guest } from "./helpers";
 import { gameFixture } from "../unit/helpers";
+import type { Game } from "../../src/shared/game";
 import { historyStatements } from "../../src/server/match-history";
 import type { StatsResponse } from "../../src/shared/player-stats";
 import { eventStatements, type GameEvent } from "../../src/server/game-events";
@@ -265,10 +266,15 @@ test("aggregate migration preserves historical samples and retries count each co
     WHERE match_id='backfill-0' AND player_id='p0'`)
     .run();
   await db.batch([
+    db.prepare("DROP TRIGGER count_second_places"),
     db.prepare("DROP TABLE player_stats"),
     db.prepare("ALTER TABLE matches DROP COLUMN stats_counted"),
   ]);
-  await db.batch(migration("0008_player_stats.sql").map((sql) => db.prepare(sql)));
+  await db.batch(
+    [...migration("0008_player_stats.sql"), ...migration("0011_player_second_places.sql")].map(
+      (sql) => db.prepare(sql),
+    ),
+  );
   const read = async () => (await playerStats(db, "p0")).player;
   const expected = {
     matches: 2,
@@ -351,6 +357,62 @@ test("bot exclusion migration rebuilds every total from human-only matches", asy
     averageDecisionMs: null,
   });
   expect((await playerStats(db, "p0")).leaders).toHaveLength(3);
+});
+
+test("finalization counts every runner-up once and the migration rebuilds them from dealt rounds", async () => {
+  const finish = (matchId: string, rounds: Record<string, number>, bot = false) => {
+    const game = gameFixture([[1], [2], [3], [4]]);
+    game.matchId = matchId;
+    game.players[3].bot = bot;
+    for (const player of game.players) player.eliminatedRound = rounds[player.id];
+    game.phase = "finished";
+    game.finishedAt = 200;
+    game.winner = "p0";
+    game.revision++;
+    return game;
+  };
+  const dealt = (game: Game) => {
+    const last = Math.max(...game.players.map((player) => player.eliminatedRound ?? 0));
+    const events: GameEvent[] = Array.from({ length: last }, (_, i) => ({
+      sequence: i + 1,
+      match_id: game.matchId!,
+      revision: game.revision,
+      round: i + 1,
+      type: "round_dealt",
+      player_id: null,
+      source: "system",
+      command_id: null,
+      occurred_at: 200,
+      payload: JSON.stringify({
+        order: game.players
+          .filter((player) => player.id === game.winner || player.eliminatedRound! > i)
+          .map((player) => player.id),
+      }),
+    }));
+    return eventStatements(db, game, events);
+  };
+  const games = [
+    finish("tied-seconds", { p1: 3, p2: 3, p3: 1 }),
+    finish("single-second", { p1: 2, p2: 1, p3: 4 }),
+    finish("with-bot", { p1: 1, p2: 4, p3: 2 }, true),
+  ];
+  for (const game of games) {
+    await db.batch([...dealt(game), ...historyStatements(db, game, 0)]);
+    await db.batch(historyStatements(db, game, 0));
+  }
+  const seconds = async () =>
+    (
+      await db
+        .prepare("SELECT player_id, second_places FROM player_stats ORDER BY player_id")
+        .all<{ player_id: string; second_places: number }>()
+    ).results.map((row) => row.second_places);
+  expect(await seconds()).toEqual([0, 1, 1, 1]);
+  await db.batch([
+    db.prepare("DROP TRIGGER count_second_places"),
+    db.prepare("ALTER TABLE player_stats DROP COLUMN second_places"),
+  ]);
+  await db.batch(migration("0011_player_second_places.sql").map((sql) => db.prepare(sql)));
+  expect(await seconds()).toEqual([0, 1, 1, 1]);
 });
 
 test("forfeiture persists during play and counts once as a loss when the match finishes", async () => {
