@@ -25,7 +25,7 @@ const EMOTES: Record<Emote["id"], { size: string; bust?: boolean }> = {
   perso: { size: "h-[86px] w-[108px]" },
   goblin: { size: "h-[53.7px] w-[76px]", bust: true },
   princess: { size: "h-[58.4px] w-[45.9px]", bust: true },
-  laughingGoblin: { size: "h-[47.4px] w-[46px]", bust: true },
+  laughingGoblin: { size: "h-[60px] w-[53.3px]", bust: true },
 };
 
 function EmoteArt({ id, animated = false }: { id: Emote["id"]; animated?: boolean }) {
