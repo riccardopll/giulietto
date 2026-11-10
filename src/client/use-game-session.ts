@@ -48,11 +48,11 @@ export function useGameSession(preview?: PreviewSession, onExit?: () => void) {
   const busyRef = useRef(busy);
   const game = preview?.state ?? liveGame;
   const ready = !session.error;
-  const blindAce = !!game?.canChooseAce && game.count === 1;
+  const lastAce = !!game?.canChooseAce && findPlayer(game, game.you)!.hand.length === 1;
   const [aceOffered, setAceOffered] = useState(false);
-  if (blindAce !== aceOffered) {
-    setAceOffered(blindAce);
-    if (blindAce) setAce(-1);
+  if (lastAce !== aceOffered) {
+    setAceOffered(lastAce);
+    if (lastAce) setAce(game!.count === 1 ? -1 : 31);
   }
 
   function setBusy(value: boolean) {

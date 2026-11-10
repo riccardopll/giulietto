@@ -1,6 +1,6 @@
 import { env, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { afterEach, expect, test, vi } from "vitest";
-import { BLIND_PLAY_MS, type Game } from "../../src/shared/game";
+import { AUTO_PLAY_MS, type Game } from "../../src/shared/game";
 import { api, guest } from "./helpers";
 
 const DAY = 86_400_000;
@@ -66,7 +66,7 @@ test("blind cards are played by the table and recorded as system plays", async (
   let state = started;
   for (const id of started.order)
     state = await api.state(guests.get(id)!, { action: "bid", bid: 0, code });
-  expect(state).toMatchObject({ phase: "playing", turnMs: BLIND_PLAY_MS });
+  expect(state).toMatchObject({ phase: "playing", turnMs: AUTO_PLAY_MS });
   await expect
     .poll(() =>
       env.DB.prepare("SELECT COUNT(*) AS n FROM match_events WHERE match_id=? AND type='bid'")
@@ -78,7 +78,7 @@ test("blind cards are played by the table and recorded as system plays", async (
   expect(await alarmAt(code, state.deadline)).toBe(true);
   state = await api.state(host, { action: "join", code });
   expect(state.trick).toHaveLength(1);
-  expect(state.deadline).toBe(Date.now() + BLIND_PLAY_MS);
+  expect(state.deadline).toBe(Date.now() + AUTO_PLAY_MS);
   expect(await alarmAt(code, state.deadline)).toBe(true);
   expect((await api.state(host, { action: "join", code })).phase).toBe("trick");
   const plays = await runInDurableObject(stub, (_instance, ctx) =>
@@ -87,6 +87,84 @@ test("blind cards are played by the table and recorded as system plays", async (
       .toArray(),
   );
   expect(plays).toEqual(started.order.map((player_id) => ({ player_id, source: "system" })));
+});
+
+test("the table plays each last card once and refuses the player's own play", async () => {
+  const host = guest(1);
+  const other = guest(2);
+  const { code } = await api.state(host, { action: "create" });
+  const joined = await api.state(other, { action: "join", code });
+  const started = await api.state(host, { action: "start", code });
+  const guests = new Map([
+    [started.you, host],
+    [joined.you, other],
+  ]);
+  const stub = env.ROOMS.getByName(code);
+  await runInDurableObject(stub, (_instance, ctx) => {
+    const room = ctx.storage.kv.get("room") as { game: Game };
+    room.game.count = 2;
+    room.game.players.forEach((player, seat) => {
+      player.hand = [seat + 1, seat + 11];
+    });
+    ctx.storage.kv.put("room", room);
+  });
+  for (const id of started.order) await api.state(guests.get(id)!, { action: "bid", bid: 0, code });
+  const opening = started.order.map((id) => ({
+    player: guests.get(id)!,
+    input: {
+      action: "play",
+      card: started.players.findIndex((player) => player.id === id) + 1,
+      code,
+      commandId: crypto.randomUUID(),
+    },
+  }));
+  let state = started;
+  for (const { player, input } of opening) {
+    state = await api.state(player, input);
+    expect(state.turnMs).toBe(started.turnSeconds * 1000);
+  }
+  expect(state.phase).toBe("trick");
+  await expect
+    .poll(() =>
+      env.DB.prepare("SELECT COUNT(*) AS n FROM match_events WHERE match_id=? AND type='play'")
+        .bind(started.matchId!)
+        .first(),
+    )
+    .toEqual({ n: 2 });
+
+  expect(await alarmAt(code, state.deadline)).toBe(true);
+  state = await api.state(host, { action: "join", code });
+  expect(state).toMatchObject({
+    phase: "playing",
+    turnMs: AUTO_PLAY_MS,
+    deadline: Date.now() + AUTO_PLAY_MS,
+  });
+  const leader = state.order[state.turn];
+  const refused = await api.post(guests.get(leader)!, {
+    action: "play",
+    card: state.players.findIndex((player) => player.id === leader) + 11,
+    code,
+  });
+  expect(refused.status).toBe(400);
+  expect(await refused.json()).toEqual({ error: "notYourTurn" });
+  for (const { player, input } of opening) await api.state(player, input);
+  expect((await api.state(host, { action: "join", code })).trick).toEqual([]);
+
+  expect(await alarmAt(code, state.deadline)).toBe(true);
+  state = await api.state(host, { action: "join", code });
+  expect(state.trick.map((play) => play.player)).toEqual([leader]);
+  expect(state.deadline).toBe(Date.now() + AUTO_PLAY_MS);
+  expect(await alarmAt(code, state.deadline)).toBe(true);
+  state = await api.state(host, { action: "join", code });
+  expect(state.phase).toBe("trick");
+  expect(state.played).toHaveLength(4);
+  expect(state.players.map((player) => player.hand)).toEqual([[], []]);
+  const plays = await runInDurableObject(stub, (_instance, ctx) =>
+    ctx.storage.sql
+      .exec("SELECT source FROM game_events WHERE type='play' ORDER BY sequence")
+      .toArray(),
+  );
+  expect(plays.map((play) => play.source)).toEqual(["player", "player", "system", "system"]);
 });
 
 test("lobby seats expire while disconnected and the host role moves on", async () => {

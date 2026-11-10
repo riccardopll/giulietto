@@ -110,7 +110,7 @@ export function MatchBoard({
     me?.emote ?? game.spectators?.find((spectator) => spectator.id === game.you)?.emote;
   const myTurn = seating.current === game.you && active;
   const canPlay =
-    myTurn && game.phase === "playing" && !busy && (game.count !== 1 || game.canChooseAce);
+    myTurn && game.phase === "playing" && !busy && (me?.hand.length !== 1 || game.canChooseAce);
   const opponents = seating.seats.slice(1);
   const hasBottomNeighbors = opponents.length > 3;
   const topSeats = hasBottomNeighbors ? opponents.slice(1, -1) : opponents;

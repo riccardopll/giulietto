@@ -72,8 +72,8 @@ test.each([
 
 test("starts play timing after the between-trick pause, even when the alarm is late", () => {
   const game = gameFixture([
-    [1, 2],
-    [11, 12],
+    [1, 2, 3],
+    [11, 12, 13],
   ]);
   bid(game, "p0", 0, 100);
   bid(game, "p1", 0, 100);

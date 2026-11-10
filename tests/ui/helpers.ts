@@ -120,22 +120,33 @@ export async function playCard(players: Player[], keyboard = false) {
     await button.focus();
     await button.press("Enter");
   } else await button.click();
-  if (state!.canChooseAce && card === 31) {
-    const dialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
-    await expect(dialog.locator('img[src="/cards/neapolitan/31.webp"]')).toHaveCount(2);
-    const low = dialog.getByRole("button", { name: "Low · 0", exact: true });
-    const high = dialog.getByRole("button", { name: "High · 41", exact: true });
-    await expect(low).toBeFocused();
-    if (keyboard) {
-      await page.keyboard.press("Tab");
-      await expect(high).toBeFocused();
-      await page.keyboard.press("Enter");
-    } else await high.click();
-  }
+  if (state!.canChooseAce && card === 31) await chooseHighAce(page, keyboard);
   await synced(
     players,
     (next) =>
       next.revision > state!.revision && next.trick.some((play) => play.player === state!.you),
   );
   await expect(hand.getByRole("button")).toHaveCount(before.hand.length - 1);
+}
+
+async function chooseHighAce(page: Page, keyboard = false) {
+  const dialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
+  await expect(dialog.locator('img[src="/cards/neapolitan/31.webp"]')).toHaveCount(2);
+  const low = dialog.getByRole("button", { name: "Low · 0", exact: true });
+  const high = dialog.getByRole("button", { name: "High · 41", exact: true });
+  await expect(low).toBeFocused();
+  if (keyboard) {
+    await page.keyboard.press("Tab");
+    await expect(high).toBeFocused();
+    await page.keyboard.press("Enter");
+  } else await high.click();
+}
+
+export async function lastTrick(players: Player[]) {
+  const played = () => players.every((player) => player.state!.phase !== "playing");
+  const chooser = () => players.find((player) => player.state!.canChooseAce);
+  await expect.poll(() => played() || !!chooser(), { timeout: 20_000 }).toBe(true);
+  const ace = chooser();
+  if (ace) await chooseHighAce(ace.page);
+  await synced(players, (state) => state.phase !== "playing");
 }

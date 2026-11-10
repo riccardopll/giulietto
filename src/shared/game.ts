@@ -68,7 +68,7 @@ export const MIN_TURN_SECONDS = 15;
 export const MAX_TURN_SECONDS = 40;
 export const ROUND_PAUSE_MS = 8000;
 export const TRICK_PAUSE_MS = 1600;
-export const BLIND_PLAY_MS = 1000;
+export const AUTO_PLAY_MS = 1000;
 export const TABLE_RETENTION_MS = 86400000;
 export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
@@ -121,14 +121,12 @@ export function strength(play: Play) {
   return play.card === 31 ? (play.mode === "low" ? 0 : 41) : play.card;
 }
 export function autoPlays(game: Game) {
-  return (
-    game.phase === "playing" &&
-    game.count === 1 &&
-    !findPlayer(game, game.order[game.turn])!.hand.includes(31)
-  );
+  if (game.phase !== "playing") return false;
+  const hand = findPlayer(game, game.order[game.turn])!.hand;
+  return hand.length === 1 && hand[0] !== 31;
 }
 export function turnMs(game: Game) {
-  return autoPlays(game) ? BLIND_PLAY_MS : game.turnSeconds * 1000;
+  return autoPlays(game) ? AUTO_PLAY_MS : game.turnSeconds * 1000;
 }
 function shuffle<T>(items: T[]) {
   for (let i = items.length - 1; i > 0; i--) {
@@ -329,7 +327,7 @@ export function tick(game: Game, now: number, connected?: ReadonlySet<string>) {
       game.phase = "playing";
       game.turn = game.order.indexOf(game.lastWinner!);
       game.trick = [];
-      game.deadline = now + game.turnSeconds * 1000;
+      game.deadline = now + turnMs(game);
     }
   } else if (game.phase === "results") deal(game, now);
 }
