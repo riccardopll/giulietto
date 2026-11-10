@@ -11,7 +11,9 @@ class Socket {
   onmessage?: (event: { data: string }) => void;
   onclose?: (event: { code: number; reason: string }) => void;
   send = vi.fn();
-  close = vi.fn((code = 1000, reason = "") => this.disconnect(code, reason));
+  close = vi.fn(() => {
+    this.readyState = 2;
+  });
   constructor() {
     Socket.sockets.push(this);
   }
@@ -55,6 +57,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  page.visibilityState = "visible";
   connection.stop();
   vi.useRealTimers();
   vi.unstubAllGlobals();
@@ -139,8 +142,52 @@ test("pings every ten seconds and drops a socket that stops replying", async () 
   await vi.advanceTimersByTimeAsync(1);
   expect(first.close).toHaveBeenCalledWith(4000, "No reply");
   expect(status).toHaveBeenLastCalledWith("reconnecting");
-  await vi.advanceTimersByTimeAsync(500);
   expect(Socket.sockets).toHaveLength(2);
+});
+
+test("replaces a silent socket without waiting for it to close", async () => {
+  const first = Socket.sockets[0];
+  first.open();
+  first.receive({ type: "state", state: state() });
+  const pending = connection.command({ action: "bid", bid: 0 });
+  const message = first.send.mock.calls[0][0];
+  await vi.advanceTimersByTimeAsync(5000);
+  expect(first.readyState).toBe(2);
+  const second = Socket.sockets[1];
+  second.open();
+  second.receive({ type: "state", state: state() });
+  expect(second.send.mock.calls).toEqual([[message]]);
+  second.receive({ type: "ack", commandId: JSON.parse(message).commandId, state: state() });
+  await expect(pending).resolves.toMatchObject({ you: "p0" });
+  first.receive({ type: "state", state: { ...state(), viewerName: "late" } });
+  first.disconnect();
+  await vi.advanceTimersByTimeAsync(9000);
+  expect(Socket.sockets).toHaveLength(2);
+  expect(accept).toHaveBeenCalledTimes(2);
+  expect(status).toHaveBeenLastCalledWith("");
+});
+
+test("opens a fresh socket after the tab was hidden for a while", async () => {
+  const first = Socket.sockets[0];
+  first.open();
+  first.receive({ type: "state", state: state() });
+  page.visibilityState = "hidden";
+  page.dispatchEvent(new Event("visibilitychange"));
+  await vi.advanceTimersByTimeAsync(3000);
+  page.visibilityState = "visible";
+  page.dispatchEvent(new Event("visibilitychange"));
+  expect(first.send.mock.calls).toEqual([["ping"]]);
+  first.onmessage?.({ data: "pong" });
+  expect(Socket.sockets).toHaveLength(1);
+  page.visibilityState = "hidden";
+  page.dispatchEvent(new Event("visibilitychange"));
+  await vi.advanceTimersByTimeAsync(6000);
+  page.visibilityState = "visible";
+  page.dispatchEvent(new Event("visibilitychange"));
+  expect(first.close).toHaveBeenCalledWith(4000, "Resumed");
+  expect(status).toHaveBeenLastCalledWith("reconnecting");
+  expect(Socket.sockets).toHaveLength(2);
+  expect(request).not.toHaveBeenCalled();
 });
 
 test("drops a socket that never delivers its first snapshot and tries again", async () => {

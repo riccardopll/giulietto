@@ -1,6 +1,6 @@
 import { env, runDurableObjectAlarm, runInDurableObject } from "cloudflare:test";
 import { afterEach, expect, test, vi } from "vitest";
-import { AUTO_PLAY_MS, type Game } from "../../src/shared/game";
+import { AUTO_PLAY_MS, type Game, type GameView } from "../../src/shared/game";
 import { api, guest } from "./helpers";
 
 const DAY = 86_400_000;
@@ -184,6 +184,32 @@ test("lobby seats expire while disconnected and the host role moves on", async (
   const rejoined = await api.state(host, { action: "join", code });
   expect(rejoined.players).toHaveLength(2);
   expect(rejoined.host).toBe(socket.latest()!.you);
+});
+
+test("silent sockets count as disconnected until they ping or are replaced", async () => {
+  const host = guest(1);
+  const other = guest(2);
+  const { code } = await api.state(host, { action: "create" });
+  const joined = await api.state(other, { action: "join", code });
+  const online = async () => {
+    const state = (await (await api.get(host, code)).json()) as GameView;
+    return state.players.find((player) => player.id === joined.you)!.connected;
+  };
+  const now = Date.now();
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(now - 30_000);
+  const socket = await api.connect(other, code);
+  expect(await online()).toBe(true);
+  vi.useRealTimers();
+  expect(await online()).toBe(false);
+  socket.send("ping");
+  await expect.poll(online).toBe(true);
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(Date.now() + 25_000);
+  expect(await online()).toBe(false);
+  await api.connect(other, code);
+  expect(await socket.closed).toEqual({ code: 4000, reason: "No reply" });
+  expect(await online()).toBe(true);
 });
 
 test("idle tables expire after a day and close their connections", async () => {

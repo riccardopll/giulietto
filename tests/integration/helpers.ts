@@ -45,7 +45,8 @@ async function connect(player: Guest, code: string) {
   if (!socket) throw new Error("Worker did not return a WebSocket.");
   const messages: Message[] = [];
   socket.addEventListener("message", (event) => {
-    if (typeof event.data === "string") messages.push(JSON.parse(event.data) as Message);
+    if (typeof event.data === "string" && event.data !== "pong")
+      messages.push(JSON.parse(event.data) as Message);
   });
   const closed = new Promise<{ code: number; reason: string }>((resolve) =>
     socket.addEventListener("close", ({ code, reason }) => resolve({ code, reason })),
