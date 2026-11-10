@@ -25,6 +25,13 @@ scans. Update totals and `matches.stats_counted` in the same finalization batch
 so a retry cannot count a match twice. Keep timing totals and sample counts
 separate. Matches with bots do not contribute to player statistics or rankings.
 
+Only `view` decides who sees which cards. Spectators who never held a seat
+receive every hand; anyone in `players` receives at most their own, whether
+connected, eliminated, forfeited, or on a second connection. This relies on
+seats never leaving `players` once a match starts. Identity is the hashed
+session cookie, so a player with a second browser profile, or a friend at the
+table code, can still watch every hand.
+
 The finished table opens rematch lobbies itself, with a code derived from the
 command ID, so one invite exists per table and retries reuse the same lobby.
 Invites expire after a minute; the table then accepts a new one.

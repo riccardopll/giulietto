@@ -268,6 +268,70 @@ test("the API rejects malformed commands, foreign origins, and players outside t
   expect((await api.get(guest(3), code)).status).toBe(400);
 });
 
+test("late spectators see every hand and players only their own", async () => {
+  const seats = [guest(1), guest(2), guest(3)];
+  const watcher = guest(4);
+  const { code } = await api.state(seats[0], { action: "create" });
+  for (const seat of seats.slice(1)) await api.state(seat, { action: "join", code });
+  await api.state(seats[0], { action: "start", code });
+  const sockets = await Promise.all(seats.map((seat) => api.connect(seat, code)));
+  const own = (state: GameView) => state.players.find((p) => p.id === state.you)!.hand;
+  const dealt = new Map(sockets.map((socket) => [socket.latest()!.you, own(socket.latest()!)]));
+  const hidden = (state: GameView) =>
+    state.players.every((p) =>
+      p.hand.every((card) => (p.id === state.you ? card !== null : card === null)),
+    );
+  for (const socket of sockets) {
+    expect(own(socket.latest()!)).toHaveLength(6);
+    expect(socket.latest()).toMatchObject({ openHands: false, spectating: false });
+    expect(hidden(socket.latest()!)).toBe(true);
+  }
+
+  const joined = await api.state(watcher, { action: "join", code });
+  expect(joined).toMatchObject({ openHands: true, spectating: true });
+  expect(new Map(joined.players.map((p) => [p.id, p.hand]))).toEqual(dealt);
+  const watching = await api.connect(watcher, code);
+  expect(new Map(watching.latest()!.players.map((p) => [p.id, p.hand]))).toEqual(dealt);
+  expect(((await (await api.get(watcher, code)).json()) as GameView).openHands).toBe(true);
+  await expect.poll(() => sockets[0].latest()?.spectatorCount).toBe(1);
+  expect(sockets.every((socket) => hidden(socket.latest()!))).toBe(true);
+
+  const secondTab = await api.connect(seats[0], code);
+  expect(secondTab.latest()).toMatchObject({ openHands: false, spectating: false });
+  expect(hidden(secondTab.latest()!)).toBe(true);
+  const rejoined = await api.state(seats[0], { action: "join", code });
+  expect(rejoined.openHands).toBe(false);
+  expect(hidden(rejoined)).toBe(true);
+  expect(rejoined.spectators?.map((spectator) => spectator.id)).toEqual([joined.you]);
+
+  const bidder = sockets.find((socket) => socket.latest()!.you === joined.order[0])!;
+  await bidder.command({ action: "bid", bid: 0 });
+  await expect
+    .poll(() => watching.latest()?.players.find((p) => p.id === joined.order[0])?.bid)
+    .toBe(0);
+  expect(new Map(watching.latest()!.players.map((p) => [p.id, p.hand]))).toEqual(dealt);
+
+  const leaver = sockets[1].latest()!.you;
+  await sockets[1].command({ action: "leave" });
+  const returned = await api.state(seats[1], { action: "join", code });
+  expect(returned).toMatchObject({ openHands: false, spectating: true });
+  expect(returned.players.every((p) => p.hand.every((card) => card === null))).toBe(true);
+  const returnedSocket = await api.connect(seats[1], code);
+  expect(returnedSocket.latest()!.openHands).toBe(false);
+  expect(returnedSocket.latest()!.players.every((p) => p.hand.every((card) => card === null))).toBe(
+    true,
+  );
+  await expect
+    .poll(() => watching.latest()?.players.find((p) => p.id === leaver)?.hand)
+    .toEqual([]);
+  expect(
+    watching
+      .latest()!
+      .players.filter((p) => p.id !== leaver)
+      .every((p) => p.hand.length === 6 && p.hand.every((card) => card !== null)),
+  ).toBe(true);
+});
+
 test("reconnected players resume and late spectators receive live updates", async () => {
   const host = guest(1);
   const other = guest(2);
@@ -323,9 +387,6 @@ test("reconnected players resume and late spectators receive live updates", asyn
   await expect
     .poll(() => watchingAgain.latest()?.players.find((p) => p.id === resumed.order[0])?.bid)
     .toBe(0);
-  expect(watchingAgain.latest()!.players.every((p) => p.hand.every((card) => card === null))).toBe(
-    true,
-  );
   expect((await api.get(watcher, code)).status).toBe(200);
   await watchingAgain.command({ action: "leave" });
   await expect.poll(() => reconnected.latest()?.spectatorCount).toBe(0);
