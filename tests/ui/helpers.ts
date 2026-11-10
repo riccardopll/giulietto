@@ -1,15 +1,20 @@
 import { expect, test as base, type Page, type TestInfo } from "@playwright/test";
 import type { GameView } from "../../src/shared/game";
 
-export type Player = { page: Page; state?: GameView };
+export type Player = { page: Page; state?: GameView; states: GameView[]; sentPlays: number };
 
 export function observe(page: Page): Player {
-  const player: Player = { page };
+  const player: Player = { page, states: [], sentPlays: 0 };
   page.on("websocket", (socket) => {
     socket.on("framereceived", ({ payload }) => {
       if (String(payload) === "pong") return;
       const message = JSON.parse(String(payload));
-      if (message.state?.you) player.state = message.state;
+      if (!message.state?.you) return;
+      player.state = message.state;
+      player.states.push(message.state);
+    });
+    socket.on("framesent", ({ payload }) => {
+      if (String(payload).includes('"action":"play"')) player.sentPlays++;
     });
   });
   return player;
@@ -86,7 +91,7 @@ export async function start(players: Player[]) {
   }
 }
 
-function current(players: Player[]) {
+export function current(players: Player[]) {
   const state = players[0].state!;
   return players.find((player) => player.state!.you === state.order[state.turn])!;
 }
@@ -109,12 +114,12 @@ export async function predict(players: Player[], bid: number, keyboard = false) 
   );
 }
 
-export async function playCard(players: Player[], keyboard = false) {
+export async function playCard(players: Player[], keyboard = false, pick?: number) {
   const { page, state } = current(players);
   const hand = page.getByRole("region", { name: "Your hand", exact: true });
   const before = state!.players.find((p) => p.id === state!.you)!;
-  const card = before.hand[0];
-  const button = hand.getByRole("button").first();
+  const card = pick ?? before.hand[0];
+  const button = hand.getByRole("button").nth(before.hand.indexOf(card));
   await expect(button).toBeEnabled();
   if (keyboard) {
     await button.focus();
@@ -129,7 +134,7 @@ export async function playCard(players: Player[], keyboard = false) {
   await expect(hand.getByRole("button")).toHaveCount(before.hand.length - 1);
 }
 
-async function chooseHighAce(page: Page, keyboard = false) {
+export async function chooseHighAce(page: Page, keyboard = false) {
   const dialog = page.getByRole("dialog", { name: "Ace of Coins", exact: true });
   await expect(dialog.locator('img[src="/cards/neapolitan/31.webp"]')).toHaveCount(2);
   const low = dialog.getByRole("button", { name: "Low · 0", exact: true });
