@@ -29,7 +29,9 @@ type Room = {
   failures?: number;
   deliveredSequence: number;
 };
-type Attachment = { id: string; roomCode: string; connectionId?: string };
+type Attachment = { id: string; roomCode: string; connectionId?: string; openedAt?: number };
+
+const STALE_MS = 25000;
 
 const bot = createBot(weights);
 
@@ -93,11 +95,17 @@ export class GameTable extends DurableObject<Env> {
       ws.close(1011, "Reconnect");
     }
   }
+  private live(ws: WebSocket) {
+    if (ws.readyState !== WebSocket.OPEN) return false;
+    const { openedAt = 0 } = ws.deserializeAttachment() as Attachment;
+    const heard = this.ctx.getWebSocketAutoResponseTimestamp(ws)?.getTime() ?? 0;
+    return Date.now() - Math.max(openedAt, heard) < STALE_MS;
+  }
   private connected() {
     return new Set(
       this.ctx
         .getWebSockets()
-        .filter((ws) => ws.readyState === WebSocket.OPEN)
+        .filter((ws) => this.live(ws))
         .map((ws) => (ws.deserializeAttachment() as Attachment).id),
     );
   }
@@ -326,11 +334,16 @@ export class GameTable extends DurableObject<Env> {
         room = await this.advance(room);
         if (url.pathname.endsWith("/socket")) {
           this.view(room.game, id);
-          const sockets = this.ctx.getWebSockets(id);
+          const sockets = this.ctx.getWebSockets(id).filter((socket) => {
+            if (this.live(socket)) return true;
+            if (socket.readyState === WebSocket.OPEN) socket.close(4000, "No reply");
+            return false;
+          });
           if (sockets.length >= 3) this.close(sockets[0], 4002, "otherTab");
           const { 0: client, 1: server } = new WebSocketPair();
           this.ctx.acceptWebSocket(server, [id]);
           attachment.connectionId = crypto.randomUUID();
+          attachment.openedAt = Date.now();
           server.serializeAttachment(attachment);
           this.broadcast(room.game);
           await this.schedule(room);

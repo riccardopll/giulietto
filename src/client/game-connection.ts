@@ -16,6 +16,7 @@ const RECONNECTING: ErrorCode = "reconnecting";
 const PING_MS = 10000;
 const REPLY_MS = 5000;
 const CONNECT_MS = 10000;
+const AWAY_MS = 5000;
 
 export class GameConnection {
   private socket?: WebSocket;
@@ -26,16 +27,23 @@ export class GameConnection {
   private watchdog?: number;
   private joining?: AbortController;
   private synced = false;
+  private hiddenAt?: number;
   private closedReason: string = CLOSED;
   private pending = new Map<string, Pending>();
   private wake = () => {
-    if (this.stopped || (typeof document !== "undefined" && document.visibilityState === "hidden"))
+    if (this.stopped) return;
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+      this.hiddenAt ??= Date.now();
       return;
+    }
+    const away = this.hiddenAt === undefined ? 0 : Date.now() - this.hiddenAt;
+    this.hiddenAt = undefined;
     if (this.retry !== undefined) {
       clearTimeout(this.retry);
       this.retry = undefined;
       void this.rejoin();
-    } else if (this.socket?.readyState === WebSocket.OPEN) this.send(this.socket, "ping");
+    } else if (this.socket && away > AWAY_MS) this.replace(this.socket, "Resumed");
+    else if (this.socket?.readyState === WebSocket.OPEN) this.send(this.socket, "ping");
   };
   constructor(
     private code: string,
@@ -50,10 +58,18 @@ export class GameConnection {
     this.connect();
   }
   private expect(ws: WebSocket, ms: number) {
-    this.watchdog ??= setTimeout(() => {
-      this.watchdog = undefined;
-      ws.close(4000, "No reply");
-    }, ms);
+    this.watchdog ??= setTimeout(() => this.replace(ws, "No reply"), ms);
+  }
+  private replace(ws: WebSocket, reason: string) {
+    ws.onopen = ws.onmessage = ws.onclose = ws.onerror = null;
+    clearInterval(this.heartbeat);
+    clearTimeout(this.watchdog);
+    this.watchdog = undefined;
+    this.socket = undefined;
+    ws.close(4000, reason);
+    this.attempt++;
+    this.status(RECONNECTING);
+    void this.rejoin();
   }
   private send(ws: WebSocket, message: string) {
     ws.send(message);
@@ -66,7 +82,7 @@ export class GameConnection {
     url.protocol = location.protocol === "https:" ? "wss:" : "ws:";
     url.searchParams.set("code", this.code);
     const ws = (this.socket = new WebSocket(url, ["giulietto", this.token]));
-    this.status(CONNECTING);
+    this.status(this.attempt ? RECONNECTING : CONNECTING);
     this.expect(ws, CONNECT_MS);
     ws.onopen = () => {
       if (this.stopped || this.socket !== ws) return;
