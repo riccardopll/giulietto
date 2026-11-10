@@ -125,6 +125,8 @@ export const it: Messages = {
     trick: "Presa in corso",
     hand: "Le tue carte",
     spectating: "Modalità spettatore",
+    watching: "Spettatore",
+    handOf: (name) => `Carte di ${name}`,
     predict: (n) => `Dichiara ${count(n, "presa", "prese")}`,
     tally: (predicted, delta, cards) =>
       `${count(predicted, "presa dichiarata", "prese dichiarate")}, ${delta > 0 ? `${delta} in più rispetto a` : delta < 0 ? `${-delta} in meno rispetto a` : "pari a"} ${count(cards, "carta", "carte")}`,

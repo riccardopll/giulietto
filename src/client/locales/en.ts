@@ -127,6 +127,8 @@ export const en = {
     trick: "Current trick",
     hand: "Your hand",
     spectating: "Spectator mode",
+    watching: "Spectating",
+    handOf: (name: string) => `${name}'s hand`,
     predict: (n: number) => `Predict ${count(n, "trick", "tricks")}`,
     tally: (predicted: number, delta: number, cards: number) =>
       `${count(predicted, "trick", "tricks")} predicted, ${delta > 0 ? `${delta} over` : delta < 0 ? `${-delta} under` : "even with"} the ${count(cards, "card", "cards")}`,

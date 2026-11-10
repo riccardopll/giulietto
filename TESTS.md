@@ -5,7 +5,7 @@ themselves. After layout changes, inspect the screenshots and open `/preview`
 for the user to review.
 
 UI coverage is one complete three-player game, entry retries, reload and resume
-during play, profile editing with error recovery, and one dense mobile layout
+during play, a late spectator's open hands, profile editing with error recovery, and one dense mobile layout
 check. Rules and event generation belong in unit
 tests; API, WebSocket, and persistence behavior in integration tests. Do not
 add preview permutations.

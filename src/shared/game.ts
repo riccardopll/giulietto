@@ -336,6 +336,7 @@ export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
   const spectator = game.spectators?.find((spectator) => spectator.id === id);
   if (!me && !spectator) throw new GameError("notAtTable");
   const active = !!me && game.order.includes(id);
+  const openHands = !me;
   const blind = game.count === 1 && ["bidding", "playing", "trick"].includes(game.phase);
   return {
     ...game,
@@ -349,13 +350,16 @@ export function view(game: Game, id: string, connected?: ReadonlySet<string>) {
       ),
     ].filter((watcher) => !connected || connected.has(watcher.id)).length,
     spectating: !me || (game.phase !== "lobby" && me.lives <= 0),
+    openHands,
     canChooseAce:
       active && game.phase === "playing" && game.order[game.turn] === id && me.hand.includes(31),
     players: game.players.map((player) => ({
       ...player,
       connected: player.bot || (connected?.has(player.id) ?? true),
       hand: player.hand.map((card) =>
-        active && ((!blind && player.id === id) || (blind && player.id !== id)) ? card : null,
+        openHands || (active && ((!blind && player.id === id) || (blind && player.id !== id)))
+          ? card
+          : null,
       ),
     })),
     legalBids: game.phase === "bidding" && game.order[game.turn] === id ? legalBids(game) : [],

@@ -49,7 +49,7 @@ test("does not revive a player eliminated while away", () => {
 });
 
 test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
-  "allows spectators during %s without revealing hands or adding seats",
+  "allows spectators during %s without adding seats",
   (phase) => {
     const game = gameFixture([[31], [2], [3], [4], [5], [6]]);
     game.phase = phase;
@@ -63,7 +63,6 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
       canChooseAce: false,
     });
     expect(state.players).toHaveLength(6);
-    expect(state.players.every((p) => p.hand.every((card) => card === null))).toBe(true);
     expect(game.spectators).toHaveLength(1);
     expect(tableOrder(state).seats).toEqual(game.players.map((p) => p.id));
     for (const input of [
@@ -98,6 +97,50 @@ test.each(["bidding", "playing", "trick", "results", "finished"] as const)(
     expect(() => view(game, "watcher")).toThrow();
   },
 );
+
+const hands = (state: ReturnType<typeof view>) => state.players.map((p) => p.hand);
+
+test("shows every hand only to spectators who never held a seat", () => {
+  const game = gameFixture();
+  join(game, "watcher", "Observer", 200);
+  expect(view(game, "watcher")).toMatchObject({ spectating: true, openHands: true });
+  expect(hands(view(game, "watcher"))).toEqual([
+    [1, 2],
+    [11, 12],
+    [21, 22],
+  ]);
+  expect(view(game, "p0").openHands).toBe(false);
+  expect(hands(view(game, "p0"))).toEqual([
+    [1, 2],
+    [null, null],
+    [null, null],
+  ]);
+
+  join(game, "p0", "bot_1", 300);
+  expect(game.spectators?.map((spectator) => spectator.id)).toEqual(["watcher"]);
+  expect(hands(view(game, "p0", new Set(["watcher"])))).toEqual([
+    [1, 2],
+    [null, null],
+    [null, null],
+  ]);
+
+  apply(game, "p1", { action: "leave", commandId: crypto.randomUUID() }, 400);
+  join(game, "p1", "Observer", 500);
+  expect(game.spectators?.map((spectator) => spectator.id)).toEqual(["watcher"]);
+  expect(view(game, "p1")).toMatchObject({ spectating: true, openHands: false });
+  expect(hands(view(game, "p1"))).toEqual([[null, null], [], [null, null]]);
+
+  game.spectators!.push({ id: "p0", name: "Observer", seen: 500 });
+  expect(view(game, "p0").openHands).toBe(false);
+  expect(hands(view(game, "p0"))).toEqual([[1, 2], [], [null, null]]);
+});
+
+test("shows spectators both sides of the blind round", () => {
+  const game = gameFixture([[7], [31]]);
+  join(game, "watcher", "Observer", 200);
+  expect(hands(view(game, "watcher"))).toEqual([[7], [31]]);
+  expect(hands(view(game, "p0"))).toEqual([[null], [31]]);
+});
 
 test("keeps spectators out of tie revival and subsequent rounds", () => {
   const game = gameFixture();
