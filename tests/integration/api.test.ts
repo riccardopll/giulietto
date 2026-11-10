@@ -10,7 +10,7 @@ import { expect, test } from "vitest";
 import { api, captureLogs, guest } from "./helpers";
 
 test("public matchmaking fills a lobby that waits for its host to start", async () => {
-  const players = Array.from({ length: 6 }, (_, index) => guest(index + 1));
+  const players = Array.from({ length: 8 }, (_, index) => guest(index + 1));
   const created = await api.state(players[0], { action: "match" });
   const joined = await Promise.all(
     players.slice(1).map((player) => api.state(player, { action: "match" })),
@@ -21,15 +21,15 @@ test("public matchmaking fills a lobby that waits for its host to start", async 
   const response = await api.get(players[0], created.code);
   const state = (await response.json()) as GameView;
   expect(state.phase).toBe("lobby");
-  expect(state.players).toHaveLength(6);
-  expect(new Set(state.players.map((player) => player.id)).size).toBe(6);
+  expect(state.players).toHaveLength(8);
+  expect(new Set(state.players.map((player) => player.id)).size).toBe(8);
   const next = await api.state(guest(1), { action: "match" });
   expect(codes.has(next.code)).toBe(false);
   expect(next.phase).toBe("lobby");
   expect((await api.post(players[1], { action: "start", code: created.code })).status).toBe(400);
   const started = await api.state(players[0], { action: "start", code: created.code });
   expect(started.phase).toBe("bidding");
-  expect(started.players.every((player) => player.hand.length === 6)).toBe(true);
+  expect(started.players.every((player) => player.hand.length === 5)).toBe(true);
 });
 
 for (const { visibility, action } of [

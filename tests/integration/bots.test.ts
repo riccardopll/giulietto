@@ -38,14 +38,23 @@ test("only the lobby host manages bots, with unique names, seat limits, and retr
   const first = (await read(code)).players.find((player) => player.bot)!;
   expect((await api.post(other, { action: "kick", playerId: first.id, code })).status).toBe(400);
   await api.state(host, { action: "kick", playerId: first.id, code });
-  for (let i = 0; i < 4; i++) await api.state(host, { action: "addBot", code });
+  for (let i = 0; i < 6; i++) await api.state(host, { action: "addBot", code });
   const game = await read(code);
-  expect(game.players).toHaveLength(6);
+  expect(game.players).toHaveLength(8);
   const bots = game.players.filter((player) => player.bot);
-  expect(bots).toHaveLength(4);
-  expect(new Set(bots.map((player) => player.name)).size).toBe(4);
+  expect(bots).toHaveLength(6);
+  expect(new Set(bots.map((player) => player.name)).size).toBe(6);
   for (const { name } of bots)
-    expect(["Vannacci", "Tutorial", "Perso", "Pippa", "Netanyahu", "Slayer 1.90"]).toContain(name);
+    expect([
+      "Vannacci",
+      "Tutorial",
+      "Perso",
+      "Pippa",
+      "Netanyahu",
+      "Slayer 1.90",
+      "Briscola",
+      "Settebello",
+    ]).toContain(name);
   expect((await api.post(host, { action: "addBot", code })).status).toBe(400);
   await api.state(host, { action: "start", code });
   expect((await api.post(host, { action: "addBot", code })).status).toBe(400);

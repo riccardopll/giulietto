@@ -16,11 +16,21 @@ import {
   MIN_TURN_SECONDS,
   MAX_TURN_SECONDS,
   MAX_STARTING_LIVES,
+  MAX_PLAYERS,
   type Game,
   findPlayer,
 } from "../shared/game";
 
-const botNames = ["Vannacci", "Tutorial", "Perso", "Pippa", "Netanyahu", "Slayer 1.90"];
+const botNames = [
+  "Vannacci",
+  "Tutorial",
+  "Perso",
+  "Pippa",
+  "Netanyahu",
+  "Slayer 1.90",
+  "Briscola",
+  "Settebello",
+];
 
 function integer(value: unknown, code: ErrorCode) {
   if (typeof value !== "number" || !Number.isInteger(value)) throw new GameError(code);
@@ -118,7 +128,7 @@ export function join(
     (game.spectators ??= []).push({ id, name, seen: now });
     return;
   }
-  if (game.players.length >= 6) throw new GameError("tableFull");
+  if (game.players.length >= MAX_PLAYERS) throw new GameError("tableFull");
   game.players.push({ ...makePlayer(id, name, now), lives: game.startingLives });
   if (!game.host) game.host = id;
   tick(game, now);
@@ -162,7 +172,7 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   } else if (input.action === "addBot") {
     if (game.host !== id) throw new GameError("hostOnlyBots");
     if (game.phase !== "lobby") throw new GameError("botsLobbyOnly");
-    if (game.players.length >= 6) throw new GameError("tableFull");
+    if (game.players.length >= MAX_PLAYERS) throw new GameError("tableFull");
     const names = botNames.filter((name) => !game.players.some((member) => member.name === name));
     const name = names[Math.floor(Math.random() * names.length)];
     game.players.push({

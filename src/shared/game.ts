@@ -74,6 +74,7 @@ export const SPECTATOR_RETENTION_MS = 120000;
 export const DEFAULT_STARTING_LIVES = 3;
 export const MIN_STARTING_LIVES = 1;
 export const MAX_STARTING_LIVES = 5;
+export const MAX_PLAYERS = 8;
 export function makeGame(code: string, host: Player, isPublic: boolean): Game {
   return {
     code,
@@ -149,9 +150,9 @@ export function deal(game: Game, now: number) {
     shuffle(game.players);
   }
   game.round++;
-  game.count = 6 - ((game.round - 1) % 6);
-  game.cycle = Math.floor((game.round - 1) / 6) + 1;
   const active = game.players.filter((player) => player.lives > 0);
+  game.count = Math.min(6 - ((game.round - 1) % 6), Math.floor(40 / active.length));
+  game.cycle = Math.floor((game.round - 1) / 6) + 1;
   game.order = active.map((player) => player.id);
   const offset = (game.round - 1) % active.length;
   game.order = [...game.order.slice(offset), ...game.order.slice(0, offset)];
