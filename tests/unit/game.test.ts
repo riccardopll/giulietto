@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import {
+  AUTO_PLAY_MS,
+  autoPlays,
   bid,
-  BLIND_PLAY_MS,
   deal,
   legalBids,
   MAX_STARTING_LIVES,
@@ -140,18 +141,59 @@ describe("turns and tricks", () => {
   test("plays blind cards automatically and gives the Ace holder a full turn", () => {
     const game = gameFixture([[7], [31], [12]]);
     for (const id of game.order) bid(game, id, 0, 100);
-    expect(view(game, "p0").turnMs).toBe(BLIND_PLAY_MS);
-    expect(game.deadline).toBe(100 + BLIND_PLAY_MS);
+    expect(view(game, "p0").turnMs).toBe(AUTO_PLAY_MS);
+    expect(game.deadline).toBe(100 + AUTO_PLAY_MS);
     tick(game, game.deadline - 1);
     expect(game.trick).toEqual([]);
     tick(game, game.deadline);
     expect(game.trick).toEqual([{ player: "p0", card: 7 }]);
     expect(view(game, "p1").turnMs).toBe(game.turnSeconds * 1000);
-    expect(game.deadline).toBe(100 + BLIND_PLAY_MS + game.turnSeconds * 1000);
+    expect(game.deadline).toBe(100 + AUTO_PLAY_MS + game.turnSeconds * 1000);
     play(game, "p1", 31, "low", 5000);
-    expect(game.deadline).toBe(5000 + BLIND_PLAY_MS);
+    expect(game.deadline).toBe(5000 + AUTO_PLAY_MS);
     tick(game, game.deadline);
     expect(game).toMatchObject({ phase: "trick", lastWinner: "p2" });
+  });
+
+  test("plays the last card of a longer round automatically", () => {
+    const game = gameFixture([
+      [7, 20],
+      [5, 31],
+      [3, 12],
+    ]);
+    for (const id of game.order) bid(game, id, 0, 100);
+    for (const id of game.order) {
+      expect(autoPlays(game)).toBe(false);
+      expect(view(game, id).turnMs).toBe(game.turnSeconds * 1000);
+      tick(game, 100 + AUTO_PLAY_MS);
+      expect(game.order[game.turn]).toBe(id);
+      play(game, id, findPlayer(game, id)!.hand[0], undefined, 200);
+    }
+    expect(game).toMatchObject({ phase: "trick", lastWinner: "p0" });
+    tick(game, game.deadline);
+    expect(game).toMatchObject({ phase: "playing", turn: 0, deadline: 1800 + AUTO_PLAY_MS });
+    expect(view(game, "p0").turnMs).toBe(AUTO_PLAY_MS);
+    tick(game, game.deadline - 1);
+    expect(game.trick).toEqual([]);
+    tick(game, game.deadline);
+    expect(game.trick).toEqual([{ player: "p0", card: 20 }]);
+    expect(autoPlays(game)).toBe(false);
+    expect(view(game, "p1").canChooseAce).toBe(true);
+    expect(game.deadline).toBe(1800 + AUTO_PLAY_MS + game.turnSeconds * 1000);
+    tick(game, game.deadline - 1);
+    expect(game.trick).toHaveLength(1);
+    play(game, "p1", 31, "low", 9000);
+    expect(game.deadline).toBe(9000 + AUTO_PLAY_MS);
+    tick(game, game.deadline);
+    expect(game.trick).toEqual([
+      { player: "p0", card: 20 },
+      { player: "p1", card: 31, mode: "low" },
+      { player: "p2", card: 12 },
+    ]);
+    expect(game).toMatchObject({ phase: "trick", lastWinner: "p0" });
+    tick(game, game.deadline);
+    expect(game.phase).toBe("results");
+    expect(game.players.map((player) => player.hand)).toEqual([[], [], []]);
   });
 
   test("uses a legal prediction and card when a turn expires", () => {
@@ -258,15 +300,18 @@ test("uses the configured move time across turns and the shorter pauses between 
   expect(game.phase).toBe("trick");
   tick(game, 2000);
   expect(game.phase).toBe("playing");
-  expect(game.deadline).toBe(12000);
-  play(game, "p1", 12, undefined, 2100);
-  play(game, "p0", 2, undefined, 2200);
-  tick(game, 3800);
+  expect(game.deadline).toBe(3000);
+  tick(game, 3000);
+  expect(game.deadline).toBe(4000);
+  tick(game, 4000);
+  expect(game.phase).toBe("trick");
+  expect(game.deadline).toBe(5600);
+  tick(game, 5600);
   expect(game.phase).toBe("results");
-  expect(game.deadline).toBe(11800);
-  tick(game, 11799);
+  expect(game.deadline).toBe(13600);
+  tick(game, 13599);
   expect(game.phase).toBe("results");
-  tick(game, 11800);
+  tick(game, 13600);
   expect(game.phase).toBe("bidding");
-  expect(game.deadline).toBe(21800);
+  expect(game.deadline).toBe(23600);
 });

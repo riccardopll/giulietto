@@ -1,6 +1,15 @@
 import { findPlayer } from "../../src/shared/game";
 import { expect } from "@playwright/test";
-import { playCard, predict, screenshot, start, synced, test, type Player } from "./helpers";
+import {
+  lastTrick,
+  playCard,
+  predict,
+  screenshot,
+  start,
+  synced,
+  test,
+  type Player,
+} from "./helpers";
 
 function predictions(players: Player[], eliminated: string) {
   const state = players[0].state!;
@@ -79,7 +88,8 @@ test("three players complete a game, including round results and elimination", a
     await synced(players, (state) => state.phase === "playing");
     for (let trick = 0; trick < state.count; trick++) {
       await synced(players, (state) => state.phase === "playing");
-      for (let turn = 0; turn < state.order.length; turn++) await playCard(players);
+      if (trick === state.count - 1) await lastTrick(players);
+      else for (let turn = 0; turn < state.order.length; turn++) await playCard(players);
       for (const { page } of players) {
         await expect(
           page.getByRole("region", { name: "Current trick", exact: true }).getByRole("img"),

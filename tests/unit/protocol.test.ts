@@ -164,6 +164,29 @@ test("refuses plays while the table plays a blind card", () => {
   ]);
 });
 
+test("accepts plays until the last card, which the table plays", () => {
+  const game = gameFixture([
+    [7, 8],
+    [31, 12],
+  ]);
+  game.phase = "playing";
+  const send = (id: string, card: number) =>
+    apply(game, id, { action: "play", card, mode: "high", commandId: crypto.randomUUID() }, 200);
+  send("p0", 7);
+  send("p1", 12);
+  tick(game, game.deadline);
+  expect(game).toMatchObject({ phase: "playing", turn: 1, trick: [] });
+  send("p1", 31);
+  expect(() => send("p0", 8)).toThrow("notYourTurn");
+  expect(game.players[0].hand).toEqual([8]);
+  tick(game, game.deadline);
+  expect(game.trick).toEqual([
+    { player: "p1", card: 31, mode: "high" },
+    { player: "p0", card: 8 },
+  ]);
+  expect(game.phase).toBe("trick");
+});
+
 test.each([
   [{ action: "bid", bid: 1.5 }, "invalidBid"],
   [{ action: "play", card: "31" }, "invalidCard"],
