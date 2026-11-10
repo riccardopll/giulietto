@@ -158,8 +158,15 @@ test("six players and full hands fit the smallest supported phone", async ({ pag
   await page.setViewportSize({ width: 393, height: 852 });
   await page.goto("/preview?people=6&cards=6&phase=bidding&viewer=-1");
   const spectatorHand = page.getByRole("region", { name: "Spectator mode" });
-  await expect(spectatorHand.getByRole("img", { name: "Hidden card", exact: true })).toHaveCount(6);
+  await expect(page.getByRole("status", { name: "Spectating", exact: true })).toBeVisible();
+  await expect(spectatorHand.getByRole("group")).toHaveCount(6);
+  await expect(spectatorHand.getByRole("img")).toHaveCount(36);
+  await expect(spectatorHand.getByRole("img", { name: "Hidden card", exact: true })).toHaveCount(0);
   await expect(spectatorHand.getByRole("button")).toHaveCount(0);
+  const hands = (await spectatorHand.boundingBox())!;
+  expect(hands.x).toBeGreaterThanOrEqual(0);
+  expect(hands.x + hands.width).toBeLessThanOrEqual(393);
+  expect(hands.y + hands.height).toBeLessThanOrEqual(852);
   await expect(
     page.locator('[data-seat-slot][data-center] [data-side="bottom"] [data-seat-hand]'),
   ).toHaveCount(0);

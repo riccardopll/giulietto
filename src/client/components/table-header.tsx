@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Check, Copy, LogOut } from "lucide-react";
+import { Check, Copy, Eye, LogOut } from "lucide-react";
 import type { GameView } from "../../shared/game";
 import { t } from "../i18n";
 import { toRoman } from "../utils";
@@ -63,6 +63,16 @@ export function TableHeader({
           <h2 className="shrink-0 whitespace-nowrap text-center text-sm leading-tight font-semibold min-[360px]:text-base">
             {t.table.round} {toRoman(game.round)}
           </h2>
+          {game.openHands && (
+            <p
+              className="mx-auto mt-0.5 flex w-fit items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-2xs leading-3 font-semibold whitespace-nowrap text-primary-foreground"
+              role="status"
+              aria-label={t.match.watching}
+            >
+              <Eye className="size-3" aria-hidden="true" />
+              {t.match.watching}
+            </p>
+          )}
         </div>
       )}
       <div className="col-start-3 row-start-1 grid min-w-0 grid-cols-[minmax(0,1fr)_auto_auto] items-center">

@@ -16,6 +16,7 @@ import { ChatButton, type ChatState } from "./chat";
 import { EmotePicker, ReactionRail, useRecent } from "./emotes";
 import { PlayerSeat } from "./player-seat";
 import { PlayingCard } from "./playing-card";
+import { SpectatorHands } from "./spectator-hands";
 import { TableSurface, tableOutline } from "./table-surface";
 import { Button } from "@ui/button";
 import { MatchEventFeed } from "./match-event-feed";
@@ -201,7 +202,7 @@ export function MatchBoard({
       >
         <PlayerSeat
           emoteMenuOpen={emoteMenuOpen}
-          player={player}
+          player={game.openHands ? { ...player, hand: player.hand.map(() => null) } : player}
           number={number}
           you={id === game.you}
           handInTray={id === seating.seats[0]}
@@ -310,45 +311,49 @@ export function MatchBoard({
         </section>
       </section>
       <div className="@container/hand relative mx-auto grid w-full max-w-[36rem] min-w-0 grid-cols-[2rem_minmax(0,1fr)_2rem] items-center pt-2">
-        <section
-          className="col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
-          style={{ "--hand-count": handPlayer?.hand.length ?? 0 } as CSSProperties}
-          aria-label={game.spectating ? t.match.spectating : t.match.hand}
-        >
-          <div
-            className="flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-data-hand-card:scale-[1.08] transition-[filter] duration-300 ease-out data-[waiting]:brightness-[.8]"
-            key={`hand-${game.round}`}
-            data-waiting={
-              ((game.phase === "playing" || game.phase === "trick") && !myTurn) || undefined
-            }
-            data-active-turn={(canPlay && !!me?.hand.length) || undefined}
+        {game.openHands ? (
+          <SpectatorHands game={game} seats={seating.seats} current={seating.current} />
+        ) : (
+          <section
+            className="col-start-2 row-start-1 min-w-0 [--hand-card-limit:4.75rem] [--hand-card-width:min(var(--hand-card-limit),calc((100cqw+1.5rem)/6),12dvh)] [--hand-card-gap:min(.5rem,calc((100cqw-4rem-var(--hand-count)*var(--hand-card-width))/max(1,var(--hand-count)-1)))]"
+            style={{ "--hand-count": handPlayer?.hand.length ?? 0 } as CSSProperties}
+            aria-label={game.spectating ? t.match.spectating : t.match.hand}
           >
-            {handPlayer?.hand.map((card, i) => {
-              const middle = (handPlayer.hand.length - 1) / 2;
-              const position = middle ? (i - middle) / middle : 0;
-              return (
-                <div
-                  className="relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
-                  key={card ?? i}
-                  data-hand-card
-                  style={
-                    {
-                      "--hand-angle": `${position * 3}deg`,
-                      "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
-                    } as CSSProperties
-                  }
-                >
-                  <PlayingCard
-                    card={game.spectating ? null : card}
-                    disabled={!canPlay}
-                    pending={pendingCard === (card ?? -1)}
-                    onClick={game.spectating ? undefined : () => onPlay(card)}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        </section>
+            <div
+              className="flex min-h-[calc(var(--hand-card-width)*1.6)] origin-bottom items-center justify-center has-data-hand-card:scale-[1.08] transition-[filter] duration-300 ease-out data-[waiting]:brightness-[.8]"
+              key={`hand-${game.round}`}
+              data-waiting={
+                ((game.phase === "playing" || game.phase === "trick") && !myTurn) || undefined
+              }
+              data-active-turn={(canPlay && !!me?.hand.length) || undefined}
+            >
+              {handPlayer?.hand.map((card, i) => {
+                const middle = (handPlayer.hand.length - 1) / 2;
+                const position = middle ? (i - middle) / middle : 0;
+                return (
+                  <div
+                    className="relative ml-(--hand-card-gap) first:ml-0 w-(--hand-card-width) min-w-0 origin-bottom translate-y-(--hand-lift) rotate-(--hand-angle)"
+                    key={card ?? i}
+                    data-hand-card
+                    style={
+                      {
+                        "--hand-angle": `${position * 3}deg`,
+                        "--hand-lift": `${middle ? (position ** 2 - 1) * 4 : 0}px`,
+                      } as CSSProperties
+                    }
+                  >
+                    <PlayingCard
+                      card={game.spectating ? null : card}
+                      disabled={!canPlay}
+                      pending={pendingCard === (card ?? -1)}
+                      onClick={game.spectating ? undefined : () => onPlay(card)}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );
