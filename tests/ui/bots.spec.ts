@@ -8,14 +8,14 @@ test("a host fills seats with bots and plays against them online", async ({ page
   await expect(page.getByRole("list", { name: "Players", exact: true })).toBeVisible();
   await rename(page, "bot_1");
   const add = page.getByRole("button", { name: "Add bot", exact: true });
-  await expect(add).toHaveCount(5);
+  await expect(add).toHaveCount(7);
   await add.first().click();
   await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(1);
   await page.getByRole("button", { name: /^Remove / }).click();
-  await expect(add).toHaveCount(5);
+  await expect(add).toHaveCount(7);
   for (let i = 0; i < 2; i++) {
     await add.first().click();
-    await expect(add).toHaveCount(4 - i);
+    await expect(add).toHaveCount(6 - i);
   }
   await page.reload();
   await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(2);

@@ -12,6 +12,14 @@ test("lets a timed-out lobby player join again", () => {
   expect(game.host).toBe("p0");
 });
 
+test("seats up to eight players", () => {
+  const game = lobbyFixture(6);
+  join(game, "p6", "bot_7", 200);
+  join(game, "p7", "bot_8", 200);
+  expect(game.players).toHaveLength(8);
+  expect(() => join(game, "p8", "Ninth", 200)).toThrow("tableFull");
+});
+
 test("preserves a reconnecting player's seat, hand, and progress", () => {
   const game = gameFixture();
   game.players[0].bid = 1;

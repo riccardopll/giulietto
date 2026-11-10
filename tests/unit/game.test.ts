@@ -56,6 +56,36 @@ describe("rounds", () => {
     expect(game.players[1].hand).toEqual([]);
     expect(game.players[2].hand).toEqual([]);
   });
+
+  test.each([7, 8])("deals %i players equal reduced hands and leaves the rest unused", (people) => {
+    const game = lobbyFixture(people);
+    deal(game, 100);
+    expect(game.count).toBe(5);
+    expect(legalBids(game)).toEqual([0, 1, 2, 3, 4, 5]);
+    expect(game.players.map((p) => p.hand.length)).toEqual(Array(people).fill(5));
+    expect(new Set(game.players.flatMap((p) => p.hand)).size).toBe(people * 5);
+    const counts = [game.count];
+    for (let round = 2; round <= 7; round++) {
+      deal(game, round * 100);
+      counts.push(game.count);
+      expect(game.players.every((p) => p.hand.length === game.count)).toBe(true);
+    }
+    expect(counts).toEqual([5, 5, 4, 3, 2, 1, 5]);
+  });
+
+  test("returns to six cards once eliminations leave enough cards", () => {
+    const game = lobbyFixture(8);
+    deal(game, 100);
+    game.round = 6;
+    game.players[0].lives = 0;
+    deal(game, 200);
+    expect(game.count).toBe(5);
+    game.round = 6;
+    game.players[1].lives = 0;
+    deal(game, 300);
+    expect(game.count).toBe(6);
+    expect(game.players.map((p) => p.hand.length)).toEqual([0, 0, 6, 6, 6, 6, 6, 6]);
+  });
 });
 
 describe("turns and tricks", () => {

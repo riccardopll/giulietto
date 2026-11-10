@@ -3,6 +3,7 @@ import { Avatar } from "./avatar";
 import { useState } from "react";
 import { ArrowRight, Check, Globe, Link, Lock, Minus, Pencil, Plus, User } from "lucide-react";
 import {
+  MAX_PLAYERS,
   MAX_STARTING_LIVES,
   MIN_STARTING_LIVES,
   MIN_TURN_SECONDS,
@@ -170,7 +171,7 @@ export function Lobby({
         />
       </div>
       <ul className="grid gap-2" aria-label={t.lobby.players}>
-        {Array.from({ length: 6 }, (_, i) => {
+        {Array.from({ length: MAX_PLAYERS }, (_, i) => {
           const player = game.players[i];
           return (
             <li
