@@ -43,6 +43,8 @@ export type ErrorCode =
   | "chatClosed"
   | "emotesPlayOnly"
   | "emoteCooldown"
+  | "donationUnavailable"
+  | "donationTarget"
   | "rematchNotOver"
   | "rematchPlayersOnly"
   | "rematchInvited"

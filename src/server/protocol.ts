@@ -9,6 +9,7 @@ import {
   bid,
   forfeit,
   deal,
+  donate,
   play,
   makePlayer,
   tick,
@@ -46,6 +47,10 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
       return { action: "rename", name: displayName(input.name) };
     case "settings": {
       const option = input.option;
+      if (option === "lifeDonation") {
+        if (typeof input.value !== "boolean") throw new GameError("optionRequired");
+        return { action: "settings", option, value: input.value };
+      }
       if (option !== "startingLives" && option !== "turnSeconds")
         throw new GameError("optionRequired");
       const lives = option === "startingLives";
@@ -62,8 +67,9 @@ function fields(input: Record<string, unknown>): EntryCommand | TableCommand {
     case "leave":
       return { action: input.action };
     case "kick":
+    case "donate":
       if (typeof input.playerId !== "string") throw new GameError("playerRequired");
-      return { action: "kick", playerId: input.playerId };
+      return { action: input.action, playerId: input.playerId };
     case "bid":
       return { action: "bid", bid: integer(input.bid, "invalidBid") };
     case "play":
@@ -156,9 +162,12 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   } else if (input.action === "settings") {
     if (game.host !== id) throw new GameError("hostOnlyOptions");
     if (game.phase !== "lobby") throw new GameError("optionsLocked");
-    game[input.option] = input.value;
-    if (input.option === "startingLives")
-      for (const member of game.players) member.lives = input.value;
+    if (input.option === "lifeDonation") game.lifeDonation = input.value;
+    else {
+      game[input.option] = input.value;
+      if (input.option === "startingLives")
+        for (const member of game.players) member.lives = input.value;
+    }
   } else if (input.action === "addBot") {
     if (game.host !== id) throw new GameError("hostOnlyBots");
     if (game.phase !== "lobby") throw new GameError("botsLobbyOnly");
@@ -185,7 +194,8 @@ export function apply(game: Game, id: string, input: Command, now: number) {
   else if (input.action === "play") {
     if (autoPlays(game)) throw new GameError("notYourTurn");
     play(game, id, game.count === 1 ? player.hand[0] : input.card, input.mode, now);
-  } else if (input.action === "rematch") {
+  } else if (input.action === "donate") donate(game, id, input.playerId);
+  else if (input.action === "rematch") {
     if (!input.code) throw new GameError("invalidRequest");
     inviteRematch(game, id, input.code, now);
   } else if (input.action === "leave" && game.phase === "lobby") {

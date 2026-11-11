@@ -98,6 +98,7 @@ export function makePreview(input: PreviewOptions, bot: Bot): Game {
   let game = makeGame(`PREVIEW${people}`, players[0], false);
   game.players = players;
   game.startingLives = startingLives;
+  game.lifeDonation = true;
   if (phase === "finished") {
     game.phase = "finished";
     game.winner = players[1].id;
@@ -119,9 +120,9 @@ export function makePreview(input: PreviewOptions, bot: Bot): Game {
   deal(game, Date.now());
   game.players.sort((a, b) => seatOrder.indexOf(a.id) - seatOrder.indexOf(b.id));
   game.players.forEach((p, i) => {
-    const state = seatStates[i];
-    p.lives = state === "eliminated" ? 0 : startingLives;
-    if (p.lives === 0) p.hand = [];
+    const out = seatStates[i] === "eliminated" && phase !== "results";
+    p.lives = out ? 0 : startingLives;
+    if (out) p.hand = [];
   });
   game.order = game.players.filter((p) => p.hand.length > 0).map((p) => p.id);
   if (phase === "bidding") {
@@ -133,6 +134,14 @@ export function makePreview(input: PreviewOptions, bot: Bot): Game {
     while (game.phase !== "trick" || game.players.some((p) => p.hand.length))
       game = advancePreview(game, bot);
     game = advancePreview(game, bot);
+    game.players.forEach((p, i) => {
+      if (seatStates[i] !== "eliminated" || game.phase !== "results") return;
+      const result = game.results.find((entry) => entry.id === p.id)!;
+      result.lost += p.lives;
+      result.lives = 0;
+      p.lives = 0;
+      p.eliminatedRound = game.round;
+    });
   } else {
     for (let trick = 0; trick < options.completedTricks; trick++) {
       while (game.phase === "playing") game = advancePreview(game, bot);

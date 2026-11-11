@@ -12,6 +12,7 @@ import {
   autoPlays,
   bid,
   deal,
+  donate,
   play,
   view,
   ROUND_PAUSE_MS,
@@ -195,7 +196,7 @@ export function Preview({ bot }: { bot: Bot }) {
     const acting = game.phase === "bidding" || game.phase === "playing";
     const viewerId = viewer === -1 ? null : game.players[viewer]?.id;
     if (acting && game.order[game.turn] === viewerId && !autoPlays(game)) return;
-    const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? 3000 : 900;
+    const delay = game.phase === "trick" ? 1500 : game.phase === "results" ? ROUND_PAUSE_MS : 900;
     const timer = setTimeout(() => {
       setTables((tables) => ({ ...tables, [people]: nextEntry(tables[people], bot) }));
     }, delay);
@@ -275,9 +276,12 @@ export function Preview({ bot }: { bot: Bot }) {
       if (input.action === "rename" && game.phase === "lobby")
         game.players[viewer].name = input.name.trim().slice(0, 20);
       else if (input.action === "settings" && game.phase === "lobby") {
-        game[input.option] = input.value;
-        if (input.option === "startingLives")
-          for (const player of game.players) player.lives = input.value;
+        if (input.option === "lifeDonation") game.lifeDonation = input.value;
+        else {
+          game[input.option] = input.value;
+          if (input.option === "startingLives")
+            for (const player of game.players) player.lives = input.value;
+        }
       } else if (input.action === "start" && game.phase === "lobby") deal(game, now);
       else if (input.action === "emote") sendEmote(game, id, input.emote, now);
       else if (input.action === "chat") sendChat(game, id, input.text, now);
@@ -290,6 +294,7 @@ export function Preview({ bot }: { bot: Bot }) {
           input.mode,
           now,
         );
+      else if (input.action === "donate") donate(game, id, input.playerId);
       else if (input.action === "rematch") inviteRematch(game, id, "PREVIEW0", now);
       else return;
     }

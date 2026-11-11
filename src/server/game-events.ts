@@ -58,6 +58,12 @@ export function gameEvents(before: Game, after: Game, origin: EventSource, now: 
         lives: player.lives,
       })),
     });
+  } else if ((after.donations?.length ?? 0) > (before.donations?.length ?? 0)) {
+    const donation = after.donations!.at(-1)!;
+    add("life_donated", donation.from, {
+      to: donation.to,
+      lives: findPlayer(after, donation.from)!.lives,
+    });
   } else if (
     (before.phase === "bidding" && after.turn !== before.turn) ||
     (before.phase === "bidding" && after.phase === "playing")
